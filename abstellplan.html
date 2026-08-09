@@ -67,7 +67,7 @@ body.readonly .write-only{display:none!important}
 body.is-admin .admin-only{display:flex!important}
 
 .track {
-    min-height: 150px;
+    min-height: 178px;
 }
 
 .track-title-box{
@@ -321,7 +321,7 @@ button.danger {
 .track {
     position: absolute;
 
-    height: 125px;
+    height: 178px;
 
     margin-bottom: 25px;
 
@@ -921,17 +921,31 @@ body.dark .vehicle-status.status-werkstatt{
 }
 
 .track-admin-actions{
+    position:absolute;
+    left:10px;
+    bottom:10px;
+    z-index:30;
     display:flex;
-    flex-direction:column;
+    flex-direction:row;
     gap:5px;
-    margin-top:7px;
+    align-items:center;
+    flex-wrap:nowrap;
 }
 
-.track-admin-actions .track-edit-btn,
-.track-admin-actions .track-delete-btn{
-    margin-top:0;
-    padding:4px 6px;
-    font-size:10px;
+.track-admin-actions button{
+    margin:0!important;
+    padding:5px 7px!important;
+    min-height:26px;
+    border-radius:6px;
+    font-size:10px!important;
+    line-height:1;
+    white-space:nowrap;
+}
+
+.track-edit-btn,
+.track-length-btn{
+    background:#343a40!important;
+    color:#fff!important;
 }
 
 .track-delete-btn{
@@ -956,8 +970,8 @@ body.dark .scale-mark.scale-major {
 ========================================================= */
 .track-drag-handle{
     display:none;
-    margin-top:6px;
-    padding:4px 6px;
+    margin:0!important;
+    padding:5px 7px!important;
     border-radius:6px;
     background:#343a40!important;
     color:#fff!important;
@@ -965,6 +979,7 @@ body.dark .scale-mark.scale-major {
     cursor:grab;
     user-select:none;
     touch-action:none;
+    white-space:nowrap;
 }
 
 body.is-admin .track-drag-handle{
@@ -1492,10 +1507,18 @@ function renderPlan() {
 
             const editButton = document.createElement("button");
             editButton.className = "track-edit-btn";
-            editButton.textContent = "✏ Ändern";
+            editButton.textContent = "✏ Name";
             editButton.addEventListener("click", event => {
                 event.stopPropagation();
-                editTrack(track.id);
+                renameTrack(track.id);
+            });
+
+            const lengthButton = document.createElement("button");
+            lengthButton.className = "track-length-btn";
+            lengthButton.textContent = "📏 Länge";
+            lengthButton.addEventListener("click", event => {
+                event.stopPropagation();
+                editTrackLength(track.id);
             });
 
             const deleteButton = document.createElement("button");
@@ -1518,6 +1541,7 @@ function renderPlan() {
             });
 
             actions.appendChild(editButton);
+            actions.appendChild(lengthButton);
             actions.appendChild(deleteButton);
             actions.appendChild(dragHandle);
             titleBox.appendChild(actions);
@@ -1580,7 +1604,7 @@ function updatePlanCanvasSize() {
     tracks.forEach(track => {
         const width = track.length * PIXELS_PER_METER + 110;
         maxRight = Math.max(maxRight, track.x + width + 80);
-        maxBottom = Math.max(maxBottom, track.y + 180);
+        maxBottom = Math.max(maxBottom, track.y + 210);
     });
 
     // Absolute Elemente benötigen eine explizite Arbeitsfläche.
@@ -1973,7 +1997,7 @@ async function addTrack() {
     await loadPlan();
 }
 
-async function editTrack(trackId) {
+async function renameTrack(trackId) {
     if (!enforceAdminPermission()) return;
 
     const track = tracks.find(t => t.id === trackId);
@@ -1988,7 +2012,30 @@ async function editTrack(trackId) {
         return;
     }
 
-    const lengthInput = prompt("Gleislänge in Metern:", track.length);
+    const { error } = await window.eetgSupabase
+        .from("tracks")
+        .update({
+            number: cleanName,
+            updated_at: new Date().toISOString()
+        })
+        .eq("id", trackId);
+
+    if (error) {
+        console.error(error);
+        alert("Gleisname konnte nicht geändert werden.");
+        return;
+    }
+
+    await loadPlan();
+}
+
+async function editTrackLength(trackId) {
+    if (!enforceAdminPermission()) return;
+
+    const track = tracks.find(t => t.id === trackId);
+    if (!track) return;
+
+    const lengthInput = prompt("Neue Gleislänge in Metern:", track.length);
     if (lengthInput === null) return;
 
     const length = Number(String(lengthInput).replace(",", "."));
@@ -1997,10 +2044,28 @@ async function editTrack(trackId) {
         return;
     }
 
+    // Warnen, wenn Fahrzeuge über das neue Gleisende hinausragen würden.
+    const overhanging = vehicles.filter(v =>
+        v.track === trackId &&
+        (Number(v.position) + Number(v.length)) > length
+    );
+
+    if (overhanging.length > 0) {
+        const names = overhanging.slice(0, 4).map(v => v.number).join(", ");
+        const extra = overhanging.length > 4 ? ` und ${overhanging.length - 4} weitere` : "";
+
+        if (!confirm(
+            `Achtung: ${overhanging.length} Fahrzeug(e) würden über das neue Gleisende hinausragen:
+` +
+            `${names}${extra}.
+
+Gleislänge trotzdem auf ${length} m ändern?`
+        )) return;
+    }
+
     const { error } = await window.eetgSupabase
         .from("tracks")
         .update({
-            number: cleanName,
             length,
             updated_at: new Date().toISOString()
         })
@@ -2008,7 +2073,7 @@ async function editTrack(trackId) {
 
     if (error) {
         console.error(error);
-        alert("Gleis konnte nicht geändert werden.");
+        alert("Gleislänge konnte nicht geändert werden.");
         return;
     }
 
