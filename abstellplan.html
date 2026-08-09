@@ -12,15 +12,15 @@
 }
 
 :root {
-    --bg: #15171a;
-    --panel: #202329;
-    --panel2: #282c32;
-    --border: #3b4048;
-    --text: #f1f3f5;
-    --muted: #9ca3af;
-    --accent: #3b82f6;
-    --danger: #dc2626;
-    --track: #777;
+    --bg: #f4f6f7;
+    --panel: #ffffff;
+    --panel2: #f7f8f9;
+    --border: #dfe3e6;
+    --text: #20252a;
+    --muted: #69727b;
+    --accent: #b5121b;
+    --danger: #b5121b;
+    --track: #6f767d;
 }
 
 body {
@@ -36,9 +36,10 @@ body {
 ========================================================= */
 
 header {
-    height: 64px;
-    background: #101214;
-    border-bottom: 1px solid var(--border);
+height: 64px;
+background: #ffffff;
+border-bottom: 1px solid var(--border);
+box-shadow: 0 2px 12px rgba(24,27,31,.06);
 
     display: flex;
     align-items: center;
@@ -62,6 +63,76 @@ header {
 .readonly-note{padding:10px 12px;margin:10px 15px;border:1px solid #6b7280;border-radius:6px;color:#d1d5db;font-size:12px;display:none}
 body.readonly .readonly-note{display:block}
 body.readonly .write-only{display:none!important}
+.admin-only{display:none!important}
+body.is-admin .admin-only{display:flex!important}
+
+.track {
+    min-height: 150px;
+}
+
+.track-title-box{
+    position:absolute;
+    left:10px;
+    top:14px;
+    width:60px;
+    z-index:25;
+    text-align:center;
+}
+.track-title{
+    font-size:14px;
+    font-weight:800;
+    line-height:1.15;
+    word-break:break-word;
+}
+.track-length-label{
+    margin-top:4px;
+    color:var(--muted);
+    font-size:10px;
+}
+.track-edit-btn{
+    margin-top:7px;
+    padding:4px 6px;
+    font-size:10px;
+    background:#5d646b;
+}
+
+.vehicle-wrap{
+    position:absolute;
+    top:43px;
+    z-index:10;
+}
+
+.vehicle-wrap .vehicle{
+    position:relative;
+    top:0;
+    left:0!important;
+    width:100%;
+}
+
+.vehicle-status{
+    width:100%;
+    margin-top:4px;
+    height:26px;
+    padding:2px 5px;
+    border:1px solid var(--border);
+    border-radius:5px;
+    background:#ffffff;
+    color:var(--text);
+    font-size:10px;
+    font-weight:700;
+    cursor:pointer;
+}
+
+.vehicle-status:disabled{
+    cursor:default;
+    opacity:.75;
+}
+
+.vehicle-status.status-unterwegs{border-color:#facc15;background:#3a3210;color:#fff}
+.vehicle-status.status-werkstatt{border-color:#f97316;background:#3b2110;color:#fff}
+.vehicle-status.status-vermietet{border-color:#3b82f6;background:#10264a;color:#fff}
+.vehicle-status.status-abgestellt{border-color:#ef4444;background:#451515;color:#fff}
+.vehicle-status.status-einsatzbereit{border-color:#22c55e;background:#123a20;color:#fff;font-weight:800}
 
 
 
@@ -123,7 +194,7 @@ button:hover {
 }
 
 button.secondary {
-    background: #3a3f47;
+    background: #5d646b;
 }
 
 button.danger {
@@ -512,7 +583,7 @@ button.danger {
 
     width: 180px;
 
-    background: #202329;
+    background: #ffffff;
 
     border: 1px solid var(--border);
 
@@ -553,6 +624,174 @@ button.danger {
 
     font-size: 13px;
 }
+
+.status-legend{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px 16px;
+    align-items:center;
+    padding:10px 14px;
+    margin:0 20px 14px;
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:10px;
+    font-size:12px;
+}
+.status-legend strong{margin-right:4px}
+.legend-item{display:flex;align-items:center;gap:6px}
+.legend-dot{width:13px;height:13px;border-radius:4px;border:1px solid rgba(255,255,255,.25)}
+.legend-einsatzbereit{background:#22c55e}
+.legend-unterwegs{background:#facc15}
+.legend-abgestellt{background:#ef4444}
+.legend-vermietet{background:#3b82f6}
+.legend-werkstatt{background:#f97316}
+
+
+/* =========================================================
+   EETG ORIGINALSEITEN-OPTIK
+========================================================= */
+body{
+    background:#f4f6f7;
+    color:#20252a;
+}
+
+header{
+    background:#ffffff;
+    color:#20252a;
+}
+
+.logo{
+    color:#20252a;
+}
+
+.header-info{
+    color:#69727b;
+}
+
+.sidebar{
+    background:#ffffff!important;
+    border-right:1px solid #dfe3e6!important;
+    box-shadow:4px 0 18px rgba(24,27,31,.04);
+}
+
+.workspace,
+.plan,
+.plan-area,
+.track-container{
+    background:#f4f6f7!important;
+}
+
+button{
+    background:#b5121b;
+    color:#ffffff;
+    border:0;
+    border-radius:8px;
+    font-weight:700;
+}
+
+button:hover{
+    filter:brightness(.92);
+}
+
+button.secondary,
+.secondary-btn,
+.track-edit-btn{
+    background:#343a40!important;
+    color:#ffffff!important;
+}
+
+input,
+select{
+    background:#ffffff!important;
+    color:#20252a!important;
+    border:1px solid #dfe3e6!important;
+}
+
+.track{
+    background:#ffffff!important;
+    border:1px solid #dfe3e6!important;
+    border-radius:12px;
+    box-shadow:0 6px 20px rgba(24,27,31,.06);
+}
+
+.track::before,
+.track-line{
+    border-color:#747b82!important;
+}
+
+.track-title{
+    color:#20252a;
+}
+
+.track-length-label,
+.vehicle-info{
+    color:#69727b;
+}
+
+.vehicle{
+    box-shadow:0 3px 8px rgba(24,27,31,.18);
+}
+
+.status-legend{
+    background:#ffffff;
+    border:1px solid #dfe3e6;
+    color:#20252a;
+    box-shadow:0 5px 18px rgba(24,27,31,.05);
+}
+
+.status-legend strong{
+    color:#b5121b;
+}
+
+.modal{
+    background:rgba(17,24,32,.55);
+}
+
+.modal-content{
+    background:#ffffff!important;
+    color:#20252a!important;
+    border:1px solid #dfe3e6!important;
+    box-shadow:0 24px 60px rgba(0,0,0,.22);
+}
+
+.context-menu{
+    background:#ffffff!important;
+    color:#20252a!important;
+    border:1px solid #dfe3e6!important;
+    box-shadow:0 12px 30px rgba(0,0,0,.16);
+}
+
+.context-menu div:hover{
+    background:#f2f3f4!important;
+}
+
+/* Statusfarben bleiben bewusst eindeutig */
+.vehicle-status.status-einsatzbereit{
+    border-color:#22c55e!important;
+    background:#dcfce7!important;
+    color:#166534!important;
+}
+.vehicle-status.status-unterwegs{
+    border-color:#eab308!important;
+    background:#fef9c3!important;
+    color:#854d0e!important;
+}
+.vehicle-status.status-abgestellt{
+    border-color:#ef4444!important;
+    background:#fee2e2!important;
+    color:#991b1b!important;
+}
+.vehicle-status.status-vermietet{
+    border-color:#3b82f6!important;
+    background:#dbeafe!important;
+    color:#1e40af!important;
+}
+.vehicle-status.status-werkstatt{
+    border-color:#f97316!important;
+    background:#ffedd5!important;
+    color:#9a3412!important;
+}
+
 </style>
 </head>
 
@@ -572,6 +811,15 @@ button.danger {
     </div>
 
 </header>
+<div class="status-legend" aria-label="Legende Fahrzeugstatus">
+    <strong>Legende:</strong>
+    <span class="legend-item"><span class="legend-dot legend-einsatzbereit"></span>Einsatzbereit</span>
+    <span class="legend-item"><span class="legend-dot legend-unterwegs"></span>Unterwegs</span>
+    <span class="legend-item"><span class="legend-dot legend-abgestellt"></span>Abgestellt</span>
+    <span class="legend-item"><span class="legend-dot legend-vermietet"></span>Vermietet</span>
+    <span class="legend-item"><span class="legend-dot legend-werkstatt"></span>In der Werkstatt</span>
+</div>
+
 
 
 <div class="app">
@@ -596,7 +844,7 @@ button.danger {
             </button>
 
             <button
-                class="secondary"
+                class="secondary admin-only"
                 onclick="openTrackModal()">
 
                 + Gleis
@@ -793,12 +1041,12 @@ button.danger {
         <div class="form-row">
 
             <label>
-                Gleisnummer
+                Gleisname
             </label>
 
             <input
                 id="trackNumber"
-                placeholder="z.B. 7">
+                placeholder="z.B. Abstellung Nord 1">
 
         </div>
 
@@ -882,6 +1130,16 @@ function canWrite() {
     return currentRole === "dispatcher" || currentRole === "admin";
 }
 
+function isAdmin() {
+    return currentRole === "admin";
+}
+
+function enforceAdminPermission() {
+    if (isAdmin()) return true;
+    alert("Nur Administratoren dürfen Gleise anlegen oder ändern.");
+    return false;
+}
+
 function enforceWritePermission() {
     if (canWrite()) return true;
     alert("Du hast nur Leserechte.");
@@ -914,6 +1172,7 @@ async function requireLogin() {
 
     document.getElementById("userRole").textContent = currentRole;
     document.body.classList.toggle("readonly", !canWrite());
+    document.body.classList.toggle("is-admin", currentRole === "admin");
     return true;
 }
 
@@ -939,7 +1198,8 @@ function mapVehicle(row) {
         length: Number(row.length),
         track: row.track_id,
         position: Number(row.position || 0),
-        consist: row.consist
+        consist: row.consist,
+        status: row.status || "Abgestellt"
     };
 }
 
@@ -975,10 +1235,31 @@ function renderPlan() {
         const width = track.length * PIXELS_PER_METER;
         trackElement.style.width = Math.max(width + 110, 1000) + "px";
 
-        const number = document.createElement("div");
-        number.className = "track-number";
-        number.textContent = track.number;
-        trackElement.appendChild(number);
+        const titleBox = document.createElement("div");
+        titleBox.className = "track-title-box";
+
+        const title = document.createElement("div");
+        title.className = "track-title";
+        title.textContent = track.number;
+        titleBox.appendChild(title);
+
+        const lengthLabel = document.createElement("div");
+        lengthLabel.className = "track-length-label";
+        lengthLabel.textContent = track.length + " m";
+        titleBox.appendChild(lengthLabel);
+
+        if (isAdmin()) {
+            const editButton = document.createElement("button");
+            editButton.className = "track-edit-btn";
+            editButton.textContent = "✏ Ändern";
+            editButton.addEventListener("click", event => {
+                event.stopPropagation();
+                editTrack(track.id);
+            });
+            titleBox.appendChild(editButton);
+        }
+
+        trackElement.appendChild(titleBox);
 
         const line = document.createElement("div");
         line.className = "track-line";
@@ -1033,16 +1314,28 @@ function createScale(container, length) {
     }
 }
 
+function statusClass(status) {
+    if (status === "Unterwegs") return "status-unterwegs";
+    if (status === "In der Werkstatt") return "status-werkstatt";
+    if (status === "Vermietet") return "status-vermietet";
+    if (status === "Einsatzbereit") return "status-einsatzbereit";
+    return "status-abgestellt";
+}
+
 function createVehicleElement(vehicle) {
+    const width = Math.max(
+        vehicle.length * PIXELS_PER_METER * VEHICLE_VISUAL_SCALE,
+        70
+    );
+
+    const wrap = document.createElement("div");
+    wrap.className = "vehicle-wrap";
+    wrap.style.left = (80 + vehicle.position * PIXELS_PER_METER) + "px";
+    wrap.style.width = width + "px";
+
     const element = document.createElement("div");
     element.className = "vehicle " + vehicle.type;
-
-    element.style.width =
-        Math.max(vehicle.length * PIXELS_PER_METER * VEHICLE_VISUAL_SCALE, 30) + "px";
-
-    element.style.left =
-        (80 + vehicle.position * PIXELS_PER_METER) + "px";
-
+    element.style.width = "100%";
     element.textContent = vehicle.number;
     element.draggable = canWrite();
 
@@ -1074,7 +1367,34 @@ function createVehicleElement(vehicle) {
         });
     }
 
-    return element;
+    const statusSelect = document.createElement("select");
+    statusSelect.className = "vehicle-status " + statusClass(vehicle.status);
+    statusSelect.disabled = !canWrite();
+
+    ["Einsatzbereit", "Abgestellt", "Unterwegs", "In der Werkstatt", "Vermietet"].forEach(status => {
+        const option = document.createElement("option");
+        option.value = status;
+        option.textContent = status;
+        option.selected = vehicle.status === status;
+        statusSelect.appendChild(option);
+    });
+
+    statusSelect.addEventListener("click", event => event.stopPropagation());
+
+    statusSelect.addEventListener("change", async event => {
+        event.stopPropagation();
+        if (!canWrite()) return;
+
+        vehicle.status = statusSelect.value;
+        statusSelect.className = "vehicle-status " + statusClass(vehicle.status);
+        await updateVehicle(vehicle);
+        renderLibrary();
+    });
+
+    wrap.appendChild(element);
+    wrap.appendChild(statusSelect);
+
+    return wrap;
 }
 
 async function updateVehicle(vehicle) {
@@ -1088,6 +1408,7 @@ async function updateVehicle(vehicle) {
             track_id: vehicle.track,
             position: vehicle.position,
             consist: vehicle.consist,
+            status: vehicle.status || "Abgestellt",
             updated_at: new Date().toISOString()
         })
         .eq("id", Number(vehicle.id));
@@ -1230,7 +1551,8 @@ async function addVehicle() {
             length,
             track_id: tracks[0].id,
             position: 10,
-            consist: null
+            consist: null,
+            status: "Abgestellt"
         });
 
     if (error) {
@@ -1245,18 +1567,18 @@ async function addVehicle() {
 }
 
 function openTrackModal() {
-    if (!enforceWritePermission()) return;
+    if (!enforceAdminPermission()) return;
     document.getElementById("trackModal").classList.add("active");
 }
 
 async function addTrack() {
-    if (!enforceWritePermission()) return;
+    if (!enforceAdminPermission()) return;
 
     const number = document.getElementById("trackNumber").value.trim();
     const length = Number(document.getElementById("trackLength").value);
 
     if (!number) {
-        alert("Bitte Gleisnummer eingeben.");
+        alert("Bitte Gleisname eingeben.");
         return;
     }
 
@@ -1287,6 +1609,48 @@ async function addTrack() {
     await loadPlan();
 }
 
+async function editTrack(trackId) {
+    if (!enforceAdminPermission()) return;
+
+    const track = tracks.find(t => t.id === trackId);
+    if (!track) return;
+
+    const name = prompt("Gleisname:", track.number);
+    if (name === null) return;
+
+    const cleanName = name.trim();
+    if (!cleanName) {
+        alert("Der Gleisname darf nicht leer sein.");
+        return;
+    }
+
+    const lengthInput = prompt("Gleislänge in Metern:", track.length);
+    if (lengthInput === null) return;
+
+    const length = Number(String(lengthInput).replace(",", "."));
+    if (!Number.isFinite(length) || length <= 0) {
+        alert("Bitte eine gültige Gleislänge eingeben.");
+        return;
+    }
+
+    const { error } = await window.eetgSupabase
+        .from("tracks")
+        .update({
+            number: cleanName,
+            length,
+            updated_at: new Date().toISOString()
+        })
+        .eq("id", trackId);
+
+    if (error) {
+        console.error(error);
+        alert("Gleis konnte nicht geändert werden.");
+        return;
+    }
+
+    await loadPlan();
+}
+
 function renderLibrary() {
     const library = document.getElementById("vehicleLibrary");
     library.innerHTML = "";
@@ -1305,6 +1669,9 @@ function renderLibrary() {
             <div class="vehicle-name">${escapeHtml(vehicle.number)}</div>
             <div class="vehicle-info">
                 ${escapeHtml(vehicle.model || vehicle.type)} · ${vehicle.length} m
+            </div>
+            <div class="vehicle-info">
+                Status: ${escapeHtml(vehicle.status || "Abgestellt")}
             </div>
         `;
 
