@@ -981,7 +981,7 @@ body.dark .vehicle-status.status-werkstatt{
 
         <div class="button-row write-only">
 
-            <button onclick="openVehicleModal()">
+            <button class="admin-only" onclick="openVehicleModal()">
                 + Fahrzeug
             </button>
 
@@ -1701,12 +1701,12 @@ async function removeSelected() {
 }
 
 function openVehicleModal() {
-    if (!enforceWritePermission()) return;
+    if (!enforceAdminPermission()) return;
     document.getElementById("vehicleModal").classList.add("active");
 }
 
 async function addVehicle() {
-    if (!enforceWritePermission()) return;
+    if (!enforceAdminPermission()) return;
 
     const number = document.getElementById("vehicleNumber").value.trim();
     const model = document.getElementById("vehicleModel").value.trim();
