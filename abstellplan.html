@@ -57,6 +57,13 @@ header {
     font-size: 13px;
 }
 
+.user-box{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted)}
+.role-badge{padding:4px 8px;border-radius:999px;background:#30343b;color:#fff;font-weight:700}
+.readonly-note{padding:10px 12px;margin:10px 15px;border:1px solid #6b7280;border-radius:6px;color:#d1d5db;font-size:12px;display:none}
+body.readonly .readonly-note{display:block}
+body.readonly .write-only{display:none!important}
+
+
 
 /* =========================================================
    APP
@@ -558,8 +565,10 @@ button.danger {
         🚆 Digitaler Abstellplan
     </div>
 
-    <div class="header-info">
-        Maßstab: 1 px = 0,5 m
+    <div class="user-box">
+        <span id="userEmail">–</span>
+        <span class="role-badge" id="userRole">–</span>
+        <button class="secondary" onclick="logout()">Abmelden</button>
     </div>
 
 </header>
@@ -580,7 +589,7 @@ button.danger {
             Fahrzeugbibliothek
         </div>
 
-        <div class="button-row">
+        <div class="button-row write-only">
 
             <button onclick="openVehicleModal()">
                 + Fahrzeug
@@ -602,35 +611,24 @@ button.danger {
     <div class="vehicle-list" id="vehicleLibrary"></div>
 
 
+    <div class="readonly-note">
+        Du bist als Betrachter angemeldet. Änderungen sind deaktiviert.
+    </div>
+
     <div class="sidebar-section">
 
         <div class="sidebar-title">
-            Speicher
+            Zentrale Datenbank
         </div>
 
         <div class="button-row">
 
-            <button
-                onclick="savePlan()">
-
-                💾 Speichern
-
+            <button onclick="loadPlan()">
+                ↻ Aktualisieren
             </button>
 
-            <button
-                class="secondary"
-                onclick="loadPlan()">
-
-                ↻ Laden
-
-            </button>
-
-            <button
-                class="danger"
-                onclick="resetPlan()">
-
-                Zurücksetzen
-
+            <button class="secondary write-only" onclick="savePlan()">
+                💾 Alles speichern
             </button>
 
         </div>
@@ -648,7 +646,7 @@ button.danger {
 
     <div class="workspace-toolbar">
 
-        <button onclick="createConsist()">
+        <button class="write-only" onclick="createConsist()">
             🔗 Zugverband bilden
         </button>
 
@@ -866,1355 +864,516 @@ button.danger {
 </div>
 
 
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./assets/js/supabase.js"></script>
 <script>
-
-/* =========================================================
-   KONFIGURATION
-========================================================= */
-
-/*
-    1 Pixel = 0,5 Meter
-
-    Dadurch ist ein Fahrzeug mit 16,64 m:
-
-    16,64 / 0,5 = 33,28 px
-*/
-
 const PIXELS_PER_METER = 2;
+const VEHICLE_VISUAL_SCALE = 2; // Fahrzeuge werden optisch x2 dargestellt.
 
-
-/* =========================================================
-   DATEN
-========================================================= */
-
-let tracks = [
-
-    {
-        id: 1,
-        number: "1",
-        length: 250
-    },
-
-    {
-        id: 2,
-        number: "2",
-        length: 220
-    },
-
-    {
-        id: 3,
-        number: "3",
-        length: 180
-    },
-
-    {
-        id: 4,
-        number: "4",
-        length: 320
-    },
-
-    {
-        id: 5,
-        number: "5",
-        length: 250
-    }
-
-];
-
-
-let vehicles = [
-
-    {
-        id: "v1",
-
-        number: "143 245-7",
-
-        model: "BR 143",
-
-        type: "lok",
-
-        length: 16.64,
-
-        track: 1,
-
-        position: 35,
-
-        consist: "zug1"
-    },
-
-    {
-        id: "v2",
-
-        number: "Dosto 1",
-
-        model: "Doppelstockwagen",
-
-        type: "wagen",
-
-        length: 26.8,
-
-        track: 1,
-
-        position: 51.64,
-
-        consist: "zug1"
-    },
-
-    {
-        id: "v3",
-
-        number: "Dosto 2",
-
-        model: "Doppelstockwagen",
-
-        type: "wagen",
-
-        length: 26.8,
-
-        track: 1,
-
-        position: 78.44,
-
-        consist: "zug1"
-    },
-
-    {
-        id: "v4",
-
-        number: "Dosto 3",
-
-        model: "Doppelstockwagen",
-
-        type: "wagen",
-
-        length: 26.8,
-
-        track: 1,
-
-        position: 105.24,
-
-        consist: "zug1"
-    },
-
-    {
-        id: "v5",
-
-        number: "185 123-4",
-
-        model: "BR 185",
-
-        type: "lok",
-
-        length: 18.9,
-
-        track: 2,
-
-        position: 30,
-
-        consist: null
-    },
-
-    {
-        id: "v6",
-
-        number: "Bpmz 294",
-
-        model: "IC-Wagen",
-
-        type: "wagen",
-
-        length: 26.4,
-
-        track: 4,
-
-        position: 80,
-
-        consist: null
-    }
-
-];
-
-
+let tracks = [];
+let vehicles = [];
 let selectedVehicle = null;
+let currentUser = null;
+let currentRole = "viewer";
+let realtimeChannel = null;
 
+function canWrite() {
+    return currentRole === "dispatcher" || currentRole === "admin";
+}
 
-/* =========================================================
-   PLAN ZEICHNEN
-========================================================= */
+function enforceWritePermission() {
+    if (canWrite()) return true;
+    alert("Du hast nur Leserechte.");
+    return false;
+}
+
+async function requireLogin() {
+    const { data: { session }, error } = await window.eetgSupabase.auth.getSession();
+
+    if (error || !session) {
+        window.location.replace("login.html?next=abstellplan.html");
+        return false;
+    }
+
+    currentUser = session.user;
+    document.getElementById("userEmail").textContent = currentUser.email || "Angemeldet";
+
+    const { data: profile, error: profileError } = await window.eetgSupabase
+        .from("profiles")
+        .select("role")
+        .eq("id", currentUser.id)
+        .single();
+
+    if (profileError) {
+        console.error("Profil konnte nicht geladen werden:", profileError);
+        currentRole = "viewer";
+    } else {
+        currentRole = profile?.role || "viewer";
+    }
+
+    document.getElementById("userRole").textContent = currentRole;
+    document.body.classList.toggle("readonly", !canWrite());
+    return true;
+}
+
+async function logout() {
+    await window.eetgSupabase.auth.signOut();
+    window.location.replace("login.html");
+}
+
+function mapTrack(row) {
+    return {
+        id: row.id,
+        number: row.number,
+        length: Number(row.length)
+    };
+}
+
+function mapVehicle(row) {
+    return {
+        id: String(row.id),
+        number: row.number,
+        model: row.model || "",
+        type: row.type,
+        length: Number(row.length),
+        track: row.track_id,
+        position: Number(row.position || 0),
+        consist: row.consist
+    };
+}
+
+async function loadPlan() {
+    const [{ data: trackRows, error: trackError }, { data: vehicleRows, error: vehicleError }] =
+        await Promise.all([
+            window.eetgSupabase.from("tracks").select("*").order("sort_order", { ascending: true }).order("id"),
+            window.eetgSupabase.from("vehicles").select("*").order("track_id").order("position")
+        ]);
+
+    if (trackError || vehicleError) {
+        console.error(trackError || vehicleError);
+        alert("Der Abstellplan konnte nicht aus Supabase geladen werden.");
+        return;
+    }
+
+    tracks = (trackRows || []).map(mapTrack);
+    vehicles = (vehicleRows || []).map(mapVehicle);
+
+    renderPlan();
+    renderLibrary();
+}
 
 function renderPlan() {
-
-    const plan =
-        document.getElementById("plan");
-
+    const plan = document.getElementById("plan");
     plan.innerHTML = "";
 
-
     tracks.forEach(track => {
+        const trackElement = document.createElement("div");
+        trackElement.className = "track";
+        trackElement.dataset.track = track.id;
 
-        const trackElement =
-            document.createElement("div");
+        const width = track.length * PIXELS_PER_METER;
+        trackElement.style.width = Math.max(width + 110, 1000) + "px";
 
-        trackElement.className =
-            "track";
-
-        trackElement.dataset.track =
-            track.id;
-
-
-        /*
-         * Gleisbreite anhand der Gleislänge
-         */
-
-        const width =
-            track.length *
-            PIXELS_PER_METER;
-
-        trackElement.style.width =
-            Math.max(width + 110, 1000) + "px";
-
-
-        /* Nummer */
-
-        const number =
-            document.createElement("div");
-
-        number.className =
-            "track-number";
-
-        number.textContent =
-            track.number;
-
+        const number = document.createElement("div");
+        number.className = "track-number";
+        number.textContent = track.number;
         trackElement.appendChild(number);
 
-
-        /* Gleis */
-
-        const line =
-            document.createElement("div");
-
-        line.className =
-            "track-line";
-
+        const line = document.createElement("div");
+        line.className = "track-line";
         trackElement.appendChild(line);
 
-
-        /* Skala */
-
-        const scale =
-            document.createElement("div");
-
-        scale.className =
-            "scale";
-
-        createScale(
-            scale,
-            track.length
-        );
-
+        const scale = document.createElement("div");
+        scale.className = "scale";
+        createScale(scale, track.length);
         trackElement.appendChild(scale);
 
-
-        /*
-         * Fahrzeuge
-         */
-
         vehicles
-            .filter(v =>
-                v.track === track.id
-            )
-            .forEach(vehicle => {
+            .filter(v => v.track === track.id)
+            .forEach(vehicle => trackElement.appendChild(createVehicleElement(vehicle)));
 
-                const element =
-                    createVehicleElement(
-                        vehicle,
-                        track
-                    );
+        if (canWrite()) {
+            trackElement.addEventListener("dragover", event => event.preventDefault());
 
-                trackElement.appendChild(
-                    element
-                );
-
-            });
-
-
-        /*
-         * Drop
-         */
-
-        trackElement.addEventListener(
-            "dragover",
-            event => {
-
+            trackElement.addEventListener("drop", async event => {
                 event.preventDefault();
 
-            }
-        );
+                const id = event.dataTransfer.getData("vehicle");
+                const vehicle = vehicles.find(v => v.id === id);
+                if (!vehicle) return;
 
-
-        trackElement.addEventListener(
-            "drop",
-            event => {
-
-                event.preventDefault();
-
-                const id =
-                    event.dataTransfer
-                        .getData("vehicle");
-
-                if (!id)
-                    return;
-
-
-                const vehicle =
-                    vehicles.find(
-                        v => v.id === id
-                    );
-
-                if (!vehicle)
-                    return;
-
-
-                /*
-                 * Position bestimmen
-                 */
-
-                const rect =
-                    trackElement
-                        .getBoundingClientRect();
-
-
-                let x =
-                    event.clientX -
-                    rect.left -
-                    80;
-
-
-                let position =
-                    x / PIXELS_PER_METER;
-
-
-                if (position < 0)
-                    position = 0;
-
-
-                /*
-                 * Zugverband verschieben
-                 */
+                const rect = trackElement.getBoundingClientRect();
+                let x = event.clientX - rect.left - 80;
+                let position = Math.max(0, x / PIXELS_PER_METER);
 
                 if (vehicle.consist) {
-
-                    moveConsist(
-                        vehicle.consist,
-                        track.id,
-                        position
-                    );
-
+                    await moveConsist(vehicle.consist, track.id, position);
                 } else {
-
-                    vehicle.track =
-                        track.id;
-
-                    vehicle.position =
-                        position;
-
+                    vehicle.track = track.id;
+                    vehicle.position = position;
+                    await updateVehicle(vehicle);
                 }
-
 
                 renderPlan();
+            });
+        }
 
-            }
-        );
-
-
-        plan.appendChild(
-            trackElement
-        );
-
+        plan.appendChild(trackElement);
     });
-
 }
 
-
-/* =========================================================
-   SKALA
-========================================================= */
-
-function createScale(
-    container,
-    length
-) {
-
-    for (
-        let meter = 0;
-        meter <= length;
-        meter += 10
-    ) {
-
-        const mark =
-            document.createElement("div");
-
-        mark.className =
-            "scale-mark";
-
-        mark.style.left =
-            (meter *
-                PIXELS_PER_METER) +
-            "px";
-
-        mark.textContent =
-            meter + " m";
-
-        container.appendChild(
-            mark
-        );
-
+function createScale(container, length) {
+    for (let meter = 0; meter <= length; meter += 10) {
+        const mark = document.createElement("div");
+        mark.className = "scale-mark";
+        mark.style.left = (meter * PIXELS_PER_METER) + "px";
+        mark.textContent = meter + " m";
+        container.appendChild(mark);
     }
-
 }
 
-
-/* =========================================================
-   FAHRZEUG ELEMENT
-========================================================= */
-
-function createVehicleElement(
-    vehicle,
-    track
-) {
-
-    const element =
-        document.createElement("div");
-
-    element.className =
-        "vehicle " +
-        vehicle.type;
-
-
-    /*
-     * Fahrzeuglänge maßstäblich
-     */
+function createVehicleElement(vehicle) {
+    const element = document.createElement("div");
+    element.className = "vehicle " + vehicle.type;
 
     element.style.width =
-        Math.max(
-            vehicle.length *
-            PIXELS_PER_METER,
-            30
-        ) + "px";
-
-
-    /*
-     * Position
-     */
+        Math.max(vehicle.length * PIXELS_PER_METER * VEHICLE_VISUAL_SCALE, 30) + "px";
 
     element.style.left =
-        (
-            80 +
-            vehicle.position *
-            PIXELS_PER_METER
-        ) + "px";
+        (80 + vehicle.position * PIXELS_PER_METER) + "px";
 
+    element.textContent = vehicle.number;
+    element.draggable = canWrite();
 
-    element.textContent =
-        vehicle.number;
-
-
-    element.draggable = true;
-
-
-    /*
-     * Auswahl
-     */
-
-    if (
-        selectedVehicle ===
-        vehicle.id
-    ) {
-
-        element.classList.add(
-            "selected"
-        );
-
+    if (selectedVehicle === vehicle.id) {
+        element.classList.add("selected");
     }
 
+    element.addEventListener("click", event => {
+        event.stopPropagation();
+        selectedVehicle = vehicle.id;
+        renderPlan();
+    });
 
-    element.addEventListener(
-        "click",
-        event => {
+    if (canWrite()) {
+        element.addEventListener("dragstart", event => {
+            event.dataTransfer.setData("vehicle", vehicle.id);
+        });
 
-            event.stopPropagation();
-
-            selectedVehicle =
-                vehicle.id;
-
-            renderPlan();
-
-        }
-    );
-
-
-    /*
-     * Drag
-     */
-
-    element.addEventListener(
-        "dragstart",
-        event => {
-
-            event.dataTransfer.setData(
-                "vehicle",
-                vehicle.id
-            );
-
-        }
-    );
-
-
-    /*
-     * Rechtsklick
-     */
-
-    element.addEventListener(
-        "contextmenu",
-        event => {
-
+        element.addEventListener("contextmenu", event => {
             event.preventDefault();
+            selectedVehicle = vehicle.id;
+            showContextMenu(event.clientX, event.clientY);
+        });
 
-            selectedVehicle =
-                vehicle.id;
-
-            showContextMenu(
-                event.clientX,
-                event.clientY
-            );
-
-        }
-    );
-
-
-    /*
-     * Doppelklick
-     */
-
-    element.addEventListener(
-        "dblclick",
-        event => {
-
+        element.addEventListener("dblclick", event => {
             event.stopPropagation();
-
-            selectedVehicle =
-                vehicle.id;
-
+            selectedVehicle = vehicle.id;
             editSelected();
-
-        }
-    );
-
+        });
+    }
 
     return element;
-
 }
 
+async function updateVehicle(vehicle) {
+    const { error } = await window.eetgSupabase
+        .from("vehicles")
+        .update({
+            number: vehicle.number,
+            model: vehicle.model,
+            type: vehicle.type,
+            length: vehicle.length,
+            track_id: vehicle.track,
+            position: vehicle.position,
+            consist: vehicle.consist,
+            updated_at: new Date().toISOString()
+        })
+        .eq("id", Number(vehicle.id));
 
-/* =========================================================
-   ZUGVERBAND VERSCHIEBEN
-========================================================= */
-
-function moveConsist(
-    consistId,
-    targetTrack,
-    newStart
-) {
-
-    const consistVehicles =
-        vehicles
-            .filter(
-                v =>
-                    v.consist ===
-                    consistId
-            )
-            .sort(
-                (a,b) =>
-                    a.position -
-                    b.position
-            );
-
-
-    if (
-        consistVehicles.length === 0
-    )
-        return;
-
-
-    const first =
-        consistVehicles[0];
-
-
-    const offset =
-        newStart -
-        first.position;
-
-
-    consistVehicles.forEach(
-        vehicle => {
-
-            vehicle.track =
-                targetTrack;
-
-            vehicle.position =
-                Math.max(
-                    0,
-                    vehicle.position +
-                    offset
-                );
-
-        }
-    );
-
+    if (error) {
+        console.error(error);
+        alert("Änderung konnte nicht gespeichert werden.");
+    }
 }
 
+async function moveConsist(consistId, targetTrack, newStart) {
+    if (!enforceWritePermission()) return;
 
-/* =========================================================
-   ZUGVERBAND BILDEN
-========================================================= */
+    const consistVehicles = vehicles
+        .filter(v => v.consist === consistId)
+        .sort((a, b) => a.position - b.position);
 
-function createConsist() {
+    if (!consistVehicles.length) return;
 
-    const selected =
-        vehicles.find(
-            v =>
-                v.id ===
-                selectedVehicle
-        );
+    const offset = newStart - consistVehicles[0].position;
 
+    consistVehicles.forEach(vehicle => {
+        vehicle.track = targetTrack;
+        vehicle.position = Math.max(0, vehicle.position + offset);
+    });
 
+    const results = await Promise.all(consistVehicles.map(updateVehicle));
+    return results;
+}
+
+async function createConsist() {
+    if (!enforceWritePermission()) return;
+
+    const selected = vehicles.find(v => v.id === selectedVehicle);
     if (!selected) {
-
-        alert(
-            "Bitte zuerst ein Fahrzeug auswählen."
-        );
-
+        alert("Bitte zuerst ein Fahrzeug auswählen.");
         return;
-
     }
 
+    const nearby = vehicles
+        .filter(v => v.track === selected.track)
+        .filter(v => Math.abs(v.position - selected.position) < 40);
 
-    const sameTrack =
-        vehicles.filter(
-            v =>
-                v.track ===
-                selected.track
-        );
-
-
-    /*
-     * Alle Fahrzeuge des Gleises,
-     * die sich berühren bzw. nahe
-     * beieinander befinden.
-     */
-
-    const nearby =
-        sameTrack.filter(
-            v =>
-                Math.abs(
-                    v.position -
-                    selected.position
-                ) < 40
-        );
-
-
-    if (
-        nearby.length < 2
-    ) {
-
-        alert(
-            "Mindestens zwei Fahrzeuge müssen sich auf demselben Gleis befinden."
-        );
-
+    if (nearby.length < 2) {
+        alert("Mindestens zwei nahe Fahrzeuge auf demselben Gleis werden benötigt.");
         return;
-
     }
 
+    const consistId = "zug_" + Date.now();
+    nearby.forEach(v => v.consist = consistId);
 
-    const consistId =
-        "zug_" +
-        Date.now();
-
-
-    nearby.forEach(
-        vehicle => {
-
-            vehicle.consist =
-                consistId;
-
-        }
-    );
-
-
+    await Promise.all(nearby.map(updateVehicle));
     renderPlan();
-
 }
-
-
-/* =========================================================
-   AUSWAHL
-========================================================= */
 
 function clearSelection() {
-
-    selectedVehicle =
-        null;
-
+    selectedVehicle = null;
     hideContextMenu();
-
     renderPlan();
-
 }
 
+async function editSelected() {
+    if (!enforceWritePermission()) return;
 
-/* =========================================================
-   FAHRZEUG BEARBEITEN
-========================================================= */
+    const vehicle = vehicles.find(v => v.id === selectedVehicle);
+    if (!vehicle) return;
 
-function editSelected() {
+    const number = prompt("Fahrzeugnummer:", vehicle.number);
+    if (number !== null && number.trim()) vehicle.number = number.trim();
 
-    const vehicle =
-        vehicles.find(
-            v =>
-                v.id ===
-                selectedVehicle
-        );
-
-
-    if (!vehicle)
-        return;
-
-
-    const number =
-        prompt(
-            "Fahrzeugnummer:",
-            vehicle.number
-        );
-
-
-    if (
-        number !== null &&
-        number.trim()
-    ) {
-
-        vehicle.number =
-            number.trim();
-
+    const length = prompt("Reale Länge in Metern:", vehicle.length);
+    if (length !== null && !isNaN(length) && Number(length) > 0) {
+        vehicle.length = Number(length);
     }
 
+    await updateVehicle(vehicle);
+    renderPlan();
+    renderLibrary();
+    hideContextMenu();
+}
 
-    const length =
-        prompt(
-            "Länge in Metern:",
-            vehicle.length
-        );
+async function removeSelected() {
+    if (!enforceWritePermission()) return;
 
+    const vehicle = vehicles.find(v => v.id === selectedVehicle);
+    if (!vehicle) return;
 
-    if (
-        length !== null &&
-        !isNaN(length)
-    ) {
+    if (!confirm(vehicle.number + " wirklich entfernen?")) return;
 
-        vehicle.length =
-            Number(length);
+    const { error } = await window.eetgSupabase
+        .from("vehicles")
+        .delete()
+        .eq("id", Number(vehicle.id));
 
+    if (error) {
+        console.error(error);
+        alert("Fahrzeug konnte nicht gelöscht werden.");
+        return;
     }
 
-
-    savePlan();
-
-    renderPlan();
-
+    selectedVehicle = null;
+    await loadPlan();
     hideContextMenu();
-
 }
-
-
-/* =========================================================
-   FAHRZEUG ENTFERNEN
-========================================================= */
-
-function removeSelected() {
-
-    if (!selectedVehicle)
-        return;
-
-
-    const vehicle =
-        vehicles.find(
-            v =>
-                v.id ===
-                selectedVehicle
-        );
-
-
-    if (!vehicle)
-        return;
-
-
-    if (
-        !confirm(
-            vehicle.number +
-            " wirklich entfernen?"
-        )
-    )
-        return;
-
-
-    vehicles =
-        vehicles.filter(
-            v =>
-                v.id !==
-                selectedVehicle
-        );
-
-
-    selectedVehicle =
-        null;
-
-
-    savePlan();
-
-    renderPlan();
-
-    hideContextMenu();
-
-}
-
-
-/* =========================================================
-   FAHRZEUG HINZUFÜGEN
-========================================================= */
 
 function openVehicleModal() {
-
-    document
-        .getElementById(
-            "vehicleModal"
-        )
-        .classList.add("active");
-
+    if (!enforceWritePermission()) return;
+    document.getElementById("vehicleModal").classList.add("active");
 }
 
+async function addVehicle() {
+    if (!enforceWritePermission()) return;
 
-function addVehicle() {
-
-    const number =
-        document
-            .getElementById(
-                "vehicleNumber"
-            )
-            .value
-            .trim();
-
-
-    const model =
-        document
-            .getElementById(
-                "vehicleModel"
-            )
-            .value
-            .trim();
-
-
-    const type =
-        document
-            .getElementById(
-                "vehicleType"
-            )
-            .value;
-
-
-    const length =
-        Number(
-            document
-                .getElementById(
-                    "vehicleLength"
-                )
-                .value
-        );
-
+    const number = document.getElementById("vehicleNumber").value.trim();
+    const model = document.getElementById("vehicleModel").value.trim();
+    const type = document.getElementById("vehicleType").value;
+    const length = Number(document.getElementById("vehicleLength").value);
 
     if (!number) {
-
-        alert(
-            "Bitte Fahrzeugnummer eingeben."
-        );
-
+        alert("Bitte Fahrzeugnummer eingeben.");
         return;
-
     }
 
-
-    if (
-        !length ||
-        length <= 0
-    ) {
-
-        alert(
-            "Bitte eine gültige Länge eingeben."
-        );
-
+    if (!length || length <= 0) {
+        alert("Bitte eine gültige Länge eingeben.");
         return;
-
     }
 
+    if (!tracks.length) {
+        alert("Bitte zuerst ein Gleis anlegen.");
+        return;
+    }
 
-    vehicles.push({
-
-        id:
-            "v_" +
-            Date.now(),
-
-        number:
+    const { error } = await window.eetgSupabase
+        .from("vehicles")
+        .insert({
             number,
-
-        model:
             model,
-
-        type:
             type,
-
-        length:
             length,
+            track_id: tracks[0].id,
+            position: 10,
+            consist: null
+        });
 
-        track:
-            tracks[0].id,
-
-        position:
-            10,
-
-        consist:
-            null
-
-    });
-
+    if (error) {
+        console.error(error);
+        alert("Fahrzeug konnte nicht angelegt werden.");
+        return;
+    }
 
     closeModals();
-
-    savePlan();
-
-    renderPlan();
-
-    renderLibrary();
-
+    document.getElementById("vehicleNumber").value = "";
+    await loadPlan();
 }
-
-
-/* =========================================================
-   GLEIS HINZUFÜGEN
-========================================================= */
 
 function openTrackModal() {
-
-    document
-        .getElementById(
-            "trackModal"
-        )
-        .classList.add("active");
-
+    if (!enforceWritePermission()) return;
+    document.getElementById("trackModal").classList.add("active");
 }
 
+async function addTrack() {
+    if (!enforceWritePermission()) return;
 
-function addTrack() {
-
-    const number =
-        document
-            .getElementById(
-                "trackNumber"
-            )
-            .value
-            .trim();
-
-
-    const length =
-        Number(
-            document
-                .getElementById(
-                    "trackLength"
-                )
-                .value
-        );
-
+    const number = document.getElementById("trackNumber").value.trim();
+    const length = Number(document.getElementById("trackLength").value);
 
     if (!number) {
-
-        alert(
-            "Bitte Gleisnummer eingeben."
-        );
-
+        alert("Bitte Gleisnummer eingeben.");
         return;
-
     }
 
-
-    if (
-        !length ||
-        length <= 0
-    ) {
-
-        alert(
-            "Bitte eine gültige Gleislänge eingeben."
-        );
-
+    if (!length || length <= 0) {
+        alert("Bitte eine gültige Gleislänge eingeben.");
         return;
-
     }
 
+    const sortOrder = tracks.length
+        ? Math.max(...tracks.map((_, index) => index + 1)) + 1
+        : 1;
 
-    tracks.push({
-
-        id:
-            Date.now(),
-
-        number:
+    const { error } = await window.eetgSupabase
+        .from("tracks")
+        .insert({
             number,
+            length,
+            sort_order: sortOrder
+        });
 
-        length:
-            length
-
-    });
-
+    if (error) {
+        console.error(error);
+        alert("Gleis konnte nicht angelegt werden.");
+        return;
+    }
 
     closeModals();
-
-    savePlan();
-
-    renderPlan();
-
+    await loadPlan();
 }
-
-
-/* =========================================================
-   SIDEBAR FAHRZEUGBIBLIOTHEK
-========================================================= */
 
 function renderLibrary() {
-
-    const library =
-        document.getElementById(
-            "vehicleLibrary"
-        );
-
-
+    const library = document.getElementById("vehicleLibrary");
     library.innerHTML = "";
 
-
-    if (
-        vehicles.length === 0
-    ) {
-
-        library.innerHTML =
-            `<div class="empty">
-                Keine Fahrzeuge vorhanden.
-            </div>`;
-
+    if (!vehicles.length) {
+        library.innerHTML = '<div class="empty">Keine Fahrzeuge vorhanden.</div>';
         return;
-
     }
 
+    vehicles.forEach(vehicle => {
+        const item = document.createElement("div");
+        item.className = "vehicle-item";
+        item.draggable = canWrite();
 
-    vehicles.forEach(
-        vehicle => {
+        item.innerHTML = `
+            <div class="vehicle-name">${escapeHtml(vehicle.number)}</div>
+            <div class="vehicle-info">
+                ${escapeHtml(vehicle.model || vehicle.type)} · ${vehicle.length} m
+            </div>
+        `;
 
-            const item =
-                document.createElement(
-                    "div"
-                );
-
-            item.className =
-                "vehicle-item";
-
-            item.draggable = true;
-
-
-            item.innerHTML = `
-
-                <div class="vehicle-name">
-                    ${escapeHtml(
-                        vehicle.number
-                    )}
-                </div>
-
-                <div class="vehicle-info">
-                    ${escapeHtml(
-                        vehicle.model ||
-                        vehicle.type
-                    )}
-                    ·
-                    ${vehicle.length} m
-                </div>
-
-            `;
-
-
-            /*
-             * Drag aus Bibliothek
-             */
-
-            item.addEventListener(
-                "dragstart",
-                event => {
-
-                    event.dataTransfer.setData(
-                        "vehicle",
-                        vehicle.id
-                    );
-
-                }
-            );
-
-
-            /*
-             * Klick auswählen
-             */
-
-            item.addEventListener(
-                "click",
-                () => {
-
-                    selectedVehicle =
-                        vehicle.id;
-
-                    renderPlan();
-
-                }
-            );
-
-
-            library.appendChild(
-                item
-            );
-
+        if (canWrite()) {
+            item.addEventListener("dragstart", event => {
+                event.dataTransfer.setData("vehicle", vehicle.id);
+            });
         }
-    );
 
+        item.addEventListener("click", () => {
+            selectedVehicle = vehicle.id;
+            renderPlan();
+        });
+
+        library.appendChild(item);
+    });
 }
-
-
-/* =========================================================
-   MODAL SCHLIESSEN
-========================================================= */
 
 function closeModals() {
-
-    document
-        .querySelectorAll(
-            ".modal"
-        )
-        .forEach(
-            modal =>
-                modal.classList.remove(
-                    "active"
-                )
-        );
-
+    document.querySelectorAll(".modal").forEach(modal => modal.classList.remove("active"));
 }
 
-
-/* =========================================================
-   CONTEXT MENU
-========================================================= */
-
-function showContextMenu(
-    x,
-    y
-) {
-
-    const menu =
-        document.getElementById(
-            "contextMenu"
-        );
-
-
-    menu.style.left =
-        x + "px";
-
-    menu.style.top =
-        y + "px";
-
-    menu.style.display =
-        "block";
-
+function showContextMenu(x, y) {
+    const menu = document.getElementById("contextMenu");
+    menu.style.left = x + "px";
+    menu.style.top = y + "px";
+    menu.style.display = "block";
 }
-
 
 function hideContextMenu() {
-
-    document
-        .getElementById(
-            "contextMenu"
-        )
-        .style.display =
-        "none";
-
+    document.getElementById("contextMenu").style.display = "none";
 }
 
+document.addEventListener("click", hideContextMenu);
 
-document.addEventListener(
-    "click",
-    () => {
-
-        hideContextMenu();
-
-    }
-);
-
-
-/* =========================================================
-   SPEICHERN
-========================================================= */
-
-function savePlan() {
-
-    const data = {
-
-        tracks:
-            tracks,
-
-        vehicles:
-            vehicles
-
-    };
-
-
-    localStorage.setItem(
-        "digitaler_abstellplan",
-        JSON.stringify(data)
-    );
-
+async function savePlan() {
+    if (!enforceWritePermission()) return;
+    await Promise.all(vehicles.map(updateVehicle));
+    alert("Abstellplan wurde zentral gespeichert.");
 }
-
-
-/* =========================================================
-   LADEN
-========================================================= */
-
-function loadPlan() {
-
-    const data =
-        localStorage.getItem(
-            "digitaler_abstellplan"
-        );
-
-
-    if (!data) {
-
-        alert(
-            "Kein gespeicherter Plan vorhanden."
-        );
-
-        return;
-
-    }
-
-
-    try {
-
-        const parsed =
-            JSON.parse(data);
-
-
-        if (
-            parsed.tracks
-        )
-            tracks =
-                parsed.tracks;
-
-
-        if (
-            parsed.vehicles
-        )
-            vehicles =
-                parsed.vehicles;
-
-
-        renderPlan();
-
-        renderLibrary();
-
-
-    } catch(error) {
-
-        alert(
-            "Der gespeicherte Plan konnte nicht geladen werden."
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   ZURÜCKSETZEN
-========================================================= */
-
-function resetPlan() {
-
-    if (
-        !confirm(
-            "Den kompletten Abstellplan zurücksetzen?"
-        )
-    )
-        return;
-
-
-    localStorage.removeItem(
-        "digitaler_abstellplan"
-    );
-
-
-    location.reload();
-
-}
-
-
-/* =========================================================
-   HTML SICHER DARSTELLEN
-========================================================= */
 
 function escapeHtml(text) {
-
     return String(text)
-        .replace(
-            /&/g,
-            "&amp;"
-        )
-        .replace(
-            /</g,
-            "&lt;"
-        )
-        .replace(
-            />/g,
-            "&gt;"
-        )
-        .replace(
-            /"/g,
-            "&quot;"
-        )
-        .replace(
-            /'/g,
-            "&#039;"
-        );
-
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
+function subscribeRealtime() {
+    if (realtimeChannel) {
+        window.eetgSupabase.removeChannel(realtimeChannel);
+    }
 
-/* =========================================================
-   START
-========================================================= */
+    realtimeChannel = window.eetgSupabase
+        .channel("eetg-abstellplan")
+        .on("postgres_changes", { event: "*", schema: "public", table: "tracks" }, () => loadPlan())
+        .on("postgres_changes", { event: "*", schema: "public", table: "vehicles" }, () => loadPlan())
+        .subscribe();
+}
 
-renderPlan();
+(async function init() {
+    const ok = await requireLogin();
+    if (!ok) return;
 
-renderLibrary();
-
+    await loadPlan();
+    subscribeRealtime();
+})();
 </script>
-
 </body>
 </html>
-```
