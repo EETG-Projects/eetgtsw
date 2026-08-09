@@ -67,7 +67,7 @@ body.readonly .write-only{display:none!important}
 body.is-admin .admin-only{display:flex!important}
 
 .track {
-    min-height: 205px;
+    min-height: 220px;
 }
 
 .track-title-box{
@@ -321,7 +321,7 @@ button.danger {
 .track {
     position: absolute;
 
-    height: 205px;
+    height: 220px;
 
     margin-bottom: 25px;
 
@@ -922,26 +922,25 @@ body.dark .vehicle-status.status-werkstatt{
 
 .track-admin-actions{
     position:absolute;
-    left:80px;
-    right:20px;
+    left:14px;
     bottom:12px;
-    z-index:30;
+    z-index:40;
     display:flex;
     flex-direction:row;
-    gap:7px;
+    gap:14px;
     align-items:center;
-    justify-content:flex-start;
     flex-wrap:wrap;
 }
 
 .track-admin-actions button{
     margin:0!important;
-    padding:7px 10px!important;
-    min-height:30px;
+    padding:10px 18px!important;
+    min-height:38px;
     border-radius:7px;
-    font-size:10px!important;
+    font-size:13px!important;
     line-height:1;
     white-space:nowrap;
+    width:auto;
 }
 
 .track-edit-btn,
@@ -973,12 +972,12 @@ body.dark .scale-mark.scale-major {
 .track-drag-handle{
     display:none;
     margin:0!important;
-    padding:7px 10px!important;
-    min-height:30px;
+    padding:10px 18px!important;
+    min-height:38px;
     border-radius:7px;
     background:#343a40!important;
     color:#fff!important;
-    font-size:10px;
+    font-size:13px;
     cursor:grab;
     user-select:none;
     touch-action:none;
@@ -1534,7 +1533,7 @@ function mapTrack(row, index = 0) {
         number: row.number,
         length: Number(row.length),
         x: row.x_position == null ? 20 : Number(row.x_position),
-        y: row.y_position == null ? (20 + index * 180) : Number(row.y_position)
+        y: row.y_position == null ? (20 + index * 250) : Number(row.y_position)
     };
 }
 
@@ -1612,7 +1611,7 @@ function renderPlan() {
 
             const editButton = document.createElement("button");
             editButton.className = "track-edit-btn";
-            editButton.textContent = "✏ Name";
+            editButton.textContent = "✎ Name ändern";
             editButton.addEventListener("click", event => {
                 event.stopPropagation();
                 renameTrack(track.id);
@@ -1620,7 +1619,7 @@ function renderPlan() {
 
             const lengthButton = document.createElement("button");
             lengthButton.className = "track-length-btn";
-            lengthButton.textContent = "📏 Länge";
+            lengthButton.textContent = "📏 Länge ändern";
             lengthButton.addEventListener("click", event => {
                 event.stopPropagation();
                 editTrackLength(track.id);
@@ -1704,12 +1703,12 @@ function updatePlanCanvasSize() {
     if (!plan) return;
 
     let maxRight = 1200;
-    let maxBottom = 700;
+    let maxBottom = 850;
 
     tracks.forEach(track => {
         const width = track.length * PIXELS_PER_METER + 110 + 25;
         maxRight = Math.max(maxRight, track.x + width + 80);
-        maxBottom = Math.max(maxBottom, track.y + 235);
+        maxBottom = Math.max(maxBottom, track.y + 270);
     });
 
     // Absolute Elemente benötigen eine explizite Arbeitsfläche.
@@ -2089,7 +2088,7 @@ async function addTrack() {
             length,
             sort_order: sortOrder,
             x_position: 20,
-            y_position: 20 + tracks.length * 180
+            y_position: 20 + tracks.length * 250
         });
 
     if (error) {
