@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+x<!DOCTYPE html>
 <html lang="de">
 <head>
 <meta charset="UTF-8">
@@ -67,7 +67,7 @@ body.readonly .write-only{display:none!important}
 body.is-admin .admin-only{display:flex!important}
 
 .track {
-    min-height: 220px;
+    min-height: 250px;
 }
 
 .track-title-box{
@@ -321,7 +321,7 @@ button.danger {
 .track {
     position: absolute;
 
-    height: 220px;
+    height: 250px;
 
     margin-bottom: 25px;
 
@@ -1072,6 +1072,82 @@ body.is-admin:not(.admin-edit-enabled) .admin-only-edit{
     display:none!important;
 }
 
+
+/* =========================================================
+   GLEIS-NOTIZFELD
+========================================================= */
+.track-note-wrap{
+    position:absolute;
+    left:80px;
+    right:20px;
+    bottom:60px;
+    z-index:20;
+}
+
+.track-note-label{
+    display:block;
+    margin-bottom:5px;
+    color:var(--muted);
+    font-size:10px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+}
+
+.track-note{
+    width:100%;
+    min-height:44px;
+    max-height:72px;
+    resize:vertical;
+    padding:8px 10px;
+    border:1px solid var(--border);
+    border-radius:7px;
+    background:var(--panel2);
+    color:var(--text);
+    font:inherit;
+    font-size:12px;
+    line-height:1.35;
+    outline:none;
+}
+
+.track-note:focus{
+    border-color:var(--accent);
+    box-shadow:0 0 0 3px rgba(181,18,27,.10);
+}
+
+.track-note:disabled{
+    opacity:1;
+    cursor:default;
+    background:var(--panel2);
+    color:var(--text);
+}
+
+.track-note-status{
+    margin-top:4px;
+    min-height:14px;
+    color:var(--muted);
+    font-size:10px;
+}
+
+.track-note-status.saved{
+    color:#16a34a;
+}
+
+.track-note-status.error{
+    color:#dc2626;
+}
+
+body.dark .track-note{
+    background:#15191d;
+    color:#f5f6f7;
+    border-color:#434a51;
+}
+
+body.dark .track-note:disabled{
+    background:#15191d;
+    color:#d5dade;
+}
+
 </style>
 </head>
 
@@ -1533,7 +1609,8 @@ function mapTrack(row, index = 0) {
         number: row.number,
         length: Number(row.length),
         x: row.x_position == null ? 20 : Number(row.x_position),
-        y: row.y_position == null ? (20 + index * 250) : Number(row.y_position)
+        y: row.y_position == null ? (20 + index * 250) : Number(row.y_position),
+        note: row.note || ""
     };
 }
 
@@ -1648,7 +1725,10 @@ function renderPlan() {
             actions.appendChild(lengthButton);
             actions.appendChild(deleteButton);
             actions.appendChild(dragHandle);
-            titleBox.appendChild(actions);
+
+            // Wichtig: Die Admin-Leiste gehört direkt in den Gleiskasten,
+            // nicht in den kleinen Titelblock.
+            trackElement.appendChild(actions);
         }
 
         trackElement.appendChild(titleBox);
@@ -1665,6 +1745,65 @@ function renderPlan() {
         vehicles
             .filter(v => v.track === track.id)
             .forEach(vehicle => trackElement.appendChild(createVehicleElement(vehicle)));
+
+        // Notizfeld: sichtbar für alle, bearbeitbar für Dispatcher und Admins.
+        const noteWrap = document.createElement("div");
+        noteWrap.className = "track-note-wrap";
+
+        const noteLabel = document.createElement("label");
+        noteLabel.className = "track-note-label";
+        noteLabel.textContent = "Notiz";
+        noteWrap.appendChild(noteLabel);
+
+        const noteField = document.createElement("textarea");
+        noteField.className = "track-note";
+        noteField.value = track.note || "";
+        noteField.placeholder = canWrite()
+            ? "Notiz zu diesem Gleis eingeben …"
+            : "Keine Notiz vorhanden.";
+        noteField.disabled = !canWrite();
+
+        const noteStatus = document.createElement("div");
+        noteStatus.className = "track-note-status";
+
+        let noteSaveTimer = null;
+
+        noteField.addEventListener("click", event => event.stopPropagation());
+        noteField.addEventListener("pointerdown", event => event.stopPropagation());
+
+        noteField.addEventListener("input", () => {
+            if (!canWrite()) return;
+
+            noteStatus.className = "track-note-status";
+            noteStatus.textContent = "Wird gespeichert …";
+
+            clearTimeout(noteSaveTimer);
+            noteSaveTimer = setTimeout(async () => {
+                const oldNote = track.note || "";
+                track.note = noteField.value;
+
+                const ok = await saveTrackNote(track.id, track.note);
+
+                if (ok) {
+                    noteStatus.className = "track-note-status saved";
+                    noteStatus.textContent = "Gespeichert";
+                    setTimeout(() => {
+                        if (noteStatus.textContent === "Gespeichert") {
+                            noteStatus.textContent = "";
+                            noteStatus.className = "track-note-status";
+                        }
+                    }, 1200);
+                } else {
+                    track.note = oldNote;
+                    noteStatus.className = "track-note-status error";
+                    noteStatus.textContent = "Speichern fehlgeschlagen";
+                }
+            }, 500);
+        });
+
+        noteWrap.appendChild(noteField);
+        noteWrap.appendChild(noteStatus);
+        trackElement.appendChild(noteWrap);
 
         if (canWrite()) {
             trackElement.addEventListener("dragover", event => event.preventDefault());
@@ -1708,7 +1847,7 @@ function updatePlanCanvasSize() {
     tracks.forEach(track => {
         const width = track.length * PIXELS_PER_METER + 110 + 25;
         maxRight = Math.max(maxRight, track.x + width + 80);
-        maxBottom = Math.max(maxBottom, track.y + 270);
+        maxBottom = Math.max(maxBottom, track.y + 300);
     });
 
     // Absolute Elemente benötigen eine explizite Arbeitsfläche.
@@ -1785,6 +1924,26 @@ async function endTrackDrag() {
         alert("Die neue Gleisposition konnte nicht gespeichert werden.");
         await loadPlan();
     }
+}
+
+
+async function saveTrackNote(trackId, note) {
+    if (!canWrite()) return false;
+
+    const { error } = await window.eetgSupabase
+        .from("tracks")
+        .update({
+            note,
+            updated_at: new Date().toISOString()
+        })
+        .eq("id", trackId);
+
+    if (error) {
+        console.error("Notiz konnte nicht gespeichert werden:", error);
+        return false;
+    }
+
+    return true;
 }
 
 
@@ -2088,7 +2247,8 @@ async function addTrack() {
             length,
             sort_order: sortOrder,
             x_position: 20,
-            y_position: 20 + tracks.length * 250
+            y_position: 20 + tracks.length * 250,
+            note: ""
         });
 
     if (error) {
