@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Abstellplan Login | EETG</title>
+<link rel="stylesheet" href="./assets/css/style.css">
+<style>
+:root{--red:#bd2026;--ink:#181b1f;--muted:#69727b;--line:#dfe3e6;--paper:#fff}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;background:linear-gradient(145deg,#111820,#343b43);min-height:100vh;display:grid;place-items:center;padding:20px;color:var(--ink)}
+.login-card{width:min(430px,100%);background:var(--paper);border-radius:18px;padding:34px;box-shadow:0 22px 60px rgba(0,0,0,.35)}
+.logo{display:flex;align-items:center;gap:12px;margin-bottom:24px}
+.logo img{width:78px}
+h1{margin:0 0 8px;font-size:2rem}
+p{color:var(--muted);margin:0 0 24px}
+label{display:block;font-weight:800;font-size:.9rem;margin:14px 0 6px}
+input{width:100%;padding:13px 14px;border:1px solid var(--line);border-radius:11px;font:inherit}
+button{width:100%;margin-top:20px;padding:13px 18px;border:0;border-radius:12px;background:var(--red);color:white;font-weight:800;cursor:pointer}
+button:disabled{opacity:.6;cursor:wait}
+.message{min-height:24px;margin-top:14px;font-size:.9rem}
+.error{color:#b91c1c}.success{color:#138a57}
+.back{display:block;text-align:center;margin-top:18px;color:var(--muted);font-size:.9rem}
+</style>
+</head>
+<body>
+<main class="login-card">
+  <div class="logo">
+    <img src="./assets/img/eetg-logo.png" alt="EETG">
+    <strong>EETG</strong>
+  </div>
+  <h1>Abstellplan Login</h1>
+  <p>Bitte mit deinem EETG-Benutzernamen und Passwort anmelden.</p>
+
+  <form id="loginForm">
+    <label for="username">Benutzername</label>
+    <input id="username" type="text" autocomplete="username" placeholder="Benutzername" required>
+
+    <label for="password">Passwort</label>
+    <input id="password" type="password" autocomplete="current-password" required>
+
+    <button id="loginButton" type="submit">Anmelden</button>
+    <div id="message" class="message" aria-live="polite"></div>
+  </form>
+
+  <a class="back" href="index.html">← Zur EETG-Startseite</a>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./assets/js/supabase.js"></script>
+<script>
+const params = new URLSearchParams(location.search);
+const nextPage = params.get("next") || "abstellplan.html";
+const form = document.getElementById("loginForm");
+const button = document.getElementById("loginButton");
+const message = document.getElementById("message");
+
+(async () => {
+  const { data: { session } } = await window.eetgSupabase.auth.getSession();
+  if (session) location.replace(nextPage);
+})();
+
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  button.disabled = true;
+  message.className = "message";
+  message.textContent = "Anmeldung läuft …";
+
+  const username = document.getElementById("username").value.trim().toLowerCase();
+  const password = document.getElementById("password").value;
+
+  if (!/^[a-z0-9._-]{2,32}$/.test(username)) {
+    message.className = "message error";
+    message.textContent = "Benutzername ungültig.";
+    button.disabled = false;
+    return;
+  }
+
+  // Supabase Auth verwendet intern weiterhin E-Mail + Passwort.
+  // Der Benutzer sieht nur seinen Benutzernamen.
+  const email = username + "@eetg-login.local";
+
+  const { error } = await window.eetgSupabase.auth.signInWithPassword({ email, password });
+
+  if (error) {
+    message.className = "message error";
+    message.textContent = "Anmeldung fehlgeschlagen. Benutzername oder Passwort prüfen.";
+    button.disabled = false;
+    return;
+  }
+
+  message.className = "message success";
+  message.textContent = "Anmeldung erfolgreich.";
+  location.replace(nextPage);
+});
+</script>
+</body>
+</html>
