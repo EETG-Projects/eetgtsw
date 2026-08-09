@@ -294,7 +294,7 @@ button.danger {
 
 .plan-container {
     flex: 1;
-
+    position: relative;
     overflow: auto;
 
     background:
@@ -319,7 +319,7 @@ button.danger {
 ========================================================= */
 
 .track {
-    position: relative;
+    position: absolute;
 
     height: 125px;
 
@@ -331,7 +331,7 @@ button.danger {
 
     border-radius: 7px;
 
-    min-width: 1000px;
+    min-width: 0;
 }
 
 
@@ -950,6 +950,46 @@ body.dark .scale-mark.scale-major {
     color:#f5f6f7;
 }
 
+
+/* =========================================================
+   FREIE GLEISPOSITIONIERUNG
+========================================================= */
+.track-drag-handle{
+    display:none;
+    margin-top:6px;
+    padding:4px 6px;
+    border-radius:6px;
+    background:#343a40!important;
+    color:#fff!important;
+    font-size:10px;
+    cursor:grab;
+    user-select:none;
+    touch-action:none;
+}
+
+body.is-admin .track-drag-handle{
+    display:block;
+}
+
+.track-drag-handle:active{
+    cursor:grabbing;
+}
+
+.track.dragging-track{
+    z-index:100;
+    box-shadow:0 14px 36px rgba(24,27,31,.22)!important;
+    opacity:.96;
+}
+
+.plan-empty-space-note{
+    position:absolute;
+    left:20px;
+    top:20px;
+    color:var(--muted);
+    font-size:12px;
+    pointer-events:none;
+}
+
 </style>
 </head>
 
@@ -1370,11 +1410,13 @@ async function logout() {
     window.location.replace("login.html");
 }
 
-function mapTrack(row) {
+function mapTrack(row, index = 0) {
     return {
         id: row.id,
         number: row.number,
-        length: Number(row.length)
+        length: Number(row.length),
+        x: row.x_position == null ? 20 : Number(row.x_position),
+        y: row.y_position == null ? (20 + index * 180) : Number(row.y_position)
     };
 }
 
@@ -1405,7 +1447,7 @@ async function loadPlan() {
         return;
     }
 
-    tracks = (trackRows || []).map(mapTrack);
+    tracks = (trackRows || []).map((row, index) => mapTrack(row, index));
     vehicles = (vehicleRows || []).map(mapVehicle);
 
     renderPlan();
@@ -1422,7 +1464,14 @@ function renderPlan() {
         trackElement.dataset.track = track.id;
 
         const width = track.length * PIXELS_PER_METER;
-        trackElement.style.width = Math.max(width + 110, 1000) + "px";
+        // Die Umrandung endet passend zur tatsächlichen Gleislänge.
+        // 80 px links für Gleisname + 30 px rechter Innenabstand.
+        trackElement.style.width = (width + 110) + "px";
+        trackElement.style.minWidth = (width + 110) + "px";
+
+        // Freie Position des Gleises auf der Planfläche.
+        trackElement.style.left = track.x + "px";
+        trackElement.style.top = track.y + "px";
 
         const titleBox = document.createElement("div");
         titleBox.className = "track-title-box";
@@ -1457,8 +1506,20 @@ function renderPlan() {
                 deleteTrack(track.id);
             });
 
+            const dragHandle = document.createElement("button");
+            dragHandle.className = "track-drag-handle";
+            dragHandle.type = "button";
+            dragHandle.textContent = "↔ Verschieben";
+            dragHandle.title = "Gleis frei auf der Fläche verschieben";
+            dragHandle.addEventListener("pointerdown", event => {
+                event.preventDefault();
+                event.stopPropagation();
+                startTrackDrag(event, track, trackElement);
+            });
+
             actions.appendChild(editButton);
             actions.appendChild(deleteButton);
+            actions.appendChild(dragHandle);
             titleBox.appendChild(actions);
         }
 
@@ -1505,7 +1566,99 @@ function renderPlan() {
 
         plan.appendChild(trackElement);
     });
+
+    updatePlanCanvasSize();
 }
+
+function updatePlanCanvasSize() {
+    const plan = document.getElementById("plan");
+    if (!plan) return;
+
+    let maxRight = 1200;
+    let maxBottom = 700;
+
+    tracks.forEach(track => {
+        const width = track.length * PIXELS_PER_METER + 110;
+        maxRight = Math.max(maxRight, track.x + width + 80);
+        maxBottom = Math.max(maxBottom, track.y + 180);
+    });
+
+    // Absolute Elemente benötigen eine explizite Arbeitsfläche.
+    plan.style.minWidth = maxRight + "px";
+    plan.style.minHeight = maxBottom + "px";
+}
+
+let activeTrackDrag = null;
+
+function startTrackDrag(event, track, element) {
+    if (!enforceAdminPermission()) return;
+
+    const plan = document.getElementById("plan");
+    const planRect = plan.getBoundingClientRect();
+
+    activeTrackDrag = {
+        track,
+        element,
+        pointerId: event.pointerId,
+        offsetX: event.clientX - planRect.left + plan.scrollLeft - track.x,
+        offsetY: event.clientY - planRect.top + plan.scrollTop - track.y
+    };
+
+    element.classList.add("dragging-track");
+    element.setPointerCapture?.(event.pointerId);
+
+    window.addEventListener("pointermove", onTrackDragMove);
+    window.addEventListener("pointerup", endTrackDrag, { once: true });
+    window.addEventListener("pointercancel", endTrackDrag, { once: true });
+}
+
+function onTrackDragMove(event) {
+    if (!activeTrackDrag) return;
+
+    const plan = document.getElementById("plan");
+    const planRect = plan.getBoundingClientRect();
+
+    let x = event.clientX - planRect.left + plan.scrollLeft - activeTrackDrag.offsetX;
+    let y = event.clientY - planRect.top + plan.scrollTop - activeTrackDrag.offsetY;
+
+    // Kleine Rasterung für sauberes Ausrichten.
+    const grid = 10;
+    x = Math.max(0, Math.round(x / grid) * grid);
+    y = Math.max(0, Math.round(y / grid) * grid);
+
+    activeTrackDrag.track.x = x;
+    activeTrackDrag.track.y = y;
+    activeTrackDrag.element.style.left = x + "px";
+    activeTrackDrag.element.style.top = y + "px";
+
+    updatePlanCanvasSize();
+}
+
+async function endTrackDrag() {
+    if (!activeTrackDrag) return;
+
+    const { track, element } = activeTrackDrag;
+    activeTrackDrag = null;
+
+    element.classList.remove("dragging-track");
+    window.removeEventListener("pointermove", onTrackDragMove);
+
+    const { error } = await window.eetgSupabase
+        .from("tracks")
+        .update({
+            x_position: track.x,
+            y_position: track.y,
+            updated_at: new Date().toISOString()
+        })
+        .eq("id", track.id);
+
+    if (error) {
+        console.error(error);
+        alert("Die neue Gleisposition konnte nicht gespeichert werden.");
+        await loadPlan();
+    }
+}
+
 
 function createScale(container, length) {
     for (let meter = 0; meter <= length; meter += 10) {
@@ -1805,7 +1958,9 @@ async function addTrack() {
         .insert({
             number,
             length,
-            sort_order: sortOrder
+            sort_order: sortOrder,
+            x_position: 20,
+            y_position: 20 + tracks.length * 180
         });
 
     if (error) {
@@ -1975,7 +2130,9 @@ function subscribeRealtime() {
 
     realtimeChannel = window.eetgSupabase
         .channel("eetg-abstellplan")
-        .on("postgres_changes", { event: "*", schema: "public", table: "tracks" }, () => loadPlan())
+        .on("postgres_changes", { event: "*", schema: "public", table: "tracks" }, () => {
+            if (!activeTrackDrag) loadPlan();
+        })
         .on("postgres_changes", { event: "*", schema: "public", table: "vehicles" }, () => loadPlan())
         .subscribe();
 }
