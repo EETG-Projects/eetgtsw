@@ -1403,18 +1403,18 @@ body.dark .vehicle-status-palette{
 ========================================================= */
 .library-item{
     position:relative;
-    min-height:70px;
-    padding-right:112px!important;
+    min-height:92px;
+    padding-right:150px!important;
 }
 
 .vehicle-thumb{
     position:absolute;
-    top:7px;
-    right:7px;
-    width:98px;
-    height:56px;
+    top:8px;
+    right:8px;
+    width:136px;
+    height:74px;
     margin:0;
-    border-radius:6px;
+    border-radius:7px;
     overflow:hidden;
     border:1px solid var(--border);
     background:var(--panel);
@@ -1427,19 +1427,179 @@ body.dark .vehicle-status-palette{
     width:100%;
     height:100%;
     object-fit:contain;
+    object-position:center;
     display:block;
 }
 
 .vehicle-thumb-placeholder{
     color:var(--muted);
     font-size:9px;
-    line-height:1.15;
+    line-height:1.2;
     text-align:center;
-    padding:5px;
+    padding:6px;
 }
 
 body.dark .vehicle-thumb{
     background:#15191d;
+}
+
+
+/* =========================================================
+   STATUSFARBE IM VORHANDENEN LOKNUMMER-KÄSTCHEN
+========================================================= */
+.vehicle.status-einsatzbereit{
+    background:var(--status-einsatzbereit)!important;
+    border-color:var(--status-einsatzbereit)!important;
+    color:#073b18!important;
+}
+.vehicle.status-unterwegs{
+    background:var(--status-unterwegs)!important;
+    border-color:var(--status-unterwegs)!important;
+    color:#4a3900!important;
+}
+.vehicle.status-abgestellt{
+    background:var(--status-abgestellt)!important;
+    border-color:var(--status-abgestellt)!important;
+    color:#fff!important;
+}
+.vehicle.status-vermietet{
+    background:var(--status-vermietet)!important;
+    border-color:var(--status-vermietet)!important;
+    color:#fff!important;
+}
+.vehicle.status-werkstatt{
+    background:var(--status-werkstatt)!important;
+    border-color:var(--status-werkstatt)!important;
+    color:#fff!important;
+}
+
+.vehicle{
+    border-width:2px!important;
+    border-style:solid!important;
+    transition:background-color .18s ease,border-color .18s ease,color .18s ease;
+}
+
+
+/* =========================================================
+   FAHRZEUGLÄNGE EXAKT IM GLEIS-MASSSTAB
+========================================================= */
+.vehicle-wrap{
+    min-width:0!important;
+}
+
+.vehicle{
+    min-width:0!important;
+    overflow:hidden;
+    white-space:nowrap;
+    text-overflow:clip;
+    padding-left:2px!important;
+    padding-right:2px!important;
+    font-size:clamp(7px, .72vw, 11px);
+}
+
+/* Wichtig: Keine CSS-Mindestbreite darf den Metermaßstab verfälschen. */
+.vehicle-wrap,
+.vehicle{
+    box-sizing:border-box;
+}
+
+
+/* =========================================================
+   STATUSAUSWAHL IN DER FAHRZEUGBIBLIOTHEK
+========================================================= */
+.library-status-control{
+    margin-top:8px;
+    width:100%;
+}
+
+.library-status-current{
+    width:100%;
+    min-height:30px;
+    padding:6px 9px;
+    border:0;
+    border-radius:7px;
+    font-size:11px;
+    font-weight:800;
+    cursor:pointer;
+    text-align:left;
+}
+
+.library-status-current:disabled{
+    cursor:default;
+    opacity:1;
+}
+
+.library-status-current.status-einsatzbereit{
+    background:var(--status-einsatzbereit)!important;
+    color:#073b18!important;
+}
+.library-status-current.status-unterwegs{
+    background:var(--status-unterwegs)!important;
+    color:#4a3900!important;
+}
+.library-status-current.status-abgestellt{
+    background:var(--status-abgestellt)!important;
+    color:#fff!important;
+}
+.library-status-current.status-vermietet{
+    background:var(--status-vermietet)!important;
+    color:#fff!important;
+}
+.library-status-current.status-werkstatt{
+    background:var(--status-werkstatt)!important;
+    color:#fff!important;
+}
+
+.library-status-palette{
+    display:none;
+    margin-top:5px;
+    padding:6px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    background:var(--panel);
+    box-shadow:0 10px 24px rgba(0,0,0,.2);
+}
+
+.library-status-palette.open{
+    display:flex;
+    flex-direction:column;
+    gap:5px;
+}
+
+.library-status-option{
+    border:0!important;
+    border-radius:6px!important;
+    padding:7px 9px!important;
+    min-height:29px;
+    text-align:left;
+    font-size:10px!important;
+    font-weight:800!important;
+}
+
+.library-status-option[data-status="Einsatzbereit"]{
+    background:var(--status-einsatzbereit)!important;
+    color:#073b18!important;
+}
+.library-status-option[data-status="Unterwegs"]{
+    background:var(--status-unterwegs)!important;
+    color:#4a3900!important;
+}
+.library-status-option[data-status="Abgestellt"]{
+    background:var(--status-abgestellt)!important;
+    color:#fff!important;
+}
+.library-status-option[data-status="Vermietet"]{
+    background:var(--status-vermietet)!important;
+    color:#fff!important;
+}
+.library-status-option[data-status="In der Werkstatt"]{
+    background:var(--status-werkstatt)!important;
+    color:#fff!important;
+}
+
+body.dark .library-status-palette{
+    background:#1b2025!important;
+    border-color:#434a51!important;
 }
 
 </style>
@@ -1849,7 +2009,7 @@ async function copyDbError() {
 }
 
 const PIXELS_PER_METER = 2;
-const VEHICLE_VISUAL_SCALE = 2; // Fahrzeuge werden optisch x2 dargestellt.
+const VEHICLE_VISUAL_SCALE = 1; // Maßstab: 1 m Fahrzeug = 1 m Gleis.
 
 let tracks = [];
 let vehicles = [];
@@ -2347,10 +2507,10 @@ function statusClass(status) {
 }
 
 function createVehicleElement(vehicle) {
-    const width = Math.max(
-        vehicle.length * PIXELS_PER_METER * VEHICLE_VISUAL_SCALE,
-        70
-    );
+    // Exakter gemeinsamer Maßstab:
+    // Gleis und Fahrzeug verwenden beide PIXELS_PER_METER.
+    // Beispiel: 16,64 m Fahrzeug = 33,28 px bei 2 px pro Meter.
+    const width = vehicle.length * PIXELS_PER_METER * VEHICLE_VISUAL_SCALE;
 
     const wrap = document.createElement("div");
     wrap.className = "vehicle-wrap";
@@ -2358,7 +2518,8 @@ function createVehicleElement(vehicle) {
     wrap.style.width = width + "px";
 
     const element = document.createElement("div");
-    element.className = "vehicle " + vehicle.type;
+    element.className = "vehicle " + vehicle.type + " " + statusClass(vehicle.status);
+    element.dataset.vehicleId = vehicle.id;
     element.style.width = "100%";
     element.textContent = vehicle.number;
     element.draggable = canWrite();
@@ -2391,83 +2552,6 @@ function createVehicleElement(vehicle) {
         });
     }
 
-    const statusControl = document.createElement("div");
-    statusControl.className = "vehicle-status-control";
-
-    const statusButton = document.createElement("button");
-    statusButton.type = "button";
-    statusButton.className =
-        "vehicle-status-current " + statusClass(vehicle.status);
-    statusButton.textContent = vehicle.status || "Abgestellt";
-    statusButton.disabled = !canWrite();
-
-    const palette = document.createElement("div");
-    palette.className = "vehicle-status-palette";
-
-    const statuses = [
-        "Einsatzbereit",
-        "Unterwegs",
-        "Abgestellt",
-        "Vermietet",
-        "In der Werkstatt"
-    ];
-
-    statuses.forEach(status => {
-        const optionButton = document.createElement("button");
-        optionButton.type = "button";
-        optionButton.className = "vehicle-status-option";
-        optionButton.dataset.status = status;
-        optionButton.textContent = status;
-
-        optionButton.addEventListener("click", async event => {
-            event.stopPropagation();
-            if (!canWrite()) return;
-
-            const previousStatus = vehicle.status;
-            vehicle.status = status;
-
-            statusButton.textContent = status;
-            statusButton.className =
-                "vehicle-status-current " + statusClass(status);
-
-            palette.classList.remove("open");
-
-            const ok = await updateVehicle(vehicle);
-
-            // Bei Fehler auf alten Status zurückspringen.
-            if (ok === false) {
-                vehicle.status = previousStatus;
-                statusButton.textContent = previousStatus;
-                statusButton.className =
-                    "vehicle-status-current " + statusClass(previousStatus);
-            }
-
-            renderLibrary();
-        });
-
-        palette.appendChild(optionButton);
-    });
-
-    statusButton.addEventListener("click", event => {
-        event.stopPropagation();
-        if (!canWrite()) return;
-
-        // Alle anderen geöffneten Statuspaletten schließen.
-        document
-            .querySelectorAll(".vehicle-status-palette.open")
-            .forEach(other => {
-                if (other !== palette) other.classList.remove("open");
-            });
-
-        palette.classList.toggle("open");
-    });
-
-    statusControl.addEventListener("click", event => event.stopPropagation());
-
-    statusControl.appendChild(statusButton);
-    statusControl.appendChild(palette);
-
-    wrap.appendChild(statusControl);
 
     return wrap;
 }
@@ -2817,6 +2901,21 @@ async function deleteTrack(trackId) {
 }
 
 
+
+function updateRenderedVehicleStatus(vehicleId, status) {
+    const trackVehicle = document.querySelector(
+        `.vehicle[data-vehicle-id="${CSS.escape(String(vehicleId))}"]`
+    );
+
+    if (trackVehicle) {
+        const vehicle = vehicles.find(v => v.id === String(vehicleId));
+        if (vehicle) {
+            trackVehicle.className =
+                "vehicle " + vehicle.type + " " + statusClass(status);
+        }
+    }
+}
+
 function renderLibrary() {
     const library = document.getElementById("vehicleLibrary");
     library.innerHTML = "";
@@ -2828,7 +2927,7 @@ function renderLibrary() {
 
     vehicles.forEach(vehicle => {
         const item = document.createElement("div");
-        item.className = "vehicle-item";
+        item.className = "vehicle-item library-item";
         item.draggable = canWrite();
 
         const imageHtml = vehicle.image
@@ -2848,11 +2947,80 @@ function renderLibrary() {
             <div class="vehicle-info">
                 ${escapeHtml(vehicle.model || vehicle.type)} · ${vehicle.length} m
             </div>
-            <div class="vehicle-info">
-                Status: ${escapeHtml(vehicle.status || "Abgestellt")}
-            </div>
             ${imageHtml}
         `;
+
+        const statusControl = document.createElement("div");
+        statusControl.className = "library-status-control";
+
+        const currentButton = document.createElement("button");
+        currentButton.type = "button";
+        currentButton.className =
+            "library-status-current " + statusClass(vehicle.status);
+        currentButton.textContent = vehicle.status || "Abgestellt";
+        currentButton.disabled = !canWrite();
+
+        const palette = document.createElement("div");
+        palette.className = "library-status-palette";
+
+        [
+            "Einsatzbereit",
+            "Unterwegs",
+            "Abgestellt",
+            "Vermietet",
+            "In der Werkstatt"
+        ].forEach(status => {
+            const option = document.createElement("button");
+            option.type = "button";
+            option.className = "library-status-option";
+            option.dataset.status = status;
+            option.textContent = status;
+
+            option.addEventListener("click", async event => {
+                event.stopPropagation();
+                if (!canWrite()) return;
+
+                const previousStatus = vehicle.status;
+                vehicle.status = status;
+
+                currentButton.textContent = status;
+                currentButton.className =
+                    "library-status-current " + statusClass(status);
+                palette.classList.remove("open");
+
+                updateRenderedVehicleStatus(vehicle.id, status);
+
+                const ok = await updateVehicle(vehicle);
+
+                if (ok === false) {
+                    vehicle.status = previousStatus;
+                    currentButton.textContent = previousStatus;
+                    currentButton.className =
+                        "library-status-current " + statusClass(previousStatus);
+                    updateRenderedVehicleStatus(vehicle.id, previousStatus);
+                }
+            });
+
+            palette.appendChild(option);
+        });
+
+        currentButton.addEventListener("click", event => {
+            event.stopPropagation();
+            if (!canWrite()) return;
+
+            document
+                .querySelectorAll(".library-status-palette.open")
+                .forEach(other => {
+                    if (other !== palette) other.classList.remove("open");
+                });
+
+            palette.classList.toggle("open");
+        });
+
+        statusControl.addEventListener("click", event => event.stopPropagation());
+        statusControl.appendChild(currentButton);
+        statusControl.appendChild(palette);
+        item.appendChild(statusControl);
 
         if (canWrite()) {
             item.addEventListener("dragstart", event => {
@@ -2888,7 +3056,7 @@ document.addEventListener("click", hideContextMenu);
 
 document.addEventListener("click", () => {
     document
-        .querySelectorAll(".vehicle-status-palette.open")
+        .querySelectorAll(".vehicle-status-palette.open, .library-status-palette.open")
         .forEach(palette => palette.classList.remove("open"));
 });
 
