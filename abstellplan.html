@@ -109,7 +109,7 @@ body.is-admin .admin-only{display:flex!important}
     width:100%;
 }
 
-.vehicle-status{
+.vehicle-status-old{
     width:100%;
     margin-top:4px;
     height:26px;
@@ -123,16 +123,16 @@ body.is-admin .admin-only{display:flex!important}
     cursor:pointer;
 }
 
-.vehicle-status:disabled{
+.vehicle-status-old:disabled{
     cursor:default;
     opacity:.75;
 }
 
-.vehicle-status.status-unterwegs{border-color:#facc15;background:#3a3210;color:#fff}
-.vehicle-status.status-werkstatt{border-color:#f97316;background:#3b2110;color:#fff}
-.vehicle-status.status-vermietet{border-color:#3b82f6;background:#10264a;color:#fff}
-.vehicle-status.status-abgestellt{border-color:#ef4444;background:#451515;color:#fff}
-.vehicle-status.status-einsatzbereit{border-color:#22c55e;background:#123a20;color:#fff;font-weight:800}
+.vehicle-status-old.status-unterwegs{border-color:#facc15;background:#3a3210;color:#fff}
+.vehicle-status-old.status-werkstatt{border-color:#f97316;background:#3b2110;color:#fff}
+.vehicle-status-old.status-vermietet{border-color:#3b82f6;background:#10264a;color:#fff}
+.vehicle-status-old.status-abgestellt{border-color:#ef4444;background:#451515;color:#fff}
+.vehicle-status-old.status-einsatzbereit{border-color:#22c55e;background:#123a20;color:#fff;font-weight:800}
 
 
 
@@ -772,27 +772,27 @@ select{
 }
 
 /* Statusfarben bleiben bewusst eindeutig */
-.vehicle-status.status-einsatzbereit{
+.vehicle-status-old.status-einsatzbereit{
     border-color:#22c55e!important;
     background:#dcfce7!important;
     color:#166534!important;
 }
-.vehicle-status.status-unterwegs{
+.vehicle-status-old.status-unterwegs{
     border-color:#eab308!important;
     background:#fef9c3!important;
     color:#854d0e!important;
 }
-.vehicle-status.status-abgestellt{
+.vehicle-status-old.status-abgestellt{
     border-color:#ef4444!important;
     background:#fee2e2!important;
     color:#991b1b!important;
 }
-.vehicle-status.status-vermietet{
+.vehicle-status-old.status-vermietet{
     border-color:#3b82f6!important;
     background:#dbeafe!important;
     color:#1e40af!important;
 }
-.vehicle-status.status-werkstatt{
+.vehicle-status-old.status-werkstatt{
     border-color:#f97316!important;
     background:#ffedd5!important;
     color:#9a3412!important;
@@ -899,23 +899,23 @@ body.dark .role-badge{
 }
 
 /* Statusfarben bleiben in beiden Modi eindeutig */
-body.dark .vehicle-status.status-einsatzbereit{
+body.dark .vehicle-status-old.status-einsatzbereit{
     background:#123a20!important;
     color:#d7ffe2!important;
 }
-body.dark .vehicle-status.status-unterwegs{
+body.dark .vehicle-status-old.status-unterwegs{
     background:#3a3210!important;
     color:#fff4ad!important;
 }
-body.dark .vehicle-status.status-abgestellt{
+body.dark .vehicle-status-old.status-abgestellt{
     background:#451515!important;
     color:#ffd2d2!important;
 }
-body.dark .vehicle-status.status-vermietet{
+body.dark .vehicle-status-old.status-vermietet{
     background:#10264a!important;
     color:#d7e8ff!important;
 }
-body.dark .vehicle-status.status-werkstatt{
+body.dark .vehicle-status-old.status-werkstatt{
     background:#3b2110!important;
     color:#ffe1c7!important;
 }
@@ -1273,6 +1273,175 @@ body.is-admin.admin-edit-enabled .track::after{
     pointer-events:none;
 }
 
+
+/* =========================================================
+   EINHEITLICHE STATUSFARBEN
+========================================================= */
+:root{
+    --status-einsatzbereit:#22c55e;
+    --status-unterwegs:#facc15;
+    --status-abgestellt:#ef4444;
+    --status-vermietet:#3b82f6;
+    --status-werkstatt:#f97316;
+}
+
+/* Legende */
+.legend-einsatzbereit{background:var(--status-einsatzbereit)!important}
+.legend-unterwegs{background:var(--status-unterwegs)!important}
+.legend-abgestellt{background:var(--status-abgestellt)!important}
+.legend-vermietet{background:var(--status-vermietet)!important}
+.legend-werkstatt{background:var(--status-werkstatt)!important}
+
+/* Neuer Status-Button unter dem Fahrzeug */
+.vehicle-status-control{
+    position:relative;
+    margin-top:4px;
+    z-index:80;
+}
+
+.vehicle-status-current{
+    width:100%;
+    min-height:28px;
+    padding:5px 8px;
+    border:0;
+    border-radius:6px;
+    font-size:10px;
+    font-weight:800;
+    color:#fff;
+    cursor:pointer;
+    box-shadow:0 2px 7px rgba(0,0,0,.16);
+}
+
+.vehicle-status-current:disabled{
+    cursor:default;
+    opacity:1;
+}
+
+.vehicle-status-current.status-einsatzbereit{
+    background:var(--status-einsatzbereit)!important;
+    color:#073b18!important;
+}
+.vehicle-status-current.status-unterwegs{
+    background:var(--status-unterwegs)!important;
+    color:#4a3900!important;
+}
+.vehicle-status-current.status-abgestellt{
+    background:var(--status-abgestellt)!important;
+    color:#fff!important;
+}
+.vehicle-status-current.status-vermietet{
+    background:var(--status-vermietet)!important;
+    color:#fff!important;
+}
+.vehicle-status-current.status-werkstatt{
+    background:var(--status-werkstatt)!important;
+    color:#fff!important;
+}
+
+/* Aufklappbare Statuspalette */
+.vehicle-status-palette{
+    position:absolute;
+    left:0;
+    top:33px;
+    display:none;
+    width:max-content;
+    min-width:178px;
+    padding:7px;
+    border:1px solid var(--border);
+    border-radius:9px;
+    background:var(--panel);
+    box-shadow:0 14px 30px rgba(0,0,0,.25);
+    z-index:500;
+}
+
+.vehicle-status-palette.open{
+    display:flex;
+    flex-direction:column;
+    gap:5px;
+}
+
+.vehicle-status-option{
+    border:0!important;
+    border-radius:6px!important;
+    padding:7px 10px!important;
+    min-height:30px;
+    text-align:left;
+    font-size:11px!important;
+    font-weight:800!important;
+    white-space:nowrap;
+}
+
+.vehicle-status-option[data-status="Einsatzbereit"]{
+    background:var(--status-einsatzbereit)!important;
+    color:#073b18!important;
+}
+.vehicle-status-option[data-status="Unterwegs"]{
+    background:var(--status-unterwegs)!important;
+    color:#4a3900!important;
+}
+.vehicle-status-option[data-status="Abgestellt"]{
+    background:var(--status-abgestellt)!important;
+    color:#fff!important;
+}
+.vehicle-status-option[data-status="Vermietet"]{
+    background:var(--status-vermietet)!important;
+    color:#fff!important;
+}
+.vehicle-status-option[data-status="In der Werkstatt"]{
+    background:var(--status-werkstatt)!important;
+    color:#fff!important;
+}
+
+body.dark .vehicle-status-palette{
+    background:#1b2025!important;
+    border-color:#434a51!important;
+}
+
+
+/* =========================================================
+   FAHRZEUGBILDER IN DER BIBLIOTHEK – RECHTS
+========================================================= */
+.library-item{
+    position:relative;
+    min-height:70px;
+    padding-right:112px!important;
+}
+
+.vehicle-thumb{
+    position:absolute;
+    top:7px;
+    right:7px;
+    width:98px;
+    height:56px;
+    margin:0;
+    border-radius:6px;
+    overflow:hidden;
+    border:1px solid var(--border);
+    background:var(--panel);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.vehicle-thumb img{
+    width:100%;
+    height:100%;
+    object-fit:contain;
+    display:block;
+}
+
+.vehicle-thumb-placeholder{
+    color:var(--muted);
+    font-size:9px;
+    line-height:1.15;
+    text-align:center;
+    padding:5px;
+}
+
+body.dark .vehicle-thumb{
+    background:#15191d;
+}
+
 </style>
 </head>
 
@@ -1470,6 +1639,17 @@ body.is-admin.admin-edit-enabled .track::after{
 
             </select>
 
+        </div>
+
+
+        <div class="form-row">
+            <label>
+                Bildpfad / Bild-URL
+            </label>
+
+            <input
+                id="vehicleImage"
+                placeholder="z.B. ./assets/img/fahrzeuge/143-555-1.png">
         </div>
 
 
@@ -1812,6 +1992,7 @@ function mapVehicle(row) {
         id: String(row.id),
         number: row.number,
         model: row.model || "",
+        image: row.image_url || "",
         type: row.type,
         length: Number(row.length),
         track: row.track_id,
@@ -2210,32 +2391,83 @@ function createVehicleElement(vehicle) {
         });
     }
 
-    const statusSelect = document.createElement("select");
-    statusSelect.className = "vehicle-status " + statusClass(vehicle.status);
-    statusSelect.disabled = !canWrite();
+    const statusControl = document.createElement("div");
+    statusControl.className = "vehicle-status-control";
 
-    ["Einsatzbereit", "Abgestellt", "Unterwegs", "In der Werkstatt", "Vermietet"].forEach(status => {
-        const option = document.createElement("option");
-        option.value = status;
-        option.textContent = status;
-        option.selected = vehicle.status === status;
-        statusSelect.appendChild(option);
+    const statusButton = document.createElement("button");
+    statusButton.type = "button";
+    statusButton.className =
+        "vehicle-status-current " + statusClass(vehicle.status);
+    statusButton.textContent = vehicle.status || "Abgestellt";
+    statusButton.disabled = !canWrite();
+
+    const palette = document.createElement("div");
+    palette.className = "vehicle-status-palette";
+
+    const statuses = [
+        "Einsatzbereit",
+        "Unterwegs",
+        "Abgestellt",
+        "Vermietet",
+        "In der Werkstatt"
+    ];
+
+    statuses.forEach(status => {
+        const optionButton = document.createElement("button");
+        optionButton.type = "button";
+        optionButton.className = "vehicle-status-option";
+        optionButton.dataset.status = status;
+        optionButton.textContent = status;
+
+        optionButton.addEventListener("click", async event => {
+            event.stopPropagation();
+            if (!canWrite()) return;
+
+            const previousStatus = vehicle.status;
+            vehicle.status = status;
+
+            statusButton.textContent = status;
+            statusButton.className =
+                "vehicle-status-current " + statusClass(status);
+
+            palette.classList.remove("open");
+
+            const ok = await updateVehicle(vehicle);
+
+            // Bei Fehler auf alten Status zurückspringen.
+            if (ok === false) {
+                vehicle.status = previousStatus;
+                statusButton.textContent = previousStatus;
+                statusButton.className =
+                    "vehicle-status-current " + statusClass(previousStatus);
+            }
+
+            renderLibrary();
+        });
+
+        palette.appendChild(optionButton);
     });
 
-    statusSelect.addEventListener("click", event => event.stopPropagation());
-
-    statusSelect.addEventListener("change", async event => {
+    statusButton.addEventListener("click", event => {
         event.stopPropagation();
         if (!canWrite()) return;
 
-        vehicle.status = statusSelect.value;
-        statusSelect.className = "vehicle-status " + statusClass(vehicle.status);
-        await updateVehicle(vehicle);
-        renderLibrary();
+        // Alle anderen geöffneten Statuspaletten schließen.
+        document
+            .querySelectorAll(".vehicle-status-palette.open")
+            .forEach(other => {
+                if (other !== palette) other.classList.remove("open");
+            });
+
+        palette.classList.toggle("open");
     });
 
-    wrap.appendChild(element);
-    wrap.appendChild(statusSelect);
+    statusControl.addEventListener("click", event => event.stopPropagation());
+
+    statusControl.appendChild(statusButton);
+    statusControl.appendChild(palette);
+
+    wrap.appendChild(statusControl);
 
     return wrap;
 }
@@ -2246,6 +2478,7 @@ async function updateVehicle(vehicle) {
         .update({
             number: vehicle.number,
             model: vehicle.model,
+            image_url: vehicle.image || null,
             type: vehicle.type,
             length: vehicle.length,
             track_id: vehicle.track,
@@ -2259,7 +2492,10 @@ async function updateVehicle(vehicle) {
     if (error) {
         console.error(error);
         showSupabaseError("Fahrzeugänderung konnte nicht gespeichert werden.", error);
+        return false;
     }
+
+    return true;
 }
 
 async function moveConsist(consistId, targetTrack, newStart) {
@@ -2367,6 +2603,7 @@ async function addVehicle() {
 
     const number = document.getElementById("vehicleNumber").value.trim();
     const model = document.getElementById("vehicleModel").value.trim();
+    const image = document.getElementById("vehicleImage").value.trim();
     const type = document.getElementById("vehicleType").value;
     const length = Number(document.getElementById("vehicleLength").value);
 
@@ -2390,6 +2627,7 @@ async function addVehicle() {
         .insert({
             number,
             model,
+            image_url: image || null,
             type,
             length,
             track_id: tracks[0].id,
@@ -2408,6 +2646,8 @@ async function addVehicle() {
 
     closeModals();
     document.getElementById("vehicleNumber").value = "";
+    document.getElementById("vehicleModel").value = "";
+    document.getElementById("vehicleImage").value = "";
     await loadPlan();
 }
 
@@ -2591,6 +2831,18 @@ function renderLibrary() {
         item.className = "vehicle-item";
         item.draggable = canWrite();
 
+        const imageHtml = vehicle.image
+            ? `<div class="vehicle-thumb">
+                   <img
+                       src="${escapeHtml(vehicle.image)}"
+                       alt="${escapeHtml(vehicle.number)}"
+                       loading="lazy"
+                       onerror="this.parentElement.innerHTML='<div class=&quot;vehicle-thumb-placeholder&quot;>Bild konnte nicht geladen werden</div>'">
+               </div>`
+            : `<div class="vehicle-thumb">
+                   <div class="vehicle-thumb-placeholder">Kein Fahrzeugbild hinterlegt</div>
+               </div>`;
+
         item.innerHTML = `
             <div class="vehicle-name">${escapeHtml(vehicle.number)}</div>
             <div class="vehicle-info">
@@ -2599,6 +2851,7 @@ function renderLibrary() {
             <div class="vehicle-info">
                 Status: ${escapeHtml(vehicle.status || "Abgestellt")}
             </div>
+            ${imageHtml}
         `;
 
         if (canWrite()) {
@@ -2632,6 +2885,12 @@ function hideContextMenu() {
 }
 
 document.addEventListener("click", hideContextMenu);
+
+document.addEventListener("click", () => {
+    document
+        .querySelectorAll(".vehicle-status-palette.open")
+        .forEach(palette => palette.classList.remove("open"));
+});
 
 async function savePlan() {
     if (!enforceWritePermission()) return;
