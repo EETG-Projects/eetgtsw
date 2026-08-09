@@ -792,6 +792,147 @@ select{
     color:#9a3412!important;
 }
 
+
+/* =========================================================
+   WHITE / DARK MODE
+========================================================= */
+.theme-toggle{
+    min-width:94px;
+}
+
+body.dark{
+    --bg:#111417;
+    --panel:#1b2025;
+    --panel2:#20262c;
+    --border:#343a40;
+    --text:#f5f6f7;
+    --muted:#aeb6bd;
+    --track:#8d959c;
+    background:#111417!important;
+    color:#f5f6f7!important;
+}
+
+body.dark header{
+    background:#15191d!important;
+    color:#f5f6f7!important;
+    border-bottom-color:#343a40!important;
+    box-shadow:0 2px 12px rgba(0,0,0,.28)!important;
+}
+
+body.dark .logo,
+body.dark .track-title{
+    color:#f5f6f7!important;
+}
+
+body.dark .sidebar{
+    background:#15191d!important;
+    border-right-color:#343a40!important;
+    box-shadow:4px 0 18px rgba(0,0,0,.22)!important;
+}
+
+body.dark .workspace,
+body.dark .plan,
+body.dark .plan-area,
+body.dark .track-container{
+    background:#111417!important;
+}
+
+body.dark .track{
+    background:#1b2025!important;
+    border-color:#343a40!important;
+    box-shadow:0 6px 20px rgba(0,0,0,.25)!important;
+}
+
+body.dark .status-legend{
+    background:#1b2025!important;
+    border-color:#343a40!important;
+    color:#f5f6f7!important;
+    box-shadow:0 5px 18px rgba(0,0,0,.22)!important;
+}
+
+body.dark .modal-content,
+body.dark .modal-box{
+    background:#1b2025!important;
+    color:#f5f6f7!important;
+    border-color:#343a40!important;
+}
+
+body.dark .context-menu{
+    background:#1b2025!important;
+    color:#f5f6f7!important;
+    border-color:#343a40!important;
+}
+
+body.dark .context-menu button{
+    color:#f5f6f7!important;
+}
+
+body.dark .context-menu button:hover,
+body.dark .context-menu div:hover{
+    background:#2a3036!important;
+}
+
+body.dark input,
+body.dark select{
+    background:#15191d!important;
+    color:#f5f6f7!important;
+    border-color:#434a51!important;
+}
+
+body.dark .vehicle-item{
+    background:#20262c!important;
+    border-color:#343a40!important;
+}
+
+body.dark .readonly-note{
+    color:#d5dade!important;
+}
+
+body.dark .role-badge{
+    background:#343a40!important;
+}
+
+/* Statusfarben bleiben in beiden Modi eindeutig */
+body.dark .vehicle-status.status-einsatzbereit{
+    background:#123a20!important;
+    color:#d7ffe2!important;
+}
+body.dark .vehicle-status.status-unterwegs{
+    background:#3a3210!important;
+    color:#fff4ad!important;
+}
+body.dark .vehicle-status.status-abgestellt{
+    background:#451515!important;
+    color:#ffd2d2!important;
+}
+body.dark .vehicle-status.status-vermietet{
+    background:#10264a!important;
+    color:#d7e8ff!important;
+}
+body.dark .vehicle-status.status-werkstatt{
+    background:#3b2110!important;
+    color:#ffe1c7!important;
+}
+
+.track-admin-actions{
+    display:flex;
+    flex-direction:column;
+    gap:5px;
+    margin-top:7px;
+}
+
+.track-admin-actions .track-edit-btn,
+.track-admin-actions .track-delete-btn{
+    margin-top:0;
+    padding:4px 6px;
+    font-size:10px;
+}
+
+.track-delete-btn{
+    background:#b5121b!important;
+    color:#fff!important;
+}
+
 </style>
 </head>
 
@@ -805,8 +946,9 @@ select{
     </div>
 
     <div class="user-box">
-        <span id="userEmail">–</span>
+        <span id="userName">–</span>
         <span class="role-badge" id="userRole">–</span>
+        <button class="secondary theme-toggle" id="themeToggle" type="button" onclick="toggleTheme()" aria-label="White/Darkmode wechseln">🌙 Dark</button>
         <button class="secondary" onclick="logout()">Abmelden</button>
     </div>
 
@@ -1101,8 +1243,8 @@ select{
         ✏ Fahrzeug bearbeiten
     </button>
 
-    <button onclick="removeSelected()">
-        🗑 Fahrzeug entfernen
+    <button class="admin-only" onclick="removeSelected()">
+        🗑 Fahrzeug löschen
     </button>
 
     <button onclick="clearSelection()">
@@ -1136,7 +1278,7 @@ function isAdmin() {
 
 function enforceAdminPermission() {
     if (isAdmin()) return true;
-    alert("Nur Administratoren dürfen Gleise anlegen oder ändern.");
+    alert("Nur Administratoren dürfen Gleise oder Fahrzeuge administrativ ändern/löschen.");
     return false;
 }
 
@@ -1155,11 +1297,10 @@ async function requireLogin() {
     }
 
     currentUser = session.user;
-    document.getElementById("userEmail").textContent = currentUser.email || "Angemeldet";
 
     const { data: profile, error: profileError } = await window.eetgSupabase
         .from("profiles")
-        .select("role")
+        .select("role, display_name")
         .eq("id", currentUser.id)
         .single();
 
@@ -1170,10 +1311,41 @@ async function requireLogin() {
         currentRole = profile?.role || "viewer";
     }
 
+    const fallbackUsername = (currentUser.email || "Angemeldet").split("@")[0];
+    document.getElementById("userName").textContent =
+        profile?.display_name || fallbackUsername;
+
     document.getElementById("userRole").textContent = currentRole;
     document.body.classList.toggle("readonly", !canWrite());
     document.body.classList.toggle("is-admin", currentRole === "admin");
     return true;
+}
+
+function applyTheme(theme) {
+    const dark = theme === "dark";
+    document.body.classList.toggle("dark", dark);
+
+    const button = document.getElementById("themeToggle");
+    if (button) {
+        button.textContent = dark ? "☀️ White" : "🌙 Dark";
+    }
+}
+
+function toggleTheme() {
+    const nextTheme = document.body.classList.contains("dark") ? "light" : "dark";
+    localStorage.setItem("eetg_abstellplan_theme", nextTheme);
+    applyTheme(nextTheme);
+}
+
+function loadTheme() {
+    const saved = localStorage.getItem("eetg_abstellplan_theme");
+    const preferred = saved ||
+        (window.matchMedia &&
+         window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? "dark"
+            : "light");
+
+    applyTheme(preferred);
 }
 
 async function logout() {
@@ -1249,6 +1421,9 @@ function renderPlan() {
         titleBox.appendChild(lengthLabel);
 
         if (isAdmin()) {
+            const actions = document.createElement("div");
+            actions.className = "track-admin-actions";
+
             const editButton = document.createElement("button");
             editButton.className = "track-edit-btn";
             editButton.textContent = "✏ Ändern";
@@ -1256,7 +1431,18 @@ function renderPlan() {
                 event.stopPropagation();
                 editTrack(track.id);
             });
-            titleBox.appendChild(editButton);
+
+            const deleteButton = document.createElement("button");
+            deleteButton.className = "track-delete-btn";
+            deleteButton.textContent = "🗑 Löschen";
+            deleteButton.addEventListener("click", event => {
+                event.stopPropagation();
+                deleteTrack(track.id);
+            });
+
+            actions.appendChild(editButton);
+            actions.appendChild(deleteButton);
+            titleBox.appendChild(actions);
         }
 
         trackElement.appendChild(titleBox);
@@ -1491,7 +1677,7 @@ async function editSelected() {
 }
 
 async function removeSelected() {
-    if (!enforceWritePermission()) return;
+    if (!enforceAdminPermission()) return;
 
     const vehicle = vehicles.find(v => v.id === selectedVehicle);
     if (!vehicle) return;
@@ -1651,6 +1837,43 @@ async function editTrack(trackId) {
     await loadPlan();
 }
 
+
+async function deleteTrack(trackId) {
+    if (!enforceAdminPermission()) return;
+
+    const track = tracks.find(t => t.id === trackId);
+    if (!track) return;
+
+    const vehiclesOnTrack = vehicles.filter(v => v.track === trackId);
+
+    if (vehiclesOnTrack.length > 0) {
+        alert(
+            `Gleis "${track.number}" kann nicht gelöscht werden, solange noch ` +
+            `${vehiclesOnTrack.length} Fahrzeug(e) darauf stehen. ` +
+            `Verschiebe oder lösche diese Fahrzeuge zuerst.`
+        );
+        return;
+    }
+
+    if (!confirm(
+        `Gleis "${track.number}" (${track.length} m) wirklich dauerhaft löschen?`
+    )) return;
+
+    const { error } = await window.eetgSupabase
+        .from("tracks")
+        .delete()
+        .eq("id", trackId);
+
+    if (error) {
+        console.error(error);
+        alert("Gleis konnte nicht gelöscht werden.");
+        return;
+    }
+
+    await loadPlan();
+}
+
+
 function renderLibrary() {
     const library = document.getElementById("vehicleLibrary");
     library.innerHTML = "";
@@ -1735,6 +1958,8 @@ function subscribeRealtime() {
 }
 
 (async function init() {
+    loadTheme();
+
     const ok = await requireLogin();
     if (!ok) return;
 
