@@ -67,7 +67,7 @@ body.readonly .write-only{display:none!important}
 body.is-admin .admin-only{display:flex!important}
 
 .track {
-    min-height: 178px;
+    min-height: 205px;
 }
 
 .track-title-box{
@@ -98,7 +98,7 @@ body.is-admin .admin-only{display:flex!important}
 
 .vehicle-wrap{
     position:absolute;
-    top:43px;
+    top:48px;
     z-index:10;
 }
 
@@ -321,7 +321,7 @@ button.danger {
 .track {
     position: absolute;
 
-    height: 178px;
+    height: 205px;
 
     margin-bottom: 25px;
 
@@ -364,7 +364,7 @@ button.danger {
     left: 80px;
     right: 30px;
 
-    top: 63px;
+    top: 68px;
 
     height: 6px;
 
@@ -446,7 +446,7 @@ button.danger {
 .vehicle {
     position: absolute;
 
-    top: 43px;
+    top: 48px;
 
     height: 40px;
 
@@ -922,21 +922,23 @@ body.dark .vehicle-status.status-werkstatt{
 
 .track-admin-actions{
     position:absolute;
-    left:10px;
-    bottom:10px;
+    left:80px;
+    right:20px;
+    bottom:12px;
     z-index:30;
     display:flex;
     flex-direction:row;
-    gap:5px;
+    gap:7px;
     align-items:center;
-    flex-wrap:nowrap;
+    justify-content:flex-start;
+    flex-wrap:wrap;
 }
 
 .track-admin-actions button{
     margin:0!important;
-    padding:5px 7px!important;
-    min-height:26px;
-    border-radius:6px;
+    padding:7px 10px!important;
+    min-height:30px;
+    border-radius:7px;
     font-size:10px!important;
     line-height:1;
     white-space:nowrap;
@@ -971,8 +973,9 @@ body.dark .scale-mark.scale-major {
 .track-drag-handle{
     display:none;
     margin:0!important;
-    padding:5px 7px!important;
-    border-radius:6px;
+    padding:7px 10px!important;
+    min-height:30px;
+    border-radius:7px;
     background:#343a40!important;
     color:#fff!important;
     font-size:10px;
@@ -1005,6 +1008,71 @@ body.is-admin .track-drag-handle{
     pointer-events:none;
 }
 
+
+/* =========================================================
+   ADMIN-BEARBEITUNGSMODUS
+========================================================= */
+.admin-edit-toggle{
+    display:none;
+    align-items:center;
+    gap:8px;
+    padding:7px 10px;
+    border:1px solid var(--border);
+    border-radius:9px;
+    background:var(--panel2);
+    color:var(--text);
+    font-size:12px;
+    font-weight:800;
+    cursor:pointer;
+    user-select:none;
+}
+body.is-admin .admin-edit-toggle{display:flex}
+
+.admin-edit-toggle input{
+    appearance:none;
+    width:34px;
+    height:19px;
+    border-radius:999px;
+    background:#6b7280;
+    position:relative;
+    cursor:pointer;
+    transition:.18s ease;
+}
+.admin-edit-toggle input::after{
+    content:"";
+    position:absolute;
+    width:15px;
+    height:15px;
+    left:2px;
+    top:2px;
+    border-radius:50%;
+    background:#fff;
+    transition:.18s ease;
+}
+.admin-edit-toggle input:checked{
+    background:#b5121b;
+}
+.admin-edit-toggle input:checked::after{
+    transform:translateX(15px);
+}
+
+.admin-edit-state{
+    font-size:11px;
+    color:var(--muted);
+    font-weight:700;
+}
+body.admin-edit-enabled .admin-edit-state{
+    color:#22c55e;
+}
+
+/* Änderungsfunktionen sind für Admins erst nach Aktivierung sichtbar. */
+body.is-admin:not(.admin-edit-enabled) .track-admin-actions,
+body.is-admin:not(.admin-edit-enabled) #addTrackButton,
+body.is-admin:not(.admin-edit-enabled) #addVehicleButton,
+body.is-admin:not(.admin-edit-enabled) .admin-only-edit{
+    display:none!important;
+}
+
 </style>
 </head>
 
@@ -1020,6 +1088,11 @@ body.is-admin .track-drag-handle{
     <div class="user-box">
         <span id="userName">–</span>
         <span class="role-badge" id="userRole">–</span>
+        <label class="admin-edit-toggle" title="Änderungen am Abstellplan freigeben">
+            <input id="adminEditToggle" type="checkbox" onchange="setAdminEditMode(this.checked)">
+            <span>Bearbeiten</span>
+            <span class="admin-edit-state" id="adminEditState">Gesperrt</span>
+        </label>
         <button class="secondary theme-toggle" id="themeToggle" type="button" onclick="toggleTheme()" aria-label="White/Darkmode wechseln">🌙 Dark</button>
         <button class="secondary" onclick="logout()">Abmelden</button>
     </div>
@@ -1348,6 +1421,36 @@ function isAdmin() {
     return currentRole === "admin";
 }
 
+
+let adminEditMode = false;
+
+function setAdminEditMode(enabled) {
+    // Nur echte Admins dürfen den Bearbeitungsmodus aktivieren.
+    adminEditMode = Boolean(enabled && isAdmin());
+
+    document.body.classList.toggle("admin-edit-enabled", adminEditMode);
+
+    const toggle = document.getElementById("adminEditToggle");
+    const state = document.getElementById("adminEditState");
+
+    if (toggle) toggle.checked = adminEditMode;
+    if (state) state.textContent = adminEditMode ? "Aktiv" : "Gesperrt";
+
+    // Plan neu zeichnen, damit Admin-Schaltflächen sauber ein-/ausgeblendet werden.
+    if (Array.isArray(tracks)) renderPlan();
+}
+
+function enforceEditMode() {
+    if (!enforceAdminPermission()) return false;
+
+    if (!adminEditMode) {
+        alert("Bitte zuerst oben den Schalter „Bearbeiten“ aktivieren.");
+        return false;
+    }
+
+    return true;
+}
+
 function enforceAdminPermission() {
     if (isAdmin()) return true;
     alert("Nur Administratoren dürfen Gleise oder Fahrzeuge administrativ ändern/löschen.");
@@ -1481,8 +1584,10 @@ function renderPlan() {
         const width = track.length * PIXELS_PER_METER;
         // Die Umrandung endet passend zur tatsächlichen Gleislänge.
         // 80 px links für Gleisname + 30 px rechter Innenabstand.
-        trackElement.style.width = (width + 110) + "px";
-        trackElement.style.minWidth = (width + 110) + "px";
+        // Ein zusätzliches Raster-Kästchen (25 px) rechts hinter der Gleislänge.
+        const extraGridBox = 25;
+        trackElement.style.width = (width + 110 + extraGridBox) + "px";
+        trackElement.style.minWidth = (width + 110 + extraGridBox) + "px";
 
         // Freie Position des Gleises auf der Planfläche.
         trackElement.style.left = track.x + "px";
@@ -1501,7 +1606,7 @@ function renderPlan() {
         lengthLabel.textContent = track.length + " m";
         titleBox.appendChild(lengthLabel);
 
-        if (isAdmin()) {
+        if (isAdmin() && adminEditMode) {
             const actions = document.createElement("div");
             actions.className = "track-admin-actions";
 
@@ -1602,9 +1707,9 @@ function updatePlanCanvasSize() {
     let maxBottom = 700;
 
     tracks.forEach(track => {
-        const width = track.length * PIXELS_PER_METER + 110;
+        const width = track.length * PIXELS_PER_METER + 110 + 25;
         maxRight = Math.max(maxRight, track.x + width + 80);
-        maxBottom = Math.max(maxBottom, track.y + 210);
+        maxBottom = Math.max(maxBottom, track.y + 235);
     });
 
     // Absolute Elemente benötigen eine explizite Arbeitsfläche.
@@ -1615,7 +1720,7 @@ function updatePlanCanvasSize() {
 let activeTrackDrag = null;
 
 function startTrackDrag(event, track, element) {
-    if (!enforceAdminPermission()) return;
+    if (!enforceEditMode()) return;
 
     const plan = document.getElementById("plan");
     const planRect = plan.getBoundingClientRect();
@@ -1906,7 +2011,7 @@ function openVehicleModal() {
 }
 
 async function addVehicle() {
-    if (!enforceAdminPermission()) return;
+    if (!enforceEditMode()) return;
 
     const number = document.getElementById("vehicleNumber").value.trim();
     const model = document.getElementById("vehicleModel").value.trim();
@@ -1958,7 +2063,7 @@ function openTrackModal() {
 }
 
 async function addTrack() {
-    if (!enforceAdminPermission()) return;
+    if (!enforceEditMode()) return;
 
     const number = document.getElementById("trackNumber").value.trim();
     const length = Number(document.getElementById("trackLength").value);
@@ -1998,7 +2103,7 @@ async function addTrack() {
 }
 
 async function renameTrack(trackId) {
-    if (!enforceAdminPermission()) return;
+    if (!enforceEditMode()) return;
 
     const track = tracks.find(t => t.id === trackId);
     if (!track) return;
@@ -2030,7 +2135,7 @@ async function renameTrack(trackId) {
 }
 
 async function editTrackLength(trackId) {
-    if (!enforceAdminPermission()) return;
+    if (!enforceEditMode()) return;
 
     const track = tracks.find(t => t.id === trackId);
     if (!track) return;
@@ -2082,7 +2187,7 @@ Gleislänge trotzdem auf ${length} m ändern?`
 
 
 async function deleteTrack(trackId) {
-    if (!enforceAdminPermission()) return;
+    if (!enforceEditMode()) return;
 
     const track = tracks.find(t => t.id === trackId);
     if (!track) return;
@@ -2211,6 +2316,16 @@ function subscribeRealtime() {
     await loadPlan();
     subscribeRealtime();
 })();
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    adminEditMode = false;
+    document.body.classList.remove("admin-edit-enabled");
+    const toggle = document.getElementById("adminEditToggle");
+    const state = document.getElementById("adminEditState");
+    if (toggle) toggle.checked = false;
+    if (state) state.textContent = "Gesperrt";
+});
 </script>
 </body>
 </html>
