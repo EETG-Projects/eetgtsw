@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Benutzerverwaltung | EETG</title>
+<link rel="stylesheet" href="./assets/css/style.css">
+<style>
+body{background:#f4f6f7}
+.admin-wrap{width:min(1100px,calc(100% - 32px));margin:36px auto}
+.admin-head{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:24px}
+.admin-head h1{margin:0}
+.admin-card{background:#fff;border:1px solid #dfe3e6;border-radius:18px;padding:24px;box-shadow:0 12px 35px rgba(24,27,31,.08);margin-bottom:22px}
+.admin-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.admin-grid label{display:block;font-weight:800;font-size:.85rem;margin-bottom:5px}
+.admin-grid input,.admin-grid select{width:100%;padding:11px 12px;border:1px solid #dfe3e6;border-radius:10px;background:white}
+.admin-table{width:100%;border-collapse:collapse}
+.admin-table th,.admin-table td{padding:12px 10px;border-bottom:1px solid #e6e9ec;text-align:left;vertical-align:middle}
+.admin-table th{font-size:.78rem;text-transform:uppercase;color:#69727b;letter-spacing:.05em}
+.role{display:inline-flex;padding:4px 8px;border-radius:999px;background:#eef1f3;font-weight:800;font-size:.78rem}
+.actions{display:flex;gap:6px;flex-wrap:wrap}
+.actions button{padding:7px 9px}
+.danger{background:#b91c1c!important}
+.secondary-btn{background:#3a3f47!important}
+.status{min-height:24px;margin-top:12px;font-weight:700}
+.status.error{color:#b91c1c}.status.ok{color:#138a57}
+@media(max-width:800px){.admin-grid{grid-template-columns:1fr 1fr}.admin-table{font-size:.85rem}}
+@media(max-width:560px){.admin-grid{grid-template-columns:1fr}.table-scroll{overflow:auto}}
+</style>
+</head>
+<body>
+<header class="header">
+  <div class="container nav">
+    <a class="brand" href="index.html">
+      <img src="./assets/img/eetg-logo.png" alt="EETG Logo">
+      <span class="brand-text">EETG<small>ERFURTER EISENBAHN TRANSPORT GESELLSCHAFT</small></span>
+    </a>
+    <nav class="nav-links">
+      <a href="index.html">Startseite</a>
+      <a href="fuhrpark.html">Fahrzeugfuhrpark</a>
+      <a href="abstellplan.html">Abstellplan</a>
+      <a class="active" href="admin.html">Benutzer</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="cta" id="logoutButton">Abmelden</button>
+    </div>
+  </div>
+</header>
+
+<main class="admin-wrap">
+  <div class="admin-head">
+    <div>
+      <span class="eyebrow">Administration</span>
+      <h1>Benutzerverwaltung</h1>
+    </div>
+    <a class="cta secondary" href="abstellplan.html">← Abstellplan</a>
+  </div>
+
+  <section class="admin-card">
+    <h2>Neuen Benutzer anlegen</h2>
+    <div class="admin-grid">
+      <div><label for="newUsername">Benutzername</label><input id="newUsername" placeholder="z. B. Disponent1"></div>
+      <div><label for="newPassword">Passwort</label><input id="newPassword" type="password" minlength="8" placeholder="mindestens 8 Zeichen"></div>
+      <div><label for="newRole">Rolle</label><select id="newRole">
+        <option value="viewer">viewer – nur ansehen</option>
+        <option value="dispatcher">dispatcher – bearbeiten</option>
+        <option value="admin">admin – Benutzer verwalten</option>
+      </select></div>
+      <div style="display:flex;align-items:end"><button class="cta" id="createButton" style="width:100%">Benutzer erstellen</button></div>
+    </div>
+    <div id="createStatus" class="status"></div>
+  </section>
+
+  <section class="admin-card">
+    <div class="admin-head" style="margin-bottom:12px">
+      <h2 style="margin:0">Vorhandene Benutzer</h2>
+      <button class="cta secondary" id="reloadButton">↻ Aktualisieren</button>
+    </div>
+    <div class="table-scroll">
+      <table class="admin-table">
+        <thead><tr><th>Benutzername</th><th>Rolle</th><th>Erstellt</th><th>Aktionen</th></tr></thead>
+        <tbody id="userRows"><tr><td colspan="4">Lade Benutzer …</td></tr></tbody>
+      </table>
+    </div>
+    <div id="listStatus" class="status"></div>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./assets/js/supabase.js"></script>
+<script>
+const rows = document.getElementById("userRows");
+const listStatus = document.getElementById("listStatus");
+const createStatus = document.getElementById("createStatus");
+
+function setStatus(el,text,ok=true){el.textContent=text;el.className="status "+(ok?"ok":"error");}
+
+async function requireAdmin(){
+  const {data:{session}}=await window.eetgSupabase.auth.getSession();
+  if(!session){location.replace("login.html?next=admin.html");return false;}
+  const {data:profile,error}=await window.eetgSupabase.from("profiles").select("role").eq("id",session.user.id).single();
+  if(error||profile?.role!=="admin"){alert("Diese Seite ist nur für Administratoren verfügbar.");location.replace("abstellplan.html");return false;}
+  return true;
+}
+
+async function callAdminFunction(action,payload={}){
+  const {data,error}=await window.eetgSupabase.functions.invoke("admin-users",{body:{action,...payload}});
+  if(error) throw error;
+  if(!data?.ok) throw new Error(data?.error||"Unbekannter Fehler");
+  return data;
+}
+
+async function loadUsers(){
+  rows.innerHTML='<tr><td colspan="4">Lade Benutzer …</td></tr>'; listStatus.textContent="";
+  try{
+    const result=await callAdminFunction("list"); rows.innerHTML="";
+    for(const user of result.users){
+      const tr=document.createElement("tr");
+      tr.innerHTML=`<td><strong>${escapeHtml(user.username)}</strong></td>
+      <td><span class="role">${escapeHtml(user.role)}</span></td>
+      <td>${new Date(user.created_at).toLocaleString("de-DE")}</td>
+      <td><div class="actions">
+      <button class="secondary-btn" data-action="role" data-id="${user.id}" data-role="${user.role}">Rolle ändern</button>
+      <button class="secondary-btn" data-action="password" data-id="${user.id}">Passwort</button>
+      <button class="danger" data-action="delete" data-id="${user.id}" data-name="${escapeHtml(user.username)}">Löschen</button>
+      </div></td>`;
+      rows.appendChild(tr);
+    }
+    if(!result.users.length) rows.innerHTML='<tr><td colspan="4">Keine Benutzer vorhanden.</td></tr>';
+  }catch(e){rows.innerHTML='<tr><td colspan="4">Benutzer konnten nicht geladen werden.</td></tr>';setStatus(listStatus,e.message,false);}
+}
+
+document.getElementById("createButton").addEventListener("click",async()=>{
+  const username=document.getElementById("newUsername").value.trim();
+  const password=document.getElementById("newPassword").value;
+  const role=document.getElementById("newRole").value;
+  if(!username||password.length<8){setStatus(createStatus,"Benutzername eingeben und Passwort mit mindestens 8 Zeichen verwenden.",false);return;}
+  try{await callAdminFunction("create",{username,password,role});setStatus(createStatus,"Benutzer wurde erstellt.");document.getElementById("newUsername").value="";document.getElementById("newPassword").value="";await loadUsers();}
+  catch(e){setStatus(createStatus,e.message,false);}
+});
+
+rows.addEventListener("click",async event=>{
+  const button=event.target.closest("button[data-action]"); if(!button) return;
+  const id=button.dataset.id, action=button.dataset.action;
+  try{
+    if(action==="role"){const next=prompt("Neue Rolle: viewer, dispatcher oder admin",button.dataset.role);if(!next)return;await callAdminFunction("setRole",{userId:id,role:next.trim().toLowerCase()});}
+    if(action==="password"){const password=prompt("Neues Passwort (mindestens 8 Zeichen):");if(!password)return;await callAdminFunction("setPassword",{userId:id,password});}
+    if(action==="delete"){if(!confirm(`Benutzer "${button.dataset.name}" wirklich löschen?`))return;await callAdminFunction("delete",{userId:id});}
+    await loadUsers();
+  }catch(e){setStatus(listStatus,e.message,false);}
+});
+
+document.getElementById("reloadButton").addEventListener("click",loadUsers);
+document.getElementById("logoutButton").addEventListener("click",async()=>{await window.eetgSupabase.auth.signOut();location.replace("login.html");});
+
+function escapeHtml(text){return String(text??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");}
+(async()=>{if(await requireAdmin()) await loadUsers();})();
+</script>
+</body>
+</html>
