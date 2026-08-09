@@ -1,0 +1,2221 @@
+```html
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Digitaler Abstellplan</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+:root {
+    --bg: #15171a;
+    --panel: #202329;
+    --panel2: #282c32;
+    --border: #3b4048;
+    --text: #f1f3f5;
+    --muted: #9ca3af;
+    --accent: #3b82f6;
+    --danger: #dc2626;
+    --track: #777;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+}
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+header {
+    height: 64px;
+    background: #101214;
+    border-bottom: 1px solid var(--border);
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 0 20px;
+}
+
+.logo {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.header-info {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+
+/* =========================================================
+   APP
+========================================================= */
+
+.app {
+    display: flex;
+    height: calc(100vh - 64px);
+}
+
+
+/* =========================================================
+   SIDEBAR
+========================================================= */
+
+.sidebar {
+    width: 300px;
+    min-width: 300px;
+
+    background: var(--panel);
+
+    border-right: 1px solid var(--border);
+
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-section {
+    padding: 15px;
+    border-bottom: 1px solid var(--border);
+}
+
+.sidebar-title {
+    font-size: 14px;
+    font-weight: bold;
+
+    margin-bottom: 10px;
+}
+
+
+/* Buttons */
+
+button {
+    border: none;
+    border-radius: 5px;
+
+    padding: 9px 12px;
+
+    background: var(--accent);
+    color: white;
+
+    cursor: pointer;
+}
+
+button:hover {
+    filter: brightness(1.1);
+}
+
+button.secondary {
+    background: #3a3f47;
+}
+
+button.danger {
+    background: var(--danger);
+}
+
+.button-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+
+/* =========================================================
+   VEHICLE LIST
+========================================================= */
+
+.vehicle-list {
+    overflow-y: auto;
+    flex: 1;
+    padding: 10px;
+}
+
+.vehicle-item {
+    background: var(--panel2);
+
+    border: 1px solid var(--border);
+
+    border-radius: 6px;
+
+    padding: 9px;
+
+    margin-bottom: 7px;
+
+    cursor: grab;
+}
+
+.vehicle-item:hover {
+    border-color: var(--accent);
+}
+
+.vehicle-name {
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.vehicle-info {
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 3px;
+}
+
+
+/* =========================================================
+   WORKSPACE
+========================================================= */
+
+.workspace {
+    flex: 1;
+
+    display: flex;
+    flex-direction: column;
+
+    min-width: 0;
+}
+
+
+/* Toolbar */
+
+.workspace-toolbar {
+    height: 48px;
+
+    background: var(--panel);
+
+    border-bottom: 1px solid var(--border);
+
+    display: flex;
+    align-items: center;
+
+    gap: 8px;
+
+    padding: 0 12px;
+}
+
+.scale-info {
+    margin-left: auto;
+
+    color: var(--muted);
+
+    font-size: 12px;
+}
+
+
+/* =========================================================
+   PLAN
+========================================================= */
+
+.plan-container {
+    flex: 1;
+
+    overflow: auto;
+
+    background:
+        linear-gradient(
+            rgba(255,255,255,0.025) 1px,
+            transparent 1px
+        ),
+        linear-gradient(
+            90deg,
+            rgba(255,255,255,0.025) 1px,
+            transparent 1px
+        );
+
+    background-size: 25px 25px;
+
+    padding: 25px;
+}
+
+
+/* =========================================================
+   TRACK
+========================================================= */
+
+.track {
+    position: relative;
+
+    height: 125px;
+
+    margin-bottom: 25px;
+
+    background: rgba(255,255,255,0.025);
+
+    border: 1px solid var(--border);
+
+    border-radius: 7px;
+
+    min-width: 1000px;
+}
+
+
+/* Track number */
+
+.track-number {
+    position: absolute;
+
+    left: 10px;
+    top: 50%;
+
+    transform: translateY(-50%);
+
+    width: 55px;
+
+    font-size: 16px;
+    font-weight: bold;
+
+    text-align: center;
+
+    z-index: 20;
+}
+
+
+/* Track itself */
+
+.track-line {
+    position: absolute;
+
+    left: 80px;
+    right: 30px;
+
+    top: 63px;
+
+    height: 6px;
+
+    background: var(--track);
+
+    border-radius: 4px;
+
+    z-index: 1;
+}
+
+
+/* Rails */
+
+.track-line::before,
+.track-line::after {
+    content: "";
+
+    position: absolute;
+
+    left: 0;
+    right: 0;
+
+    height: 2px;
+
+    background: #aaa;
+}
+
+.track-line::before {
+    top: -7px;
+}
+
+.track-line::after {
+    bottom: -7px;
+}
+
+
+/* =========================================================
+   SCALE
+========================================================= */
+
+.scale {
+    position: absolute;
+
+    left: 80px;
+    right: 30px;
+
+    top: 15px;
+
+    height: 20px;
+
+    pointer-events: none;
+}
+
+.scale-mark {
+    position: absolute;
+
+    height: 8px;
+
+    border-left: 1px solid #777;
+
+    color: #777;
+
+    font-size: 9px;
+
+    padding-left: 3px;
+}
+
+
+/* =========================================================
+   VEHICLES ON TRACK
+========================================================= */
+
+.vehicle {
+    position: absolute;
+
+    top: 43px;
+
+    height: 40px;
+
+    border-radius: 5px;
+
+    border: 2px solid;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    font-size: 11px;
+
+    font-weight: bold;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+
+    cursor: grab;
+
+    user-select: none;
+
+    z-index: 10;
+
+    transition:
+        box-shadow .1s,
+        transform .1s;
+}
+
+.vehicle:hover {
+    transform: translateY(-2px);
+}
+
+.vehicle.selected {
+    box-shadow:
+        0 0 0 2px white,
+        0 0 12px rgba(59,130,246,.8);
+}
+
+.vehicle.lok {
+    background: #a61b1b;
+    border-color: #f87171;
+}
+
+.vehicle.wagen {
+    background: #3f4650;
+    border-color: #aeb4bc;
+}
+
+
+/* =========================================================
+   MODAL
+========================================================= */
+
+.modal {
+    position: fixed;
+
+    inset: 0;
+
+    background: rgba(0,0,0,.7);
+
+    display: none;
+
+    align-items: center;
+    justify-content: center;
+
+    z-index: 1000;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-box {
+    width: 420px;
+
+    background: var(--panel);
+
+    border: 1px solid var(--border);
+
+    border-radius: 9px;
+
+    padding: 20px;
+}
+
+.modal-box h2 {
+    margin-top: 0;
+}
+
+.form-row {
+    margin-bottom: 13px;
+}
+
+.form-row label {
+    display: block;
+
+    font-size: 12px;
+
+    color: var(--muted);
+
+    margin-bottom: 5px;
+}
+
+.form-row input,
+.form-row select {
+    width: 100%;
+
+    padding: 10px;
+
+    background: #15171a;
+
+    color: white;
+
+    border: 1px solid var(--border);
+
+    border-radius: 5px;
+}
+
+.modal-buttons {
+    display: flex;
+
+    justify-content: flex-end;
+
+    gap: 8px;
+
+    margin-top: 18px;
+}
+
+
+/* =========================================================
+   CONTEXT MENU
+========================================================= */
+
+.context-menu {
+    position: fixed;
+
+    display: none;
+
+    width: 180px;
+
+    background: #202329;
+
+    border: 1px solid var(--border);
+
+    border-radius: 6px;
+
+    padding: 5px;
+
+    z-index: 2000;
+
+    box-shadow: 0 10px 30px rgba(0,0,0,.4);
+}
+
+.context-menu button {
+    width: 100%;
+
+    text-align: left;
+
+    background: transparent;
+
+    border-radius: 4px;
+}
+
+.context-menu button:hover {
+    background: #30343b;
+}
+
+
+/* =========================================================
+   EMPTY
+========================================================= */
+
+.empty {
+    color: var(--muted);
+
+    text-align: center;
+
+    padding: 20px;
+
+    font-size: 13px;
+}
+</style>
+</head>
+
+
+<body>
+
+<header>
+
+    <div class="logo">
+        🚆 Digitaler Abstellplan
+    </div>
+
+    <div class="header-info">
+        Maßstab: 1 px = 0,5 m
+    </div>
+
+</header>
+
+
+<div class="app">
+
+
+<!-- =====================================================
+     SIDEBAR
+===================================================== -->
+
+<aside class="sidebar">
+
+    <div class="sidebar-section">
+
+        <div class="sidebar-title">
+            Fahrzeugbibliothek
+        </div>
+
+        <div class="button-row">
+
+            <button onclick="openVehicleModal()">
+                + Fahrzeug
+            </button>
+
+            <button
+                class="secondary"
+                onclick="openTrackModal()">
+
+                + Gleis
+
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <div class="vehicle-list" id="vehicleLibrary"></div>
+
+
+    <div class="sidebar-section">
+
+        <div class="sidebar-title">
+            Speicher
+        </div>
+
+        <div class="button-row">
+
+            <button
+                onclick="savePlan()">
+
+                💾 Speichern
+
+            </button>
+
+            <button
+                class="secondary"
+                onclick="loadPlan()">
+
+                ↻ Laden
+
+            </button>
+
+            <button
+                class="danger"
+                onclick="resetPlan()">
+
+                Zurücksetzen
+
+            </button>
+
+        </div>
+
+    </div>
+
+</aside>
+
+
+<!-- =====================================================
+     WORKSPACE
+===================================================== -->
+
+<main class="workspace">
+
+    <div class="workspace-toolbar">
+
+        <button onclick="createConsist()">
+            🔗 Zugverband bilden
+        </button>
+
+        <button
+            class="secondary"
+            onclick="clearSelection()">
+
+            Auswahl aufheben
+
+        </button>
+
+        <div class="scale-info">
+
+            1 px = 0,5 m
+
+        </div>
+
+    </div>
+
+
+    <div
+        class="plan-container"
+        id="plan">
+
+    </div>
+
+</main>
+
+</div>
+
+
+<!-- =====================================================
+     VEHICLE MODAL
+===================================================== -->
+
+<div
+    class="modal"
+    id="vehicleModal">
+
+    <div class="modal-box">
+
+        <h2>Fahrzeug hinzufügen</h2>
+
+
+        <div class="form-row">
+
+            <label>
+                Fahrzeugnummer
+            </label>
+
+            <input
+                id="vehicleNumber"
+                placeholder="z.B. 143 245-7">
+
+        </div>
+
+
+        <div class="form-row">
+
+            <label>
+                Baureihe / Modell
+            </label>
+
+            <input
+                id="vehicleModel"
+                placeholder="z.B. BR 143">
+
+        </div>
+
+
+        <div class="form-row">
+
+            <label>
+                Typ
+            </label>
+
+            <select id="vehicleType">
+
+                <option value="lok">
+                    Lokomotive
+                </option>
+
+                <option value="wagen">
+                    Wagen
+                </option>
+
+            </select>
+
+        </div>
+
+
+        <div class="form-row">
+
+            <label>
+                Länge in Metern
+            </label>
+
+            <input
+                id="vehicleLength"
+                type="number"
+                step="0.01"
+                value="16.64">
+
+        </div>
+
+
+        <div class="modal-buttons">
+
+            <button
+                class="secondary"
+                onclick="closeModals()">
+
+                Abbrechen
+
+            </button>
+
+            <button
+                onclick="addVehicle()">
+
+                Hinzufügen
+
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =====================================================
+     TRACK MODAL
+===================================================== -->
+
+<div
+    class="modal"
+    id="trackModal">
+
+    <div class="modal-box">
+
+        <h2>Gleis hinzufügen</h2>
+
+
+        <div class="form-row">
+
+            <label>
+                Gleisnummer
+            </label>
+
+            <input
+                id="trackNumber"
+                placeholder="z.B. 7">
+
+        </div>
+
+
+        <div class="form-row">
+
+            <label>
+                Gleislänge in Metern
+            </label>
+
+            <input
+                id="trackLength"
+                type="number"
+                value="250">
+
+        </div>
+
+
+        <div class="modal-buttons">
+
+            <button
+                class="secondary"
+                onclick="closeModals()">
+
+                Abbrechen
+
+            </button>
+
+            <button
+                onclick="addTrack()">
+
+                Hinzufügen
+
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =====================================================
+     CONTEXT MENU
+===================================================== -->
+
+<div
+    class="context-menu"
+    id="contextMenu">
+
+    <button onclick="editSelected()">
+        ✏ Fahrzeug bearbeiten
+    </button>
+
+    <button onclick="removeSelected()">
+        🗑 Fahrzeug entfernen
+    </button>
+
+    <button onclick="clearSelection()">
+        Auswahl aufheben
+    </button>
+
+</div>
+
+
+<script>
+
+/* =========================================================
+   KONFIGURATION
+========================================================= */
+
+/*
+    1 Pixel = 0,5 Meter
+
+    Dadurch ist ein Fahrzeug mit 16,64 m:
+
+    16,64 / 0,5 = 33,28 px
+*/
+
+const PIXELS_PER_METER = 2;
+
+
+/* =========================================================
+   DATEN
+========================================================= */
+
+let tracks = [
+
+    {
+        id: 1,
+        number: "1",
+        length: 250
+    },
+
+    {
+        id: 2,
+        number: "2",
+        length: 220
+    },
+
+    {
+        id: 3,
+        number: "3",
+        length: 180
+    },
+
+    {
+        id: 4,
+        number: "4",
+        length: 320
+    },
+
+    {
+        id: 5,
+        number: "5",
+        length: 250
+    }
+
+];
+
+
+let vehicles = [
+
+    {
+        id: "v1",
+
+        number: "143 245-7",
+
+        model: "BR 143",
+
+        type: "lok",
+
+        length: 16.64,
+
+        track: 1,
+
+        position: 35,
+
+        consist: "zug1"
+    },
+
+    {
+        id: "v2",
+
+        number: "Dosto 1",
+
+        model: "Doppelstockwagen",
+
+        type: "wagen",
+
+        length: 26.8,
+
+        track: 1,
+
+        position: 51.64,
+
+        consist: "zug1"
+    },
+
+    {
+        id: "v3",
+
+        number: "Dosto 2",
+
+        model: "Doppelstockwagen",
+
+        type: "wagen",
+
+        length: 26.8,
+
+        track: 1,
+
+        position: 78.44,
+
+        consist: "zug1"
+    },
+
+    {
+        id: "v4",
+
+        number: "Dosto 3",
+
+        model: "Doppelstockwagen",
+
+        type: "wagen",
+
+        length: 26.8,
+
+        track: 1,
+
+        position: 105.24,
+
+        consist: "zug1"
+    },
+
+    {
+        id: "v5",
+
+        number: "185 123-4",
+
+        model: "BR 185",
+
+        type: "lok",
+
+        length: 18.9,
+
+        track: 2,
+
+        position: 30,
+
+        consist: null
+    },
+
+    {
+        id: "v6",
+
+        number: "Bpmz 294",
+
+        model: "IC-Wagen",
+
+        type: "wagen",
+
+        length: 26.4,
+
+        track: 4,
+
+        position: 80,
+
+        consist: null
+    }
+
+];
+
+
+let selectedVehicle = null;
+
+
+/* =========================================================
+   PLAN ZEICHNEN
+========================================================= */
+
+function renderPlan() {
+
+    const plan =
+        document.getElementById("plan");
+
+    plan.innerHTML = "";
+
+
+    tracks.forEach(track => {
+
+        const trackElement =
+            document.createElement("div");
+
+        trackElement.className =
+            "track";
+
+        trackElement.dataset.track =
+            track.id;
+
+
+        /*
+         * Gleisbreite anhand der Gleislänge
+         */
+
+        const width =
+            track.length *
+            PIXELS_PER_METER;
+
+        trackElement.style.width =
+            Math.max(width + 110, 1000) + "px";
+
+
+        /* Nummer */
+
+        const number =
+            document.createElement("div");
+
+        number.className =
+            "track-number";
+
+        number.textContent =
+            track.number;
+
+        trackElement.appendChild(number);
+
+
+        /* Gleis */
+
+        const line =
+            document.createElement("div");
+
+        line.className =
+            "track-line";
+
+        trackElement.appendChild(line);
+
+
+        /* Skala */
+
+        const scale =
+            document.createElement("div");
+
+        scale.className =
+            "scale";
+
+        createScale(
+            scale,
+            track.length
+        );
+
+        trackElement.appendChild(scale);
+
+
+        /*
+         * Fahrzeuge
+         */
+
+        vehicles
+            .filter(v =>
+                v.track === track.id
+            )
+            .forEach(vehicle => {
+
+                const element =
+                    createVehicleElement(
+                        vehicle,
+                        track
+                    );
+
+                trackElement.appendChild(
+                    element
+                );
+
+            });
+
+
+        /*
+         * Drop
+         */
+
+        trackElement.addEventListener(
+            "dragover",
+            event => {
+
+                event.preventDefault();
+
+            }
+        );
+
+
+        trackElement.addEventListener(
+            "drop",
+            event => {
+
+                event.preventDefault();
+
+                const id =
+                    event.dataTransfer
+                        .getData("vehicle");
+
+                if (!id)
+                    return;
+
+
+                const vehicle =
+                    vehicles.find(
+                        v => v.id === id
+                    );
+
+                if (!vehicle)
+                    return;
+
+
+                /*
+                 * Position bestimmen
+                 */
+
+                const rect =
+                    trackElement
+                        .getBoundingClientRect();
+
+
+                let x =
+                    event.clientX -
+                    rect.left -
+                    80;
+
+
+                let position =
+                    x / PIXELS_PER_METER;
+
+
+                if (position < 0)
+                    position = 0;
+
+
+                /*
+                 * Zugverband verschieben
+                 */
+
+                if (vehicle.consist) {
+
+                    moveConsist(
+                        vehicle.consist,
+                        track.id,
+                        position
+                    );
+
+                } else {
+
+                    vehicle.track =
+                        track.id;
+
+                    vehicle.position =
+                        position;
+
+                }
+
+
+                renderPlan();
+
+            }
+        );
+
+
+        plan.appendChild(
+            trackElement
+        );
+
+    });
+
+}
+
+
+/* =========================================================
+   SKALA
+========================================================= */
+
+function createScale(
+    container,
+    length
+) {
+
+    for (
+        let meter = 0;
+        meter <= length;
+        meter += 10
+    ) {
+
+        const mark =
+            document.createElement("div");
+
+        mark.className =
+            "scale-mark";
+
+        mark.style.left =
+            (meter *
+                PIXELS_PER_METER) +
+            "px";
+
+        mark.textContent =
+            meter + " m";
+
+        container.appendChild(
+            mark
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   FAHRZEUG ELEMENT
+========================================================= */
+
+function createVehicleElement(
+    vehicle,
+    track
+) {
+
+    const element =
+        document.createElement("div");
+
+    element.className =
+        "vehicle " +
+        vehicle.type;
+
+
+    /*
+     * Fahrzeuglänge maßstäblich
+     */
+
+    element.style.width =
+        Math.max(
+            vehicle.length *
+            PIXELS_PER_METER,
+            30
+        ) + "px";
+
+
+    /*
+     * Position
+     */
+
+    element.style.left =
+        (
+            80 +
+            vehicle.position *
+            PIXELS_PER_METER
+        ) + "px";
+
+
+    element.textContent =
+        vehicle.number;
+
+
+    element.draggable = true;
+
+
+    /*
+     * Auswahl
+     */
+
+    if (
+        selectedVehicle ===
+        vehicle.id
+    ) {
+
+        element.classList.add(
+            "selected"
+        );
+
+    }
+
+
+    element.addEventListener(
+        "click",
+        event => {
+
+            event.stopPropagation();
+
+            selectedVehicle =
+                vehicle.id;
+
+            renderPlan();
+
+        }
+    );
+
+
+    /*
+     * Drag
+     */
+
+    element.addEventListener(
+        "dragstart",
+        event => {
+
+            event.dataTransfer.setData(
+                "vehicle",
+                vehicle.id
+            );
+
+        }
+    );
+
+
+    /*
+     * Rechtsklick
+     */
+
+    element.addEventListener(
+        "contextmenu",
+        event => {
+
+            event.preventDefault();
+
+            selectedVehicle =
+                vehicle.id;
+
+            showContextMenu(
+                event.clientX,
+                event.clientY
+            );
+
+        }
+    );
+
+
+    /*
+     * Doppelklick
+     */
+
+    element.addEventListener(
+        "dblclick",
+        event => {
+
+            event.stopPropagation();
+
+            selectedVehicle =
+                vehicle.id;
+
+            editSelected();
+
+        }
+    );
+
+
+    return element;
+
+}
+
+
+/* =========================================================
+   ZUGVERBAND VERSCHIEBEN
+========================================================= */
+
+function moveConsist(
+    consistId,
+    targetTrack,
+    newStart
+) {
+
+    const consistVehicles =
+        vehicles
+            .filter(
+                v =>
+                    v.consist ===
+                    consistId
+            )
+            .sort(
+                (a,b) =>
+                    a.position -
+                    b.position
+            );
+
+
+    if (
+        consistVehicles.length === 0
+    )
+        return;
+
+
+    const first =
+        consistVehicles[0];
+
+
+    const offset =
+        newStart -
+        first.position;
+
+
+    consistVehicles.forEach(
+        vehicle => {
+
+            vehicle.track =
+                targetTrack;
+
+            vehicle.position =
+                Math.max(
+                    0,
+                    vehicle.position +
+                    offset
+                );
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   ZUGVERBAND BILDEN
+========================================================= */
+
+function createConsist() {
+
+    const selected =
+        vehicles.find(
+            v =>
+                v.id ===
+                selectedVehicle
+        );
+
+
+    if (!selected) {
+
+        alert(
+            "Bitte zuerst ein Fahrzeug auswählen."
+        );
+
+        return;
+
+    }
+
+
+    const sameTrack =
+        vehicles.filter(
+            v =>
+                v.track ===
+                selected.track
+        );
+
+
+    /*
+     * Alle Fahrzeuge des Gleises,
+     * die sich berühren bzw. nahe
+     * beieinander befinden.
+     */
+
+    const nearby =
+        sameTrack.filter(
+            v =>
+                Math.abs(
+                    v.position -
+                    selected.position
+                ) < 40
+        );
+
+
+    if (
+        nearby.length < 2
+    ) {
+
+        alert(
+            "Mindestens zwei Fahrzeuge müssen sich auf demselben Gleis befinden."
+        );
+
+        return;
+
+    }
+
+
+    const consistId =
+        "zug_" +
+        Date.now();
+
+
+    nearby.forEach(
+        vehicle => {
+
+            vehicle.consist =
+                consistId;
+
+        }
+    );
+
+
+    renderPlan();
+
+}
+
+
+/* =========================================================
+   AUSWAHL
+========================================================= */
+
+function clearSelection() {
+
+    selectedVehicle =
+        null;
+
+    hideContextMenu();
+
+    renderPlan();
+
+}
+
+
+/* =========================================================
+   FAHRZEUG BEARBEITEN
+========================================================= */
+
+function editSelected() {
+
+    const vehicle =
+        vehicles.find(
+            v =>
+                v.id ===
+                selectedVehicle
+        );
+
+
+    if (!vehicle)
+        return;
+
+
+    const number =
+        prompt(
+            "Fahrzeugnummer:",
+            vehicle.number
+        );
+
+
+    if (
+        number !== null &&
+        number.trim()
+    ) {
+
+        vehicle.number =
+            number.trim();
+
+    }
+
+
+    const length =
+        prompt(
+            "Länge in Metern:",
+            vehicle.length
+        );
+
+
+    if (
+        length !== null &&
+        !isNaN(length)
+    ) {
+
+        vehicle.length =
+            Number(length);
+
+    }
+
+
+    savePlan();
+
+    renderPlan();
+
+    hideContextMenu();
+
+}
+
+
+/* =========================================================
+   FAHRZEUG ENTFERNEN
+========================================================= */
+
+function removeSelected() {
+
+    if (!selectedVehicle)
+        return;
+
+
+    const vehicle =
+        vehicles.find(
+            v =>
+                v.id ===
+                selectedVehicle
+        );
+
+
+    if (!vehicle)
+        return;
+
+
+    if (
+        !confirm(
+            vehicle.number +
+            " wirklich entfernen?"
+        )
+    )
+        return;
+
+
+    vehicles =
+        vehicles.filter(
+            v =>
+                v.id !==
+                selectedVehicle
+        );
+
+
+    selectedVehicle =
+        null;
+
+
+    savePlan();
+
+    renderPlan();
+
+    hideContextMenu();
+
+}
+
+
+/* =========================================================
+   FAHRZEUG HINZUFÜGEN
+========================================================= */
+
+function openVehicleModal() {
+
+    document
+        .getElementById(
+            "vehicleModal"
+        )
+        .classList.add("active");
+
+}
+
+
+function addVehicle() {
+
+    const number =
+        document
+            .getElementById(
+                "vehicleNumber"
+            )
+            .value
+            .trim();
+
+
+    const model =
+        document
+            .getElementById(
+                "vehicleModel"
+            )
+            .value
+            .trim();
+
+
+    const type =
+        document
+            .getElementById(
+                "vehicleType"
+            )
+            .value;
+
+
+    const length =
+        Number(
+            document
+                .getElementById(
+                    "vehicleLength"
+                )
+                .value
+        );
+
+
+    if (!number) {
+
+        alert(
+            "Bitte Fahrzeugnummer eingeben."
+        );
+
+        return;
+
+    }
+
+
+    if (
+        !length ||
+        length <= 0
+    ) {
+
+        alert(
+            "Bitte eine gültige Länge eingeben."
+        );
+
+        return;
+
+    }
+
+
+    vehicles.push({
+
+        id:
+            "v_" +
+            Date.now(),
+
+        number:
+            number,
+
+        model:
+            model,
+
+        type:
+            type,
+
+        length:
+            length,
+
+        track:
+            tracks[0].id,
+
+        position:
+            10,
+
+        consist:
+            null
+
+    });
+
+
+    closeModals();
+
+    savePlan();
+
+    renderPlan();
+
+    renderLibrary();
+
+}
+
+
+/* =========================================================
+   GLEIS HINZUFÜGEN
+========================================================= */
+
+function openTrackModal() {
+
+    document
+        .getElementById(
+            "trackModal"
+        )
+        .classList.add("active");
+
+}
+
+
+function addTrack() {
+
+    const number =
+        document
+            .getElementById(
+                "trackNumber"
+            )
+            .value
+            .trim();
+
+
+    const length =
+        Number(
+            document
+                .getElementById(
+                    "trackLength"
+                )
+                .value
+        );
+
+
+    if (!number) {
+
+        alert(
+            "Bitte Gleisnummer eingeben."
+        );
+
+        return;
+
+    }
+
+
+    if (
+        !length ||
+        length <= 0
+    ) {
+
+        alert(
+            "Bitte eine gültige Gleislänge eingeben."
+        );
+
+        return;
+
+    }
+
+
+    tracks.push({
+
+        id:
+            Date.now(),
+
+        number:
+            number,
+
+        length:
+            length
+
+    });
+
+
+    closeModals();
+
+    savePlan();
+
+    renderPlan();
+
+}
+
+
+/* =========================================================
+   SIDEBAR FAHRZEUGBIBLIOTHEK
+========================================================= */
+
+function renderLibrary() {
+
+    const library =
+        document.getElementById(
+            "vehicleLibrary"
+        );
+
+
+    library.innerHTML = "";
+
+
+    if (
+        vehicles.length === 0
+    ) {
+
+        library.innerHTML =
+            `<div class="empty">
+                Keine Fahrzeuge vorhanden.
+            </div>`;
+
+        return;
+
+    }
+
+
+    vehicles.forEach(
+        vehicle => {
+
+            const item =
+                document.createElement(
+                    "div"
+                );
+
+            item.className =
+                "vehicle-item";
+
+            item.draggable = true;
+
+
+            item.innerHTML = `
+
+                <div class="vehicle-name">
+                    ${escapeHtml(
+                        vehicle.number
+                    )}
+                </div>
+
+                <div class="vehicle-info">
+                    ${escapeHtml(
+                        vehicle.model ||
+                        vehicle.type
+                    )}
+                    ·
+                    ${vehicle.length} m
+                </div>
+
+            `;
+
+
+            /*
+             * Drag aus Bibliothek
+             */
+
+            item.addEventListener(
+                "dragstart",
+                event => {
+
+                    event.dataTransfer.setData(
+                        "vehicle",
+                        vehicle.id
+                    );
+
+                }
+            );
+
+
+            /*
+             * Klick auswählen
+             */
+
+            item.addEventListener(
+                "click",
+                () => {
+
+                    selectedVehicle =
+                        vehicle.id;
+
+                    renderPlan();
+
+                }
+            );
+
+
+            library.appendChild(
+                item
+            );
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   MODAL SCHLIESSEN
+========================================================= */
+
+function closeModals() {
+
+    document
+        .querySelectorAll(
+            ".modal"
+        )
+        .forEach(
+            modal =>
+                modal.classList.remove(
+                    "active"
+                )
+        );
+
+}
+
+
+/* =========================================================
+   CONTEXT MENU
+========================================================= */
+
+function showContextMenu(
+    x,
+    y
+) {
+
+    const menu =
+        document.getElementById(
+            "contextMenu"
+        );
+
+
+    menu.style.left =
+        x + "px";
+
+    menu.style.top =
+        y + "px";
+
+    menu.style.display =
+        "block";
+
+}
+
+
+function hideContextMenu() {
+
+    document
+        .getElementById(
+            "contextMenu"
+        )
+        .style.display =
+        "none";
+
+}
+
+
+document.addEventListener(
+    "click",
+    () => {
+
+        hideContextMenu();
+
+    }
+);
+
+
+/* =========================================================
+   SPEICHERN
+========================================================= */
+
+function savePlan() {
+
+    const data = {
+
+        tracks:
+            tracks,
+
+        vehicles:
+            vehicles
+
+    };
+
+
+    localStorage.setItem(
+        "digitaler_abstellplan",
+        JSON.stringify(data)
+    );
+
+}
+
+
+/* =========================================================
+   LADEN
+========================================================= */
+
+function loadPlan() {
+
+    const data =
+        localStorage.getItem(
+            "digitaler_abstellplan"
+        );
+
+
+    if (!data) {
+
+        alert(
+            "Kein gespeicherter Plan vorhanden."
+        );
+
+        return;
+
+    }
+
+
+    try {
+
+        const parsed =
+            JSON.parse(data);
+
+
+        if (
+            parsed.tracks
+        )
+            tracks =
+                parsed.tracks;
+
+
+        if (
+            parsed.vehicles
+        )
+            vehicles =
+                parsed.vehicles;
+
+
+        renderPlan();
+
+        renderLibrary();
+
+
+    } catch(error) {
+
+        alert(
+            "Der gespeicherte Plan konnte nicht geladen werden."
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   ZURÜCKSETZEN
+========================================================= */
+
+function resetPlan() {
+
+    if (
+        !confirm(
+            "Den kompletten Abstellplan zurücksetzen?"
+        )
+    )
+        return;
+
+
+    localStorage.removeItem(
+        "digitaler_abstellplan"
+    );
+
+
+    location.reload();
+
+}
+
+
+/* =========================================================
+   HTML SICHER DARSTELLEN
+========================================================= */
+
+function escapeHtml(text) {
+
+    return String(text)
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+        .replace(
+            /</g,
+            "&lt;"
+        )
+        .replace(
+            />/g,
+            "&gt;"
+        )
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+        .replace(
+            /'/g,
+            "&#039;"
+        );
+
+}
+
+
+/* =========================================================
+   START
+========================================================= */
+
+renderPlan();
+
+renderLibrary();
+
+</script>
+
+</body>
+</html>
+```
