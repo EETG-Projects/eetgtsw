@@ -420,16 +420,22 @@ button.danger {
 
 .scale-mark {
     position: absolute;
+    height: 7px;
+    border-left: 1px solid #9aa0a6;
+    color: var(--muted);
+    font-size: 10px;
+    padding-left: 0;
+}
 
-    height: 8px;
-
-    border-left: 1px solid #777;
-
-    color: #777;
-
-    font-size: 9px;
-
-    padding-left: 3px;
+.scale-mark.scale-major {
+    height: 14px;
+    border-left: 2px solid var(--text);
+    color: var(--text);
+    font-size: 11px;
+    font-weight: 700;
+    padding-left: 4px;
+    white-space: nowrap;
+    transform: translateY(-3px);
 }
 
 
@@ -931,6 +937,17 @@ body.dark .vehicle-status.status-werkstatt{
 .track-delete-btn{
     background:#b5121b!important;
     color:#fff!important;
+}
+
+
+body.dark .scale-mark {
+    border-left-color:#596168;
+    color:#8f989f;
+}
+
+body.dark .scale-mark.scale-major {
+    border-left-color:#f5f6f7;
+    color:#f5f6f7;
 }
 
 </style>
@@ -1495,7 +1512,13 @@ function createScale(container, length) {
         const mark = document.createElement("div");
         mark.className = "scale-mark";
         mark.style.left = (meter * PIXELS_PER_METER) + "px";
-        mark.textContent = meter + " m";
+
+        // Beschriftung nur alle 50 m für bessere Lesbarkeit.
+        if (meter % 50 === 0) {
+            mark.textContent = meter + " m";
+            mark.classList.add("scale-major");
+        }
+
         container.appendChild(mark);
     }
 }
