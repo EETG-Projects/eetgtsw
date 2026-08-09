@@ -1,4 +1,4 @@
-x<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
 <meta charset="UTF-8">
@@ -1148,6 +1148,68 @@ body.dark .track-note:disabled{
     color:#d5dade;
 }
 
+
+/* =========================================================
+   SUPABASE FEHLERANZEIGE
+========================================================= */
+.db-error-overlay{
+    position:fixed;
+    inset:0;
+    z-index:5000;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    background:rgba(0,0,0,.58);
+}
+.db-error-overlay.active{display:flex}
+
+.db-error-box{
+    width:min(620px,100%);
+    background:var(--panel);
+    color:var(--text);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:22px;
+    box-shadow:0 26px 70px rgba(0,0,0,.35);
+}
+
+.db-error-box h3{
+    margin:0 0 12px;
+    color:#dc2626;
+    font-size:20px;
+}
+
+.db-error-summary{
+    margin-bottom:12px;
+    font-weight:800;
+}
+
+.db-error-details{
+    display:grid;
+    grid-template-columns:110px 1fr;
+    gap:7px 12px;
+    padding:12px;
+    border-radius:9px;
+    background:var(--panel2);
+    border:1px solid var(--border);
+    font-size:12px;
+    word-break:break-word;
+}
+
+.db-error-details b{color:var(--muted)}
+
+.db-error-actions{
+    display:flex;
+    justify-content:flex-end;
+    gap:8px;
+    margin-top:16px;
+}
+
+body.dark .db-error-box{
+    background:#1b2025;
+}
+
 </style>
 </head>
 
@@ -1475,9 +1537,74 @@ body.dark .track-note:disabled{
 
 
 
+
+<div class="db-error-overlay" id="dbErrorOverlay" role="dialog" aria-modal="true" aria-labelledby="dbErrorTitle">
+    <div class="db-error-box">
+        <h3 id="dbErrorTitle">Datenbankfehler</h3>
+        <div class="db-error-summary" id="dbErrorSummary">Die Änderung konnte nicht gespeichert werden.</div>
+
+        <div class="db-error-details">
+            <b>Meldung</b><span id="dbErrorMessage">–</span>
+            <b>Code</b><span id="dbErrorCode">–</span>
+            <b>Details</b><span id="dbErrorDetails">–</span>
+            <b>Hinweis</b><span id="dbErrorHint">–</span>
+        </div>
+
+        <div class="db-error-actions">
+            <button class="secondary" type="button" onclick="copyDbError()">Fehler kopieren</button>
+            <button type="button" onclick="closeDbError()">Schließen</button>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./assets/js/supabase.js"></script>
 <script>
+
+let lastDbErrorText = "";
+
+function showSupabaseError(context, error) {
+    const message = error?.message || "Unbekannter Supabase-Fehler";
+    const code = error?.code || "-";
+    const details = error?.details || "-";
+    const hint = error?.hint || "-";
+
+    console.error(`[Supabase] ${context}`, error);
+
+    document.getElementById("dbErrorSummary").textContent = context;
+    document.getElementById("dbErrorMessage").textContent = message;
+    document.getElementById("dbErrorCode").textContent = code;
+    document.getElementById("dbErrorDetails").textContent = details;
+    document.getElementById("dbErrorHint").textContent = hint;
+
+    lastDbErrorText =
+`${context}
+Meldung: ${message}
+Code: ${code}
+Details: ${details}
+Hinweis: ${hint}`;
+
+    document.getElementById("dbErrorOverlay").classList.add("active");
+}
+
+function closeDbError() {
+    document.getElementById("dbErrorOverlay").classList.remove("active");
+}
+
+async function copyDbError() {
+    try {
+        await navigator.clipboard.writeText(lastDbErrorText);
+    } catch {
+        // Fallback für Browser ohne Clipboard-Berechtigung.
+        const area = document.createElement("textarea");
+        area.value = lastDbErrorText;
+        document.body.appendChild(area);
+        area.select();
+        document.execCommand("copy");
+        area.remove();
+    }
+}
+
 const PIXELS_PER_METER = 2;
 const VEHICLE_VISUAL_SCALE = 2; // Fahrzeuge werden optisch x2 dargestellt.
 
@@ -1637,7 +1764,7 @@ async function loadPlan() {
 
     if (trackError || vehicleError) {
         console.error(trackError || vehicleError);
-        alert("Der Abstellplan konnte nicht aus Supabase geladen werden.");
+        showSupabaseError("Der Abstellplan konnte nicht aus Supabase geladen werden.", trackError || vehicleError);
         return;
     }
 
@@ -1921,7 +2048,7 @@ async function endTrackDrag() {
 
     if (error) {
         console.error(error);
-        alert("Die neue Gleisposition konnte nicht gespeichert werden.");
+        showSupabaseError("Die neue Gleisposition konnte nicht gespeichert werden.", error);
         await loadPlan();
     }
 }
@@ -1939,7 +2066,7 @@ async function saveTrackNote(trackId, note) {
         .eq("id", trackId);
 
     if (error) {
-        console.error("Notiz konnte nicht gespeichert werden:", error);
+        showSupabaseError("Notiz konnte nicht gespeichert werden.", error);
         return false;
     }
 
@@ -2064,7 +2191,7 @@ async function updateVehicle(vehicle) {
 
     if (error) {
         console.error(error);
-        alert("Änderung konnte nicht gespeichert werden.");
+        showSupabaseError("Fahrzeugänderung konnte nicht gespeichert werden.", error);
     }
 }
 
@@ -2154,7 +2281,7 @@ async function removeSelected() {
 
     if (error) {
         console.error(error);
-        alert("Fahrzeug konnte nicht gelöscht werden.");
+        showSupabaseError("Fahrzeug konnte nicht gelöscht werden.", error);
         return;
     }
 
@@ -2191,7 +2318,7 @@ async function addVehicle() {
         return;
     }
 
-    const { error } = await window.eetgSupabase
+    const { data: insertedVehicle, error } = await window.eetgSupabase
         .from("vehicles")
         .insert({
             number,
@@ -2202,11 +2329,13 @@ async function addVehicle() {
             position: 10,
             consist: null,
             status: "Abgestellt"
-        });
+        })
+        .select()
+        .single();
 
     if (error) {
         console.error(error);
-        alert("Fahrzeug konnte nicht angelegt werden.");
+        showSupabaseError("Fahrzeug konnte nicht angelegt werden.", error);
         return;
     }
 
@@ -2253,7 +2382,7 @@ async function addTrack() {
 
     if (error) {
         console.error(error);
-        alert("Gleis konnte nicht angelegt werden.");
+        showSupabaseError("Gleis konnte nicht angelegt werden.", error);
         return;
     }
 
@@ -2286,7 +2415,7 @@ async function renameTrack(trackId) {
 
     if (error) {
         console.error(error);
-        alert("Gleisname konnte nicht geändert werden.");
+        showSupabaseError("Gleisname konnte nicht geändert werden.", error);
         return;
     }
 
@@ -2337,7 +2466,7 @@ Gleislänge trotzdem auf ${length} m ändern?`
 
     if (error) {
         console.error(error);
-        alert("Gleislänge konnte nicht geändert werden.");
+        showSupabaseError("Gleislänge konnte nicht geändert werden.", error);
         return;
     }
 
@@ -2373,7 +2502,7 @@ async function deleteTrack(trackId) {
 
     if (error) {
         console.error(error);
-        alert("Gleis konnte nicht gelöscht werden.");
+        showSupabaseError("Gleis konnte nicht gelöscht werden.", error);
         return;
     }
 
