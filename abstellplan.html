@@ -151,8 +151,8 @@ body.is-admin .admin-only{display:flex!important}
 ========================================================= */
 
 .sidebar {
-    width: 300px;
-    min-width: 300px;
+    width: 325px;
+    min-width: 325px;
 
     background: var(--panel);
 
@@ -1734,6 +1734,59 @@ body.dark .vehicle-category-header{
     color:#f5f6f7!important;
 }
 
+
+/* =========================================================
+   UNTERNEHMENSGRUPPEN IN DER FAHRZEUGBIBLIOTHEK
+========================================================= */
+.vehicle-company-group{
+    margin:5px 0 10px;
+}
+
+.vehicle-company-heading{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin:3px 2px 7px;
+    padding:5px 7px;
+    border-radius:6px;
+    background:rgba(127,127,127,.09);
+    color:var(--text);
+    font-size:11px;
+    font-weight:900;
+    letter-spacing:.04em;
+}
+
+.vehicle-company-heading::after{
+    content:"";
+    flex:1;
+    height:1px;
+    background:var(--border);
+}
+
+.vehicle-company-count{
+    color:var(--muted);
+    font-size:9px;
+    font-weight:800;
+}
+
+.vehicle-name-line{
+    display:flex;
+    align-items:baseline;
+    gap:6px;
+    min-width:0;
+}
+
+.vehicle-company-inline{
+    color:var(--muted);
+    font-size:10px;
+    font-weight:800;
+    white-space:nowrap;
+}
+
+body.dark .vehicle-company-heading{
+    background:rgba(255,255,255,.055);
+}
+
 </style>
 </head>
 
@@ -1866,7 +1919,7 @@ body.dark .vehicle-category-header{
 
         <div class="scale-info">
 
-            1 px = 0,5 m
+            1 px = 0,125 m
 
         </div>
 
@@ -1924,19 +1977,6 @@ body.dark .vehicle-category-header{
 
 
         <div class="form-row">
-
-            <label>
-                Typ
-            </label>
-
-            <select id="vehicleType">
-                <option value="lok">Lokomotive</option>
-                <option value="wagen">Wagen</option>
-            </select>
-
-        </div>
-
-        <div class="form-row">
             <label>Fahrzeugkategorie</label>
             <select id="vehicleCategory">
                 <option value="elektrolok">Elektroloks</option>
@@ -1944,6 +1984,14 @@ body.dark .vehicle-category-header{
                 <option value="triebwagen">Triebwagen</option>
                 <option value="personenwagen">Personenwagen</option>
                 <option value="gueterwagen">Güterwagen</option>
+            </select>
+        </div>
+
+        <div class="form-row">
+            <label>Unternehmen / Eigentümer</label>
+            <select id="vehicleCompany">
+                <option value="EETG">EETG</option>
+                <option value="RMB">RMB</option>
             </select>
         </div>
 
@@ -2154,7 +2202,7 @@ async function copyDbError() {
     }
 }
 
-const PIXELS_PER_METER = 2;
+const PIXELS_PER_METER = 8; // Darstellung x4: 1 m = 8 px
 const VEHICLE_VISUAL_SCALE = 1; // Maßstab: 1 m Fahrzeug = 1 m Gleis.
 
 let tracks = [];
@@ -2319,6 +2367,7 @@ function mapVehicle(row) {
         model: row.model || "",
         image: row.image_url || "",
         category: row.category || (row.type === "wagen" ? "personenwagen" : "elektrolok"),
+        company: row.company || "EETG",
         type: row.type,
         length: Number(row.length),
         track: row.track_id,
@@ -2677,7 +2726,7 @@ function statusClass(status) {
 function createVehicleElement(vehicle) {
     // Exakter gemeinsamer Maßstab:
     // Gleis und Fahrzeug verwenden beide PIXELS_PER_METER.
-    // Beispiel: 16,64 m Fahrzeug = 33,28 px bei 2 px pro Meter.
+    // Beispiel: 16,64 m Fahrzeug = 133,12 px bei 8 px pro Meter.
     const width = vehicle.length * PIXELS_PER_METER * VEHICLE_VISUAL_SCALE;
 
     const wrap = document.createElement("div");
@@ -2734,6 +2783,7 @@ async function updateVehicle(vehicle) {
             model: vehicle.model,
             image_url: vehicle.image || null,
             category: vehicle.category || (vehicle.type === "wagen" ? "personenwagen" : "elektrolok"),
+            company: vehicle.company || "EETG",
             type: vehicle.type,
             length: vehicle.length,
             track_id: vehicle.track,
@@ -2834,6 +2884,17 @@ async function editSelected() {
         }
     }
 
+    const company = prompt("Unternehmen: EETG oder RMB", vehicle.company || "EETG");
+    if (company !== null) {
+        const normalizedCompany = company.trim().toUpperCase();
+        if (["EETG", "RMB"].includes(normalizedCompany)) {
+            vehicle.company = normalizedCompany;
+        } else if (normalizedCompany) {
+            alert("Ungültiges Unternehmen. Erlaubt: EETG oder RMB.");
+            return;
+        }
+    }
+
     await updateVehicle(vehicle);
     renderPlan();
     renderLibrary();
@@ -2875,8 +2936,15 @@ async function addVehicle() {
     const number = document.getElementById("vehicleNumber").value.trim();
     const model = document.getElementById("vehicleModel").value.trim();
     const image = document.getElementById("vehicleImage").value.trim();
-    const type = document.getElementById("vehicleType").value;
     const category = document.getElementById("vehicleCategory").value;
+    const company = document.getElementById("vehicleCompany").value;
+
+    // Der technische Typ wird automatisch aus der Kategorie abgeleitet.
+    // Personen- und Güterwagen sind "wagen", alle übrigen Kategorien "lok".
+    const type = ["personenwagen", "gueterwagen"].includes(category)
+        ? "wagen"
+        : "lok";
+
     const length = Number(document.getElementById("vehicleLength").value);
 
     if (!number) {
@@ -2901,6 +2969,7 @@ async function addVehicle() {
             model,
             image_url: image || null,
             category,
+            company,
             type,
             length,
             track_id: tracks[0].id,
@@ -2921,6 +2990,7 @@ async function addVehicle() {
     document.getElementById("vehicleNumber").value = "";
     document.getElementById("vehicleModel").value = "";
     document.getElementById("vehicleImage").value = "";
+    document.getElementById("vehicleCompany").value = "EETG";
     await loadPlan();
 }
 
@@ -3110,7 +3180,7 @@ function createLibraryVehicleCard(vehicle) {
     item.className = "vehicle-item library-item";
     item.dataset.vehicleId = vehicle.id;
     item.dataset.searchText =
-        `${vehicle.number} ${vehicle.model || ""} ${VEHICLE_CATEGORY_LABELS[vehicle.category] || vehicle.category || ""}`.toLowerCase();
+        `${vehicle.number} ${vehicle.model || ""} ${vehicle.company || ""} ${VEHICLE_CATEGORY_LABELS[vehicle.category] || vehicle.category || ""}`.toLowerCase();
     item.draggable = canWrite();
 
     const imageHtml = vehicle.image
@@ -3126,7 +3196,10 @@ function createLibraryVehicleCard(vehicle) {
            </div>`;
 
     item.innerHTML = `
-        <div class="vehicle-name">${escapeHtml(vehicle.number)}</div>
+        <div class="vehicle-name-line">
+            <div class="vehicle-name">${escapeHtml(vehicle.number)}</div>
+            <span class="vehicle-company-inline">${escapeHtml(vehicle.company || "EETG")}</span>
+        </div>
         <div class="vehicle-info">
             ${escapeHtml(vehicle.model || vehicle.type)} · ${vehicle.length} m
         </div>
@@ -3261,8 +3334,35 @@ function renderLibrary() {
         if (!categoryVehicles.length) {
             body.innerHTML = '<div class="empty">Keine Fahrzeuge</div>';
         } else {
-            categoryVehicles.forEach(vehicle => {
-                body.appendChild(createLibraryVehicleCard(vehicle));
+            ["EETG", "RMB"].forEach(company => {
+                const companyVehicles = categoryVehicles
+                    .filter(vehicle => (vehicle.company || "EETG") === company)
+                    .sort((a, b) =>
+                        String(a.number).localeCompare(String(b.number), "de", {
+                            numeric: true,
+                            sensitivity: "base"
+                        })
+                    );
+
+                if (!companyVehicles.length) return;
+
+                const companyGroup = document.createElement("div");
+                companyGroup.className = "vehicle-company-group";
+
+                const heading = document.createElement("div");
+                heading.className = "vehicle-company-heading";
+                heading.innerHTML = `
+                    <span>${company}</span>
+                    <span class="vehicle-company-count">${companyVehicles.length}</span>
+                `;
+
+                companyGroup.appendChild(heading);
+
+                companyVehicles.forEach(vehicle => {
+                    companyGroup.appendChild(createLibraryVehicleCard(vehicle));
+                });
+
+                body.appendChild(companyGroup);
             });
         }
 
@@ -3283,7 +3383,7 @@ function handleGlobalSearch(value) {
             const hasMatch = vehicles
                 .filter(v => v.category === category)
                 .some(vehicle =>
-                    `${vehicle.number} ${vehicle.model || ""} ${VEHICLE_CATEGORY_LABELS[vehicle.category] || ""}`
+                    `${vehicle.number} ${vehicle.model || ""} ${vehicle.company || ""} ${VEHICLE_CATEGORY_LABELS[vehicle.category] || ""}`
                         .toLowerCase()
                         .includes(globalSearchQuery)
                 );
@@ -3320,7 +3420,7 @@ function applySearchHighlights(scrollToFirst = false) {
     }
 
     const matchingVehicles = vehicles.filter(vehicle =>
-        `${vehicle.number} ${vehicle.model || ""} ${VEHICLE_CATEGORY_LABELS[vehicle.category] || vehicle.category || ""}`
+        `${vehicle.number} ${vehicle.model || ""} ${vehicle.company || ""} ${VEHICLE_CATEGORY_LABELS[vehicle.category] || vehicle.category || ""}`
             .toLowerCase()
             .includes(globalSearchQuery)
     );
