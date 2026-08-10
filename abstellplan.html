@@ -2846,6 +2846,86 @@ body.is-admin.admin-edit-enabled .area-admin-actions{
     background:rgba(168,85,247,.10)!important;
 }
 
+
+/* =========================================================
+   ZOOM AN STELLE DER MASSSTABANZEIGE
+========================================================= */
+.zoom-controls-in-scale{
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    gap:4px!important;
+    white-space:nowrap!important;
+    font-size:inherit!important;
+}
+
+.zoom-controls-in-scale .zoom-value{
+    min-width:44px;
+    text-align:center;
+}
+
+
+/* =========================================================
+   EINHEITLICHE BUTTON-GRÖSSEN
+========================================================= */
+
+/* Standardgröße für alle normalen Bedienbuttons */
+button{
+    min-height:32px!important;
+    padding:0 10px!important;
+    display:inline-flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    line-height:1!important;
+    white-space:nowrap;
+}
+
+/* Werkzeugleisten / Standort / Historie / Statistik / Zoom */
+.workspace-toolbar button,
+.location-toolbar button,
+.statistics-dropdown button,
+.history-dropdown button,
+.zoom-controls button,
+.database-title-row button,
+.global-info-admin button,
+.button-row button{
+    height:32px!important;
+    min-height:32px!important;
+    padding:0 10px!important;
+}
+
+/* Kleine Admin-Aktionsbuttons an Gleisen und Bereichen auf gleiche Höhe */
+.track-admin-actions button,
+.area-admin-actions button,
+.library-edit-button,
+.sidebar-toggle-button{
+    height:30px!important;
+    min-height:30px!important;
+    padding:0 9px!important;
+}
+
+/* Zoomtasten gleich breit */
+.zoom-controls .zoom-button,
+.zoom-controls .zoom-reset{
+    width:36px!important;
+    min-width:36px!important;
+    padding:0!important;
+}
+
+/* Sidebar-Toggle ebenfalls quadratisch */
+.sidebar-toggle-button{
+    width:32px!important;
+    min-width:32px!important;
+    padding:0!important;
+}
+
+/* Modalfuß-Buttons einheitlich */
+.modal-buttons button{
+    height:34px!important;
+    min-height:34px!important;
+    padding:0 12px!important;
+}
+
 </style>
 </head>
 
@@ -3062,17 +3142,13 @@ body.is-admin.admin-edit-enabled .area-admin-actions{
 
         </button>
 
-        <div class="zoom-controls" aria-label="Zoomsteuerung">
+        
+
+        <div class="scale-info zoom-controls zoom-controls-in-scale" aria-label="Zoomsteuerung">
             <button class="secondary zoom-button" type="button" onclick="zoomOut()" title="Herauszoomen">−</button>
             <span class="zoom-value" id="zoomValue">100%</span>
             <button class="secondary zoom-button" type="button" onclick="zoomIn()" title="Hineinzoomen">+</button>
             <button class="secondary zoom-reset" type="button" onclick="resetZoom()" title="Zoom zurücksetzen">100%</button>
-        </div>
-
-        <div class="scale-info">
-
-            1 px = 0,125 m
-
         </div>
 
     </div>
