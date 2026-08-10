@@ -2564,6 +2564,148 @@ body.is-admin:not(.admin-edit-enabled) .global-info-admin{
     }
 }
 
+
+/* =========================================================
+   FAHRZEUGBIBLIOTHEK EIN-/AUSKLAPPEN
+========================================================= */
+.database-title-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    margin-bottom:8px!important;
+}
+
+.sidebar-toggle-button{
+    flex:0 0 auto;
+    width:30px;
+    height:28px;
+    padding:0!important;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    font-size:12px!important;
+    border-radius:6px!important;
+}
+
+.sidebar{
+    transition:
+        width .22s ease,
+        min-width .22s ease;
+}
+
+body.sidebar-collapsed .sidebar{
+    width:52px!important;
+    min-width:52px!important;
+}
+
+body.sidebar-collapsed .sidebar > .sidebar-section:not(.database-section),
+body.sidebar-collapsed .vehicle-list{
+    display:none!important;
+}
+
+body.sidebar-collapsed .database-section{
+    height:100%;
+    padding:10px 8px!important;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+}
+
+body.sidebar-collapsed .database-title-row{
+    width:100%;
+    justify-content:center;
+}
+
+body.sidebar-collapsed .database-title-row > span{
+    display:none;
+}
+
+body.sidebar-collapsed .sidebar-toggle-button{
+    width:34px;
+}
+
+body.sidebar-collapsed .database-live-row,
+body.sidebar-collapsed .realtime-state{
+    writing-mode:vertical-rl;
+    transform:rotate(180deg);
+    margin-top:8px;
+}
+
+body.sidebar-collapsed .database-live-row{
+    flex:0 0 auto;
+}
+
+body.sidebar-collapsed .realtime-dot{
+    margin:0 0 5px 0;
+}
+
+/* Workspace erhält den gewonnenen Platz automatisch über flex */
+.workspace{
+    min-width:0;
+}
+
+
+/* =========================================================
+   SIDEBAR TOGGLE V2
+========================================================= */
+.database-title-row{
+    justify-content:flex-start!important;
+}
+
+.database-title-text{
+    flex:0 0 auto;
+}
+
+.database-title-live{
+    flex:0 0 auto;
+    margin-left:6px!important;
+    margin-right:auto!important;
+    white-space:nowrap;
+}
+
+.collapsed-library-title{
+    display:none;
+}
+
+/* Eingeklappt: Statt Live-Status steht Fahrzeugbibliothek in der Leiste. */
+body.sidebar-collapsed .database-section{
+    align-items:stretch!important;
+}
+
+body.sidebar-collapsed .database-title-row{
+    justify-content:center!important;
+    margin-bottom:6px!important;
+}
+
+body.sidebar-collapsed .database-title-text,
+body.sidebar-collapsed .database-title-live{
+    display:none!important;
+}
+
+body.sidebar-collapsed .collapsed-library-title{
+    display:block;
+    writing-mode:vertical-rl;
+    transform:rotate(180deg);
+    text-align:center;
+    margin:8px auto;
+    font-size:10px;
+    font-weight:900;
+    letter-spacing:.04em;
+    color:var(--text);
+}
+
+body.sidebar-collapsed .database-live-row,
+body.sidebar-collapsed .realtime-state{
+    writing-mode:initial!important;
+    transform:none!important;
+}
+
+/* Toggle bleibt oben erreichbar. */
+body.sidebar-collapsed .sidebar-toggle-button{
+    margin:0 auto;
+}
+
 </style>
 </head>
 
@@ -2621,7 +2763,7 @@ body.is-admin:not(.admin-edit-enabled) .global-info-admin{
      SIDEBAR
 ===================================================== -->
 
-<aside class="sidebar">
+<aside class="sidebar" id="vehicleSidebar">
 
     <div class="sidebar-section">
 
@@ -2667,16 +2809,30 @@ body.is-admin:not(.admin-edit-enabled) .global-info-admin{
 
     <div class="sidebar-section database-section">
 
-        <div class="sidebar-title">
-            Zentrale Datenbank
-        </div>
+        <div class="sidebar-title database-title-row">
+            <span class="database-title-text">Zentrale Datenbank</span>
 
-        <div class="database-live-row">
-            <span class="realtime-state" id="realtimeState">
+            <span class="realtime-state database-title-live" id="realtimeState">
                 <span class="realtime-dot"></span>
                 <span id="realtimeText">Synchronisiere …</span>
             </span>
+
+            <button
+                class="secondary sidebar-toggle-button"
+                id="sidebarToggleButton"
+                type="button"
+                onclick="toggleVehicleLibrary()"
+                title="Fahrzeugbibliothek ein-/ausklappen"
+                aria-expanded="true">
+                ◀
+            </button>
         </div>
+
+        <div class="collapsed-library-title" id="collapsedLibraryTitle">
+            Fahrzeugbibliothek
+        </div>
+
+        
 
     </div>
 
@@ -3207,6 +3363,7 @@ let realtimeChannel = null;
 let historyRealtimeChannel = null;
 let realtimeFallbackTimer = null;
 let globalInfo = null;
+let vehicleSidebarCollapsed = false;
 let locations = [];
 let areas = [];
 let currentLocationId = null;
@@ -3410,7 +3567,54 @@ function mapArea(row) {
 }
 
 
+
+function applyVehicleLibraryState(){
+    document.body.classList.toggle("sidebar-collapsed", vehicleSidebarCollapsed);
+
+    const button = document.getElementById("sidebarToggleButton");
+    if(button){
+        button.textContent = vehicleSidebarCollapsed ? "▶" : "◀";
+        button.setAttribute("aria-expanded", vehicleSidebarCollapsed ? "false" : "true");
+        button.title = vehicleSidebarCollapsed
+            ? "Fahrzeugbibliothek ausklappen"
+            : "Fahrzeugbibliothek einklappen";
+    }
+
+    try{
+        localStorage.setItem(
+            "eetg_vehicle_sidebar_collapsed",
+            vehicleSidebarCollapsed ? "1" : "0"
+        );
+    }catch(_){}
+}
+
+function toggleVehicleLibrary(){
+    vehicleSidebarCollapsed = !vehicleSidebarCollapsed;
+    applyVehicleLibraryState();
+    setTimeout(updatePlanCanvasSize, 250);
+}
+
+function loadVehicleLibraryState(){
+    try{
+        vehicleSidebarCollapsed =
+            localStorage.getItem("eetg_vehicle_sidebar_collapsed") === "1";
+    }catch(_){
+        vehicleSidebarCollapsed = false;
+    }
+
+    applyVehicleLibraryState();
+}
+
 async function loadGlobalInfo(){
+    // Cache nur als sofortige Anzeige; Supabase bleibt die eigentliche Datenquelle.
+    try {
+        const cached = JSON.parse(localStorage.getItem("eetg_global_info_cache") || "null");
+        if (cached) {
+            globalInfo = cached;
+            renderGlobalInfo();
+        }
+    } catch (_) {}
+
     const { data, error } = await window.eetgSupabase
         .from("global_info")
         .select("*")
@@ -3424,6 +3628,10 @@ async function loadGlobalInfo(){
 
     globalInfo = data || { id:1, message:"", color:"#b5121b" };
     renderGlobalInfo();
+
+    try {
+        localStorage.setItem("eetg_global_info_cache", JSON.stringify(globalInfo));
+    } catch (_) {}
 }
 
 function renderGlobalInfo(){
@@ -3467,6 +3675,11 @@ async function saveGlobalInfo(){
 
     globalInfo = data;
     renderGlobalInfo();
+
+    // Lokale Sicherung als UI-Fallback.
+    try {
+        localStorage.setItem("eetg_global_info_cache", JSON.stringify(globalInfo));
+    } catch (_) {}
 }
 
 async function clearGlobalInfo(){
@@ -5737,10 +5950,14 @@ window.addEventListener("beforeunload",()=>{
 
 (async function init() {
     loadTheme();
+    loadVehicleLibraryState();
 
     const ok = await requireLogin();
     if (!ok) return;
 
+    // Globales Infofeld zuerst aus Supabase laden,
+    // damit der gespeicherte Text nach einem Reload wieder erscheint.
+    await loadGlobalInfo();
     await loadLocations();
     await loadPlan();
     subscribeRealtime();
