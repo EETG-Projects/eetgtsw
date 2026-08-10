@@ -2129,6 +2129,42 @@ body.is-admin:not(.admin-edit-enabled) .library-edit-button{
     display:none!important;
 }
 
+
+/* =========================================================
+   FAHRZEUGE ZURÜCK IN DIE BIBLIOTHEK ZIEHEN
+========================================================= */
+.vehicle-list{
+    position:relative;
+}
+
+.vehicle-list.library-drop-active{
+    outline:2px dashed var(--accent);
+    outline-offset:-6px;
+    background:rgba(181,18,27,.06);
+}
+
+.vehicle-list.library-drop-active::before{
+    content:"Fahrzeug hier ablegen";
+    position:sticky;
+    top:8px;
+    z-index:120;
+    display:block;
+    width:max-content;
+    margin:8px auto;
+    padding:8px 12px;
+    border-radius:8px;
+    background:var(--accent);
+    color:#fff;
+    font-size:11px;
+    font-weight:900;
+    box-shadow:0 8px 22px rgba(0,0,0,.25);
+    pointer-events:none;
+}
+
+.library-item.vehicle-in-library{
+    border-left:3px solid var(--accent);
+}
+
 </style>
 </head>
 
@@ -3200,6 +3236,8 @@ function createVehicleElement(vehicle) {
     if (canWrite()) {
         element.addEventListener("dragstart", event => {
             event.dataTransfer.setData("vehicle", vehicle.id);
+            event.dataTransfer.setData("text/plain", vehicle.id);
+            event.dataTransfer.effectAllowed = "move";
         });
 
         element.addEventListener("contextmenu", event => {
@@ -3247,6 +3285,91 @@ async function updateVehicle(vehicle) {
     }
 
     return true;
+}
+
+
+async function returnVehicleToLibrary(vehicleId) {
+    if (!enforceWritePermission()) return false;
+
+    const vehicle = vehicles.find(v => v.id === String(vehicleId));
+    if (!vehicle) return false;
+
+    /*
+     * Zurück in die Bibliothek bedeutet:
+     * - keinem Gleis zugeordnet
+     * - Position auf 0
+     * - ggf. aus einem Zugverband lösen
+     */
+    const oldTrack = vehicle.track;
+    const oldPosition = vehicle.position;
+    const oldConsist = vehicle.consist;
+
+    vehicle.track = null;
+    vehicle.position = 0;
+    vehicle.consist = null;
+
+    const ok = await updateVehicle(vehicle);
+
+    if (ok === false) {
+        vehicle.track = oldTrack;
+        vehicle.position = oldPosition;
+        vehicle.consist = oldConsist;
+        return false;
+    }
+
+    selectedVehicle = null;
+    renderPlan();
+    renderLibrary();
+    return true;
+}
+
+function setupLibraryDropZone() {
+    const library = document.getElementById("vehicleLibrary");
+    if (!library || library.dataset.dropReady === "1") return;
+
+    library.dataset.dropReady = "1";
+
+    library.addEventListener("dragenter", event => {
+        if (!canWrite()) return;
+
+        const hasVehicle =
+            event.dataTransfer?.types?.includes("vehicle") ||
+            event.dataTransfer?.types?.includes("text/plain");
+
+        if (hasVehicle) {
+            event.preventDefault();
+            library.classList.add("library-drop-active");
+        }
+    });
+
+    library.addEventListener("dragover", event => {
+        if (!canWrite()) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+        library.classList.add("library-drop-active");
+    });
+
+    library.addEventListener("dragleave", event => {
+        if (!library.contains(event.relatedTarget)) {
+            library.classList.remove("library-drop-active");
+        }
+    });
+
+    library.addEventListener("drop", async event => {
+        if (!canWrite()) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+        library.classList.remove("library-drop-active");
+
+        const id =
+            event.dataTransfer.getData("vehicle") ||
+            event.dataTransfer.getData("text/plain");
+
+        if (!id) return;
+
+        await returnVehicleToLibrary(id);
+    });
 }
 
 async function moveConsist(consistId, targetTrack, newStart) {
@@ -3623,7 +3746,8 @@ function updateRenderedVehicleStatus(vehicleId, status) {
 
 function createLibraryVehicleCard(vehicle) {
     const item = document.createElement("div");
-    item.className = "vehicle-item library-item";
+    item.className = "vehicle-item library-item" +
+        (vehicle.track == null ? " vehicle-in-library" : "");
     item.dataset.vehicleId = vehicle.id;
     item.dataset.searchText =
         `${vehicle.number} ${vehicle.model || ""} ${vehicle.company || ""} ${VEHICLE_CATEGORY_LABELS[vehicle.category] || vehicle.category || ""}`.toLowerCase();
@@ -3649,6 +3773,9 @@ function createLibraryVehicleCard(vehicle) {
         <div class="vehicle-info">
             ${escapeHtml(vehicle.model || vehicle.type)} · ${vehicle.length} m
         </div>
+        ${vehicle.track == null
+            ? '<div class="vehicle-info">📚 In Fahrzeugbibliothek</div>'
+            : ''}
         ${imageHtml}
     `;
 
@@ -3742,6 +3869,8 @@ function createLibraryVehicleCard(vehicle) {
     if (canWrite()) {
         item.addEventListener("dragstart", event => {
             event.dataTransfer.setData("vehicle", vehicle.id);
+            event.dataTransfer.setData("text/plain", vehicle.id);
+            event.dataTransfer.effectAllowed = "move";
         });
     }
 
@@ -3832,6 +3961,7 @@ function renderLibrary() {
         library.appendChild(section);
     });
 
+    setupLibraryDropZone();
     applySearchHighlights(false);
 }
 
