@@ -1936,6 +1936,140 @@ body.dark .vehicle-company-heading{
     background:var(--panel2)!important;
 }
 
+
+/* =========================================================
+   FINALER VIEWPORT-/SCROLL-FIX
+   Header + Legende + App passen exakt ins Browserfenster.
+========================================================= */
+html{
+    width:100%;
+    height:100%;
+}
+
+body{
+    width:100%;
+    height:100vh!important;
+    min-height:100vh!important;
+    display:grid!important;
+    grid-template-rows:64px auto minmax(0,1fr)!important;
+    overflow:hidden!important;
+}
+
+header{
+    grid-row:1;
+    height:64px!important;
+    min-height:64px!important;
+}
+
+.status-legend{
+    grid-row:2;
+    margin:0 20px!important;
+}
+
+.app{
+    grid-row:3;
+    display:flex!important;
+    width:100%;
+    height:100%!important;
+    min-height:0!important;
+    overflow:hidden!important;
+}
+
+.sidebar{
+    height:100%!important;
+    min-height:0!important;
+    display:flex!important;
+    flex-direction:column!important;
+    overflow:hidden!important;
+}
+
+.vehicle-list{
+    flex:1 1 0!important;
+    min-height:0!important;
+    overflow-y:auto!important;
+}
+
+/* Datenbankleiste bleibt sichtbar und sitzt eine Rasterkachel über dem unteren Rand. */
+.database-section{
+    flex:0 0 auto!important;
+    transform:none!important;
+    margin-top:0!important;
+    margin-bottom:25px!important;
+    position:relative!important;
+    z-index:30!important;
+    background:var(--panel)!important;
+}
+
+.workspace{
+    flex:1 1 0!important;
+    width:auto!important;
+    height:100%!important;
+    min-width:0!important;
+    min-height:0!important;
+    display:flex!important;
+    flex-direction:column!important;
+    overflow:hidden!important;
+}
+
+.workspace-toolbar{
+    flex:0 0 48px!important;
+    height:48px!important;
+}
+
+.plan-container{
+    flex:1 1 0!important;
+    width:100%!important;
+    height:auto!important;
+    min-width:0!important;
+    min-height:0!important;
+    position:relative!important;
+
+    overflow-x:scroll!important;
+    overflow-y:scroll!important;
+    scrollbar-gutter:stable!important;
+}
+
+/* Die Scrollfläche wird größer als der sichtbare Plan.
+   So ist unten garantiert eine horizontale Scrollbar vorhanden. */
+.plan-container::before{
+    content:"";
+    display:block;
+    width:var(--canvas-width)!important;
+    height:var(--canvas-height)!important;
+    min-width:2600px!important;
+    min-height:1500px!important;
+    pointer-events:none;
+}
+
+/* Gleise liegen sichtbar über dem unsichtbaren Scroll-Spacer. */
+.plan-container > .track{
+    z-index:5;
+}
+
+.plan-container::-webkit-scrollbar{
+    width:16px!important;
+    height:16px!important;
+}
+
+.plan-container::-webkit-scrollbar-track{
+    background:var(--panel2)!important;
+    border:1px solid var(--border)!important;
+}
+
+.plan-container::-webkit-scrollbar-thumb{
+    background:#6b737c!important;
+    border:3px solid var(--panel2)!important;
+    border-radius:999px!important;
+}
+
+.plan-container::-webkit-scrollbar-thumb:hover{
+    background:#858e98!important;
+}
+
+.plan-container::-webkit-scrollbar-corner{
+    background:var(--panel2)!important;
+}
+
 </style>
 </head>
 
@@ -2741,48 +2875,42 @@ function updatePlanCanvasSize() {
     const plan = document.getElementById("plan");
     if (!plan) return;
 
-    /*
-     * Zusätzliche freie Arbeitsfläche:
-     * rechts  = 2000 px
-     * unten   = 1200 px
-     *
-     * Die Fläche wächst automatisch weiter, sobald Gleise
-     * weiter nach rechts oder unten verschoben werden.
-     */
-    const EXTRA_RIGHT = 2000;
-    const EXTRA_BOTTOM = 1200;
+    const EXTRA_RIGHT = 1800;
+    const EXTRA_BOTTOM = 900;
 
-    let maxRight = Math.max(plan.clientWidth, 1400);
-    let maxBottom = Math.max(plan.clientHeight, 900);
+    let contentRight = 0;
+    let contentBottom = 0;
 
     tracks.forEach(track => {
         const width = track.length * PIXELS_PER_METER + 110 + 25;
         const visibleTrackHeight =
             (isAdmin() && adminEditMode) ? 285 : 215;
 
-        maxRight = Math.max(
-            maxRight,
-            track.x + width
+        contentRight = Math.max(
+            contentRight,
+            Number(track.x || 0) + width
         );
 
-        maxBottom = Math.max(
-            maxBottom,
-            track.y + visibleTrackHeight
+        contentBottom = Math.max(
+            contentBottom,
+            Number(track.y || 0) + visibleTrackHeight
         );
     });
 
-    const canvasWidth = maxRight + EXTRA_RIGHT;
-    const canvasHeight = maxBottom + EXTRA_BOTTOM;
-
-    plan.style.setProperty(
-        "--canvas-width",
-        canvasWidth + "px"
+    const canvasWidth = Math.max(
+        2600,
+        plan.clientWidth + 1200,
+        contentRight + EXTRA_RIGHT
     );
 
-    plan.style.setProperty(
-        "--canvas-height",
-        canvasHeight + "px"
+    const canvasHeight = Math.max(
+        1500,
+        plan.clientHeight + 700,
+        contentBottom + EXTRA_BOTTOM
     );
+
+    plan.style.setProperty("--canvas-width", canvasWidth + "px");
+    plan.style.setProperty("--canvas-height", canvasHeight + "px");
 }
 
 let activeTrackDrag = null;
