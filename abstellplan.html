@@ -36,7 +36,9 @@ body {
 ========================================================= */
 
 header {
-height: 64px;
+height:64px;
+min-height:64px;
+flex:0 0 64px;
 background: #ffffff;
 border-bottom: 1px solid var(--border);
 box-shadow: 0 2px 12px rgba(24,27,31,.06);
@@ -1853,6 +1855,85 @@ body.dark .vehicle-company-heading{
 }
 .plan-container::-webkit-scrollbar-corner{
     background:var(--panel2);
+}
+
+
+/* =========================================================
+   VIEWPORT / SCROLLBAR FIX
+========================================================= */
+.status-legend{
+    flex:0 0 auto;
+    margin:0 20px 0!important;
+}
+
+.app{
+    flex:1 1 auto!important;
+    height:auto!important;
+    min-height:0!important;
+    overflow:hidden;
+}
+
+.sidebar{
+    height:100%;
+    min-height:0;
+    overflow:hidden;
+}
+
+.vehicle-list{
+    flex:1 1 auto;
+    min-height:0;
+    overflow-y:auto;
+}
+
+.database-section{
+    flex:0 0 auto;
+    position:relative;
+    z-index:20;
+    transform:translateY(-25px);
+    margin-top:25px;
+    margin-bottom:-25px;
+    background:var(--panel);
+}
+
+/* Workspace always ends above browser bottom edge. */
+.workspace{
+    height:100%;
+    min-height:0!important;
+}
+
+.workspace-toolbar{
+    flex:0 0 48px;
+}
+
+.plan-container{
+    flex:1 1 0!important;
+    height:auto!important;
+    min-height:0!important;
+    overflow-x:scroll!important;
+    overflow-y:scroll!important;
+}
+
+/* Force a visible horizontal scroll range wider than viewport. */
+.plan-container::before{
+    min-width:calc(100vw + 1800px);
+    min-height:calc(100vh + 1000px);
+}
+
+/* Strong, visible bottom/right slider. */
+.plan-container::-webkit-scrollbar{
+    width:16px!important;
+    height:16px!important;
+}
+.plan-container::-webkit-scrollbar-track{
+    background:var(--panel2)!important;
+}
+.plan-container::-webkit-scrollbar-thumb{
+    background:#6b737c!important;
+    border:3px solid var(--panel2)!important;
+    border-radius:999px!important;
+}
+.plan-container::-webkit-scrollbar-corner{
+    background:var(--panel2)!important;
 }
 
 </style>
