@@ -1265,69 +1265,54 @@ body.dark .db-error-box{
 
 
 /* =========================================================
-   AUFKLAPPBARER ADMIN-BEARBEITUNGSBEREICH – HOVER
+   AUFKLAPPBARER ADMIN-BEARBEITUNGSBEREICH
 ========================================================= */
 .track{
     overflow:visible;
     transition:
-        height .22s ease,
-        min-height .22s ease,
-        box-shadow .22s ease,
-        transform .22s ease;
+        height .25s ease,
+        min-height .25s ease,
+        box-shadow .25s ease,
+        transform .25s ease;
     z-index:5;
 }
 
-/* Grundzustand bleibt immer kompakt. */
-body:not(.admin-edit-enabled) .track,
-body.is-admin.admin-edit-enabled .track{
+/* Normalzustand: kompakt, kein reservierter Leerraum für Admin-Buttons. */
+body:not(.admin-edit-enabled) .track{
     height:215px!important;
     min-height:215px!important;
 }
 
-/* Nur im Admin-Bearbeitungsmodus klappt das Gleis beim Darüberfahren auf.
-   :focus-within hält es offen, solange ein Button darin benutzt wird. */
-body.is-admin.admin-edit-enabled .track:hover,
-body.is-admin.admin-edit-enabled .track:focus-within{
+/* Admin aktiviert Bearbeiten:
+   Der Gleiskasten klappt nur nach unten auf. */
+body.is-admin.admin-edit-enabled .track{
     height:285px!important;
     min-height:285px!important;
-    z-index:160!important;
-    box-shadow:0 20px 48px rgba(0,0,0,.32)!important;
+    z-index:100;
+    box-shadow:0 18px 45px rgba(0,0,0,.28)!important;
 }
 
-/* Notiz bleibt an ihrer Position. */
+/* Notiz bleibt an ihrer Position; der neue Platz entsteht darunter. */
 .track-note-wrap{
-    transition:top .22s ease;
+    transition:top .25s ease;
 }
 
-/* Adminleiste grundsätzlich versteckt und erst im aufgeklappten Gleis sichtbar. */
+/* Die Bearbeitungsleiste liegt im aufgeklappten unteren Bereich. */
 body.is-admin.admin-edit-enabled .track-admin-actions{
-    display:none!important;
-    opacity:0;
-    transform:translateY(-5px);
-    pointer-events:none;
-    transition:opacity .16s ease, transform .16s ease;
-}
-
-body.is-admin.admin-edit-enabled .track:hover .track-admin-actions,
-body.is-admin.admin-edit-enabled .track:focus-within .track-admin-actions{
     display:flex!important;
-    opacity:1;
-    transform:translateY(0);
-    pointer-events:auto;
 }
 
-/* Der aufgeklappte Gleiskasten bleibt vor den anderen Gleisen. */
+/* Während Bearbeiten aktiv ist, liegt der Plan sichtbar über normalen UI-Flächen. */
 body.admin-edit-enabled .plan-container{
     position:relative;
     z-index:20;
 }
 
-body.is-admin.admin-edit-enabled .track:hover,
-body.is-admin.admin-edit-enabled .track:focus-within{
-    position:absolute;
+body.admin-edit-enabled .track:hover{
+    z-index:130;
 }
 
-/* Trennlinie nur dann anzeigen, wenn das Gleis aufgeklappt ist. */
+/* Kleine optische Trennlinie zwischen Notiz und aufgeklapptem Bereich. */
 body.is-admin.admin-edit-enabled .track::after{
     content:"";
     position:absolute;
@@ -1336,14 +1321,8 @@ body.is-admin.admin-edit-enabled .track::after{
     bottom:62px;
     height:1px;
     background:var(--border);
-    opacity:0;
-    pointer-events:none;
-    transition:opacity .16s ease;
-}
-
-body.is-admin.admin-edit-enabled .track:hover::after,
-body.is-admin.admin-edit-enabled .track:focus-within::after{
     opacity:.8;
+    pointer-events:none;
 }
 
 
@@ -2716,6 +2695,44 @@ body.sidebar-collapsed .collapsed-library-title{
     color:var(--text);
 }
 
+.vev-sync-row{
+    display:flex;
+    gap:8px;
+    margin-top:8px;
+}
+.vev-sync-row button{flex:1}
+.vev-sync-note{
+    margin:7px 0 0;
+    color:var(--muted,#64748b);
+    font-size:12px;
+    line-height:1.35;
+}
+.vev-sync-state{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    margin-top:7px;
+    font-size:12px;
+    font-weight:700;
+}
+.vev-sync-state::before{
+    content:"";
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:#94a3b8;
+}
+.vev-sync-state.connected::before{background:#22c55e}
+.vev-sync-state.error::before{background:#ef4444}
+.vev-sync-summary{
+    padding:10px 12px;
+    border:1px solid rgba(148,163,184,.35);
+    border-radius:10px;
+    background:rgba(148,163,184,.08);
+    font-size:13px;
+    line-height:1.5;
+}
+
 body.sidebar-collapsed .database-live-row,
 body.sidebar-collapsed .realtime-state{
     writing-mode:initial!important;
@@ -2970,190 +2987,6 @@ body.role-viewer #clearSelectionButton{
     display:none!important;
 }
 
-
-/* =========================================================
-   INTERNER ABSTELLPLAN – FUNKTIONSFIXES
-========================================================= */
-.library-edit-row{
-    display:flex!important;
-    gap:6px!important;
-    flex-wrap:wrap;
-}
-
-.library-delete-button{
-    flex:1 1 90px;
-    min-height:30px!important;
-    padding:0 9px!important;
-    border:0!important;
-    border-radius:6px!important;
-    background:#c91420!important;
-    color:#fff!important;
-    font-size:10px!important;
-    font-weight:900!important;
-    cursor:pointer;
-}
-
-body:not(.is-admin) .library-delete-button,
-body.is-admin:not(.admin-edit-enabled) .library-delete-button{
-    display:none!important;
-}
-
-/* Bereiche immer sichtbar */
-.plan-zoom-layer .area{
-    display:block!important;
-    visibility:visible!important;
-    opacity:1!important;
-    z-index:4!important;
-}
-
-.plan-zoom-layer .track{
-    z-index:10!important;
-}
-
-.area-titlebar,
-.area-title{
-    visibility:visible!important;
-    opacity:1!important;
-}
-
-/* Verschieben-Button zuverlässig klick-/ziehbar */
-body.is-admin.admin-edit-enabled .track-drag-handle{
-    display:inline-flex!important;
-    pointer-events:auto!important;
-    touch-action:none!important;
-    cursor:grab!important;
-}
-
-
-/* =========================================================
-   BEREICHE DIREKT AUF DEM GLEIS
-   Nur der schmale, im Screenshot gezeigte Schienenbereich.
-========================================================= */
-
-/* Alte frei platzierte Flächen werden nicht mehr dargestellt. */
-.plan-zoom-layer > .area{
-    display:none!important;
-}
-
-.area-track-info{
-    margin-top:5px;
-    color:var(--muted);
-    font-size:10px;
-    font-weight:700;
-}
-
-.track-section-area{
-    position:absolute;
-    top:51px;
-    height:34px;
-    min-width:2px;
-    z-index:8; /* vor Gleislinie, unter Fahrzeugen (z-index 10) */
-    box-sizing:border-box;
-    border:2px solid rgba(59,130,246,.95);
-    border-radius:5px;
-    background:rgba(59,130,246,.32);
-    pointer-events:auto;
-    overflow:visible;
-}
-
-.track-section-area[data-area-type="werkstatt"]{
-    border-color:rgba(249,115,22,.98);
-    background:rgba(249,115,22,.34);
-}
-.track-section-area[data-area-type="abstellung"]{
-    border-color:rgba(59,130,246,.98);
-    background:rgba(59,130,246,.32);
-}
-.track-section-area[data-area-type="service"]{
-    border-color:rgba(34,197,94,.98);
-    background:rgba(34,197,94,.32);
-}
-.track-section-area[data-area-type="sonstiges"]{
-    border-color:rgba(168,85,247,.98);
-    background:rgba(168,85,247,.32);
-}
-
-.track-section-area-label{
-    position:absolute;
-    left:4px;
-    top:50%;
-    transform:translateY(-50%);
-    max-width:calc(100% - 8px);
-    overflow:hidden;
-    text-overflow:ellipsis;
-    white-space:nowrap;
-    color:var(--text);
-    font-size:9px;
-    font-weight:900;
-    text-shadow:0 1px 2px rgba(255,255,255,.8);
-    pointer-events:none;
-}
-
-body.dark .track-section-area-label{
-    color:#fff;
-    text-shadow:0 1px 2px rgba(0,0,0,.9);
-}
-
-.track-section-area-actions{
-    display:none;
-    position:absolute;
-    left:50%;
-    bottom:calc(100% + 5px);
-    transform:translateX(-50%);
-    gap:4px;
-    z-index:300;
-    padding:4px;
-    border:1px solid var(--border);
-    border-radius:7px;
-    background:var(--panel);
-    box-shadow:0 8px 20px rgba(0,0,0,.25);
-}
-
-body.is-admin.admin-edit-enabled .track-section-area:hover{
-    z-index:220;
-    box-shadow:0 0 0 2px rgba(255,255,255,.8),0 5px 18px rgba(0,0,0,.35);
-}
-
-body.is-admin.admin-edit-enabled .track-section-area:hover .track-section-area-actions,
-body.is-admin.admin-edit-enabled .track-section-area:focus-within .track-section-area-actions{
-    display:flex;
-}
-
-.track-section-area-actions button{
-    width:30px!important;
-    min-width:30px!important;
-    height:28px!important;
-    min-height:28px!important;
-    padding:0!important;
-}
-
-/* Fahrzeuge bleiben über den Bereichen sichtbar. */
-.vehicle,
-.vehicle-wrap{
-    z-index:10!important;
-}
-
-
-/* Freie Farbauswahl für Gleisbereiche */
-.area-color-picker{
-    display:grid;
-    grid-template-columns:54px 1fr;
-    gap:8px;
-    align-items:center;
-}
-.area-color-picker input[type="color"]{
-    width:54px;
-    height:38px;
-    padding:3px;
-    border:1px solid var(--border);
-    border-radius:7px;
-    background:var(--panel);
-    cursor:pointer;
-}
-.area-color-picker input[type="text"]{
-    width:100%;
-}
-
 </style>
 </head>
 
@@ -3244,6 +3077,17 @@ body.is-admin.admin-edit-enabled .track-section-area:focus-within .track-section
             </button>
 
         </div>
+
+        <div class="vev-sync-row write-only admin-only">
+            <button type="button" onclick="startVevSync()">
+                ↻ Virtuelle EVU
+            </button>
+            <button class="secondary" type="button" onclick="disconnectVev()" title="VEV-Verbindung auf diesem Gerät trennen">
+                Trennen
+            </button>
+        </div>
+        <div id="vevSyncState" class="vev-sync-state">Nicht verbunden</div>
+        <p class="vev-sync-note">Übernimmt EETG und RailMotion Berlin in die Bibliothek Frankfurt-Griesheim. Bereits auf Gleisen platzierte Fahrzeuge bleiben unverändert.</p>
 
     </div>
 
@@ -3614,11 +3458,11 @@ body.is-admin.admin-edit-enabled .track-section-area:focus-within .track-section
 ===================================================== -->
 <div class="modal" id="areaModal">
     <div class="modal-box">
-        <h2>Bereich auf Gleis hinzufügen</h2>
+        <h2>Bereich hinzufügen</h2>
 
         <div class="form-row">
             <label>Bezeichnung</label>
-            <input id="areaName" placeholder="z.B. Werkstatt / Tankstelle / Abstellung">
+            <input id="areaName" placeholder="z.B. Werkstatt">
         </div>
 
         <div class="form-row">
@@ -3632,28 +3476,13 @@ body.is-admin.admin-edit-enabled .track-section-area:focus-within .track-section
         </div>
 
         <div class="form-row">
-            <label>Farbe</label>
-            <div class="area-color-picker">
-                <input id="areaColor" type="color" value="#3b82f6" aria-label="Bereichsfarbe auswählen">
-                <input id="areaColorHex" type="text" value="#3b82f6" maxlength="7" placeholder="#3b82f6" aria-label="Bereichsfarbe als HEX">
-            </div>
+            <label>Breite in Raster-Kästchen</label>
+            <input id="areaWidth" type="number" min="4" value="20">
         </div>
 
         <div class="form-row">
-            <label>Gleis</label>
-            <select id="areaTrack" onchange="updateAreaTrackInfo()"></select>
-            <div class="area-track-info" id="areaTrackInfo">Gleislänge: –</div>
-        </div>
-
-        <div class="form-row">
-            <label>Startposition in Metern</label>
-            <input id="areaStartMeter" type="number" min="0" step="0.1" value="0" oninput="updateAreaTrackInfo()">
-        </div>
-
-        <div class="form-row">
-            <label>Länge des Bereichs in Metern</label>
-            <input id="areaLengthMeter" type="number" min="0.1" step="0.1" value="25" oninput="updateAreaTrackInfo()">
-            <div class="area-track-info" id="areaRemainingInfo">Verfügbar: –</div>
+            <label>Höhe in Raster-Kästchen</label>
+            <input id="areaHeight" type="number" min="3" value="8">
         </div>
 
         <div class="modal-buttons">
@@ -3771,6 +3600,38 @@ body.is-admin.admin-edit-enabled .track-section-area:focus-within .track-section
     </div>
 </div>
 
+<div class="modal" id="vevLoginModal">
+    <div class="modal-content">
+        <button class="modal-close" type="button" onclick="closeVevLoginModal()">×</button>
+        <h2>Virtuelle EVU verbinden</h2>
+        <p class="vev-sync-note">Die Anmeldung erfolgt direkt bei Virtuelle EVU. Das Passwort wird nicht in der Abstellplan-Datenbank gespeichert.</p>
+        <div class="form-row">
+            <label for="vevEmail">E-Mail-Adresse</label>
+            <input id="vevEmail" type="email" autocomplete="username">
+        </div>
+        <div class="form-row">
+            <label for="vevPassword">Passwort</label>
+            <input id="vevPassword" type="password" autocomplete="current-password">
+        </div>
+        <div id="vevLoginError" class="vev-sync-note" role="alert"></div>
+        <div class="modal-buttons">
+            <button class="secondary" type="button" onclick="closeVevLoginModal()">Abbrechen</button>
+            <button type="button" id="vevLoginButton" onclick="loginAndSyncVev()">Verbinden und synchronisieren</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="vevSyncResultModal">
+    <div class="modal-content">
+        <button class="modal-close" type="button" onclick="closeVevSyncResult()">×</button>
+        <h2>VEV-Synchronisierung</h2>
+        <div id="vevSyncSummary" class="vev-sync-summary"></div>
+        <div class="modal-buttons">
+            <button type="button" onclick="closeVevSyncResult()">Schließen</button>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./assets/js/supabase.js"></script>
 <script>
@@ -3867,6 +3728,271 @@ const VEHICLE_CATEGORY_ORDER = [
     "gueterwagen"
 ];
 
+const VEV_SUPABASE_URL = "https://spqfdowwmcttczzpidfa.supabase.co";
+const VEV_SUPABASE_KEY = "sb_publishable_LNth0EhaN4vd3KePEXo3Cw_8TE0_wBl";
+const VEV_COMPANIES = {
+    "Erfurter Eisenbahn Transport Gesellschaft": "EETG",
+    "RailMotion Berlin": "RMB"
+};
+
+window.vevSupabase = window.supabase.createClient(VEV_SUPABASE_URL, VEV_SUPABASE_KEY, {
+    auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        storageKey: "eetg-abstellplan-vev-auth"
+    }
+});
+
+function setVevSyncState(text, state = "") {
+    const element = document.getElementById("vevSyncState");
+    if (!element) return;
+    element.textContent = text;
+    element.className = `vev-sync-state ${state}`.trim();
+}
+
+function openVevLoginModal() {
+    document.getElementById("vevLoginError").textContent = "";
+    document.getElementById("vevPassword").value = "";
+    document.getElementById("vevLoginModal").classList.add("active");
+    setTimeout(() => document.getElementById("vevEmail")?.focus(), 0);
+}
+
+function closeVevLoginModal() {
+    document.getElementById("vevPassword").value = "";
+    document.getElementById("vevLoginModal").classList.remove("active");
+}
+
+function closeVevSyncResult() {
+    document.getElementById("vevSyncResultModal").classList.remove("active");
+}
+
+function showVevSyncResult(summary) {
+    document.getElementById("vevSyncSummary").innerHTML = summary;
+    document.getElementById("vevSyncResultModal").classList.add("active");
+}
+
+async function updateVevConnectionState() {
+    const { data: { session } } = await window.vevSupabase.auth.getSession();
+    setVevSyncState(session ? "Virtuelle EVU verbunden" : "Nicht verbunden", session ? "connected" : "");
+    return session;
+}
+
+async function startVevSync() {
+    if (!enforceEditMode()) return;
+    const session = await updateVevConnectionState();
+    if (!session) {
+        openVevLoginModal();
+        return;
+    }
+    await syncVevVehicles();
+}
+
+async function loginAndSyncVev() {
+    const email = document.getElementById("vevEmail").value.trim();
+    const passwordInput = document.getElementById("vevPassword");
+    const password = passwordInput.value;
+    const errorBox = document.getElementById("vevLoginError");
+    const button = document.getElementById("vevLoginButton");
+
+    if (!email || !password) {
+        errorBox.textContent = "Bitte E-Mail-Adresse und Passwort eingeben.";
+        return;
+    }
+
+    button.disabled = true;
+    button.textContent = "Verbinde …";
+    errorBox.textContent = "";
+
+    try {
+        const { error } = await window.vevSupabase.auth.signInWithPassword({ email, password });
+        passwordInput.value = "";
+        if (error) throw error;
+        closeVevLoginModal();
+        setVevSyncState("Virtuelle EVU verbunden", "connected");
+        await syncVevVehicles();
+    } catch (error) {
+        passwordInput.value = "";
+        errorBox.textContent = error?.message || "Anmeldung fehlgeschlagen.";
+        setVevSyncState("Verbindung fehlgeschlagen", "error");
+    } finally {
+        button.disabled = false;
+        button.textContent = "Verbinden und synchronisieren";
+    }
+}
+
+async function disconnectVev() {
+    await window.vevSupabase.auth.signOut();
+    setVevSyncState("Nicht verbunden");
+}
+
+function vevVehicleCategory(vehicle) {
+    const type = String(vehicle.type || "").toLowerCase();
+    if (type.includes("diesel")) return "diesellok";
+    if (type.includes("trieb")) return "triebwagen";
+    if (type.includes("güter") || type.includes("gueter")) return "gueterwagen";
+    if (type.includes("personen") || type.includes("steuer")) return "personenwagen";
+    return "elektrolok";
+}
+
+function vevVehicleLength(vehicle, category) {
+    const supplied = Number(vehicle.length_m ?? vehicle.vehicle_length ?? vehicle.length);
+    if (Number.isFinite(supplied) && supplied > 0) return supplied;
+
+    const name = String(vehicle.name || "");
+    const countMatch = name.match(/^\s*(\d+)\s*x?\s+/i);
+    const count = countMatch ? Number(countMatch[1]) : 1;
+
+    if (category === "gueterwagen") return Math.max(12, count * 20);
+    if (category === "personenwagen") return Math.max(26.4, count * 26.4);
+    if (category === "triebwagen") {
+        if (/\b401\b/.test(name)) return 205;
+        if (/\b406\b/.test(name)) return 200;
+        if (/\b425\b/.test(name)) return 67.5;
+        if (/\b442\b/.test(name)) return 72.3;
+        if (/\b628\b/.test(name)) return 46.4;
+        return 70;
+    }
+    return category === "diesellok" ? 16.5 : 19.5;
+}
+
+function vevVehicleStatus(status) {
+    const value = String(status || "").toLowerCase();
+    if (value.includes("werkstatt") || value.includes("instandhaltung")) return "In der Werkstatt";
+    if (value.includes("unterwegs") || value.includes("auftrag")) return "Unterwegs";
+    if (value.includes("vermietet")) return "Vermietet";
+    if (value.includes("einsatzbereit")) return "Einsatzbereit";
+    return "Abgestellt";
+}
+
+function normalizeVevVehicle(vehicle) {
+    const company = VEV_COMPANIES[vehicle.company];
+    const category = vevVehicleCategory(vehicle);
+    return {
+        externalId: String(vehicle.id || ""),
+        number: String(vehicle.name || "Fahrzeug").trim(),
+        model: String(vehicle.type || "").trim(),
+        category,
+        company,
+        type: ["personenwagen", "gueterwagen"].includes(category) ? "wagen" : "lok",
+        length: vevVehicleLength(vehicle, category),
+        status: vevVehicleStatus(vehicle.status)
+    };
+}
+
+async function syncVevVehicles() {
+    const targetLocation = locations.find(location =>
+        String(location.name || "").trim().toLowerCase() === "frankfurt-griesheim"
+    );
+
+    if (!targetLocation) {
+        alert("Der Standort „Frankfurt-Griesheim“ wurde im Abstellplan nicht gefunden. Bitte lege ihn zuerst an.");
+        return;
+    }
+
+    const targetLocationId = Number(targetLocation.id);
+
+    setVevSyncState("Fahrzeuge werden synchronisiert …", "connected");
+
+    try {
+        const { data, error } = await window.vevSupabase
+            .from("vehicles")
+            .select("*")
+            .in("company", Object.keys(VEV_COMPANIES))
+            .order("company", { ascending: true })
+            .order("name", { ascending: true });
+
+        if (error) throw error;
+
+        const incoming = (data || [])
+            .filter(row => VEV_COMPANIES[row.company])
+            .map(normalizeVevVehicle);
+
+        const { data: existingRows, error: existingError } = await window.eetgSupabase
+            .from("vehicles")
+            .select("*")
+            .eq("location_id", targetLocationId);
+
+        if (existingError) throw existingError;
+
+        const existingByKey = new Map((existingRows || []).map(row => [
+            `${String(row.company || "EETG").toUpperCase()}::${String(row.number || "").trim().toLowerCase()}`,
+            row
+        ]));
+
+        let created = 0;
+        let updated = 0;
+        let unchanged = 0;
+
+        for (const vehicle of incoming) {
+            const key = `${vehicle.company}::${vehicle.number.toLowerCase()}`;
+            const existing = existingByKey.get(key);
+
+            if (!existing) {
+                const { error: insertError } = await window.eetgSupabase.from("vehicles").insert({
+                    number: vehicle.number,
+                    model: vehicle.model,
+                    image_url: null,
+                    category: vehicle.category,
+                    company: vehicle.company,
+                    type: vehicle.type,
+                    length: vehicle.length,
+                    track_id: null,
+                    location_id: targetLocationId,
+                    position: 0,
+                    consist: null,
+                    status: vehicle.status
+                });
+                if (insertError) throw insertError;
+                created++;
+                continue;
+            }
+
+            const patch = {
+                model: vehicle.model,
+                category: vehicle.category,
+                company: vehicle.company,
+                type: vehicle.type,
+                status: vehicle.status,
+                updated_at: new Date().toISOString()
+            };
+            const changed = Object.entries(patch).some(([field, value]) =>
+                field !== "updated_at" && String(existing[field] ?? "") !== String(value ?? "")
+            );
+
+            if (!changed) {
+                unchanged++;
+                continue;
+            }
+
+            const { error: updateError } = await window.eetgSupabase
+                .from("vehicles")
+                .update(patch)
+                .eq("id", existing.id);
+            if (updateError) throw updateError;
+            updated++;
+        }
+
+        currentLocationId = String(targetLocation.id);
+        localStorage.setItem("eetg_location_id", currentLocationId);
+        renderLocationSelect();
+        await loadPlan();
+        setVevSyncState(`VEV aktuell · ${incoming.length} Fahrzeuge`, "connected");
+
+        const eetgCount = incoming.filter(vehicle => vehicle.company === "EETG").length;
+        const rmbCount = incoming.filter(vehicle => vehicle.company === "RMB").length;
+        showVevSyncResult(
+            `<strong>${incoming.length} Fahrzeuge verarbeitet</strong><br>` +
+            `EETG: ${eetgCount} · RMB: ${rmbCount}<br>` +
+            `Neu: ${created} · Aktualisiert: ${updated} · Unverändert: ${unchanged}<br><br>` +
+            `Neue Fahrzeuge wurden in die Bibliothek von Frankfurt-Griesheim gelegt. Gleise, Positionen, Zugverbände, Bilder und manuell angepasste Längen bestehender Fahrzeuge wurden nicht verändert.`
+        );
+    } catch (error) {
+        console.error("Virtuelle-EVU-Synchronisierung:", error);
+        setVevSyncState("Synchronisierung fehlgeschlagen", "error");
+        showVevSyncResult(`<strong>Synchronisierung fehlgeschlagen</strong><br>${escapeHtml(error?.message || "Unbekannter Fehler")}`);
+    }
+}
+
 
 function canWrite() {
     return currentRole === "dispatcher" || currentRole === "admin";
@@ -3943,7 +4069,7 @@ async function requireLogin() {
     const { data: { session }, error } = await window.eetgSupabase.auth.getSession();
 
     if (error || !session) {
-        window.location.replace("login.html?next=abstellplan-intern.html");
+        window.location.replace("login.html?next=abstellplan.html");
         return false;
     }
 
@@ -3969,7 +4095,6 @@ async function requireLogin() {
     document.getElementById("userRole").textContent = currentRole;
     document.body.classList.toggle("readonly", !canWrite());
     document.body.classList.toggle("is-admin", currentRole === "admin");
-    applyRoleVisibility();
     return true;
 }
 
@@ -4049,14 +4174,9 @@ function mapConsist(row) {
 function mapArea(row) {
     return {
         id: String(row.id),
-        location: row.location_id == null ? null : String(row.location_id),
+        location: String(row.location_id),
         name: row.name,
         type: row.area_type || "sonstiges",
-        color: row.color || "#3b82f6",
-        trackId: row.track_id == null ? null : String(row.track_id),
-        startMeter: Number(row.start_meter || 0),
-        lengthMeter: Number(row.length_meter || 0),
-        // Legacy-Felder bleiben nur für alte Datensätze erhalten.
         x: Number(row.x_position || 0),
         y: Number(row.y_position || 0),
         width: Number(row.width_px || 500),
@@ -4379,10 +4499,7 @@ async function loadPlan() {
             .order("position"),
 
         window.eetgSupabase
-            .from("areas")
-            .select("*")
-            .or(`location_id.eq.${Number(currentLocationId)},location_id.is.null`)
-            .order("id"),
+            .from("areas").select("*").eq("location_id", Number(currentLocationId)).order("id"),
         window.eetgSupabase
             .from("consists").select("*").eq("location_id", Number(currentLocationId)).order("id")
     ]);
@@ -4581,8 +4698,10 @@ function renderPlan() {
         return;
     }
 
-    // Bereiche werden nicht mehr frei auf der Planfläche gezeichnet.
-    // Sie erscheinen ausschließlich auf dem zugehörigen Gleisabschnitt.
+    areas.forEach(area => {
+        plan.appendChild(createAreaElement(area));
+    });
+
     tracks.forEach(track => {
         const trackElement = document.createElement("div");
         trackElement.className = "track";
@@ -4675,14 +4794,6 @@ function renderPlan() {
         const line = document.createElement("div");
         line.className = "track-line";
         trackElement.appendChild(line);
-
-        // Nur der im Screenshot gezeigte Gleisbereich wird mit Bereichen belegt:
-        // der schmale Korridor direkt über den Schienen.
-        areas
-            .filter(area => String(area.trackId) === String(track.id))
-            .forEach(area => {
-                trackElement.appendChild(createTrackAreaElement(area, track));
-            });
 
         const scale = document.createElement("div");
         scale.className = "scale";
@@ -4794,86 +4905,6 @@ function renderPlan() {
     applySearchHighlights(false);
 }
 
-
-function createTrackAreaElement(area, track) {
-    const element = document.createElement("div");
-    element.className = "track-section-area";
-    element.dataset.areaId = area.id;
-    element.dataset.areaType = area.type;
-
-    const areaColor = normalizeAreaColor(area.color) || "#3b82f6";
-    element.style.setProperty("--area-color", areaColor);
-    element.style.borderColor = areaColor;
-    element.style.backgroundColor = areaColor + "55";
-
-    const safeStart = Math.max(0, Math.min(Number(area.startMeter || 0), Number(track.length || 0)));
-    const maxLength = Math.max(0, Number(track.length || 0) - safeStart);
-    const safeLength = Math.max(0, Math.min(Number(area.lengthMeter || 0), maxLength));
-
-    element.style.left = (80 + safeStart * PIXELS_PER_METER) + "px";
-    element.style.width = Math.max(2, safeLength * PIXELS_PER_METER) + "px";
-
-    const label = document.createElement("div");
-    label.className = "track-section-area-label";
-    label.textContent =
-        `${area.name} · ${formatMeters(safeLength)} m`;
-    element.appendChild(label);
-
-    if (isAdmin() && adminEditMode) {
-        const actions = document.createElement("div");
-        actions.className = "track-section-area-actions";
-
-        const editButton = document.createElement("button");
-        editButton.type = "button";
-        editButton.className = "secondary";
-        editButton.textContent = "📏";
-        editButton.title = "Start und Länge ändern";
-        editButton.addEventListener("click", event => {
-            event.preventDefault();
-            event.stopPropagation();
-            editTrackArea(area.id);
-        });
-
-        const colorButton = document.createElement("button");
-        colorButton.type = "button";
-        colorButton.className = "secondary";
-        colorButton.textContent = "🎨";
-        colorButton.title = "Farbe ändern";
-        colorButton.addEventListener("click", event => {
-            event.preventDefault();
-            event.stopPropagation();
-            editTrackAreaColor(area.id);
-        });
-
-        const renameButton = document.createElement("button");
-        renameButton.type = "button";
-        renameButton.className = "secondary";
-        renameButton.textContent = "✏";
-        renameButton.title = "Bereich umbenennen";
-        renameButton.addEventListener("click", event => {
-            event.preventDefault();
-            event.stopPropagation();
-            renameArea(area.id);
-        });
-
-        const deleteButton = document.createElement("button");
-        deleteButton.type = "button";
-        deleteButton.className = "danger";
-        deleteButton.textContent = "🗑";
-        deleteButton.title = "Bereich löschen";
-        deleteButton.addEventListener("click", event => {
-            event.preventDefault();
-            event.stopPropagation();
-            deleteArea(area.id);
-        });
-
-        actions.append(editButton, colorButton, renameButton, deleteButton);
-        element.appendChild(actions);
-    }
-
-    return element;
-}
-
 function createAreaElement(area) {
     const element = document.createElement("div");
     element.className = "area";
@@ -4960,9 +4991,8 @@ function startAreaDrag(event, area, element) {
         area,
         element,
         pointerId: event.pointerId,
-        zoom: Number(planZoom) || 1,
-        offsetX: (event.clientX - rect.left + plan.scrollLeft) / (Number(planZoom) || 1) - area.x,
-        offsetY: (event.clientY - rect.top + plan.scrollTop) / (Number(planZoom) || 1) - area.y
+        offsetX: event.clientX - rect.left + plan.scrollLeft - area.x,
+        offsetY: event.clientY - rect.top + plan.scrollTop - area.y
     };
 
     element.classList.add("dragging-area");
@@ -4980,9 +5010,8 @@ function onAreaDragMove(event) {
     const rect = plan.getBoundingClientRect();
     const grid = 25;
 
-    const zoom = activeAreaDrag.zoom || Number(planZoom) || 1;
-    let x = (event.clientX - rect.left + plan.scrollLeft) / zoom - activeAreaDrag.offsetX;
-    let y = (event.clientY - rect.top + plan.scrollTop) / zoom - activeAreaDrag.offsetY;
+    let x = event.clientX - rect.left + plan.scrollLeft - activeAreaDrag.offsetX;
+    let y = event.clientY - rect.top + plan.scrollTop - activeAreaDrag.offsetY;
 
     x = Math.max(0, Math.round(x / grid) * grid);
     y = Math.max(0, Math.round(y / grid) * grid);
@@ -5027,7 +5056,6 @@ function startAreaResize(event, area, element) {
         element,
         startX: event.clientX,
         startY: event.clientY,
-        zoom: Number(planZoom) || 1,
         startWidth: area.width,
         startHeight: area.height
     };
@@ -5223,26 +5251,6 @@ async function deleteCurrentLocation() {
     }
 }
 
-
-function normalizeAreaColor(value) {
-    const color = String(value || "").trim();
-    return /^#[0-9a-fA-F]{6}$/.test(color) ? color.toLowerCase() : null;
-}
-
-function syncAreaColor(source) {
-    const picker = document.getElementById("areaColor");
-    const hex = document.getElementById("areaColorHex");
-    if (!picker || !hex) return;
-
-    if (source === "picker") {
-        hex.value = picker.value.toLowerCase();
-        return;
-    }
-
-    const valid = normalizeAreaColor(hex.value);
-    if (valid) picker.value = valid;
-}
-
 function openAreaModal() {
     if (!enforceEditMode()) return;
 
@@ -5251,114 +5259,27 @@ function openAreaModal() {
         return;
     }
 
-    if (!tracks.length) {
-        alert("An diesem Standort ist noch kein Gleis vorhanden.");
-        return;
-    }
-
-    const colorPicker = document.getElementById("areaColor");
-    const colorHex = document.getElementById("areaColorHex");
-    if (colorPicker) colorPicker.value = "#3b82f6";
-    if (colorHex) colorHex.value = "#3b82f6";
-
-    const select = document.getElementById("areaTrack");
-    select.innerHTML = "";
-
-    tracks.forEach(track => {
-        const option = document.createElement("option");
-        option.value = track.id;
-        option.textContent = `${track.number} · ${formatMeters(track.length)} m`;
-        select.appendChild(option);
-    });
-
-    document.getElementById("areaStartMeter").value = "0";
-
-    const firstTrack = tracks[0];
-    document.getElementById("areaLengthMeter").value =
-        String(Math.min(25, Number(firstTrack?.length || 25)));
-
-    updateAreaTrackInfo();
     document.getElementById("areaModal").classList.add("active");
-}
-
-function updateAreaTrackInfo() {
-    const trackId = document.getElementById("areaTrack")?.value;
-    const track = tracks.find(t => String(t.id) === String(trackId));
-
-    const trackInfo = document.getElementById("areaTrackInfo");
-    const remainingInfo = document.getElementById("areaRemainingInfo");
-    const startInput = document.getElementById("areaStartMeter");
-    const lengthInput = document.getElementById("areaLengthMeter");
-
-    if (!track) {
-        if (trackInfo) trackInfo.textContent = "Gleislänge: –";
-        if (remainingInfo) remainingInfo.textContent = "Verfügbar: –";
-        return;
-    }
-
-    const trackLength = Number(track.length || 0);
-    const start = Math.max(0, Number(startInput?.value || 0));
-    const available = Math.max(0, trackLength - start);
-
-    if (startInput) startInput.max = String(trackLength);
-    if (lengthInput) lengthInput.max = String(available);
-
-    if (trackInfo) {
-        trackInfo.textContent = `Gleislänge aus Abstellplan: ${formatMeters(trackLength)} m`;
-    }
-
-    if (remainingInfo) {
-        remainingInfo.textContent =
-            `Ab ${formatMeters(start)} m noch ${formatMeters(available)} m verfügbar`;
-    }
 }
 
 async function addArea() {
     if (!enforceEditMode()) return;
+
     if (!currentLocationId) return;
 
     const name = document.getElementById("areaName").value.trim();
     const type = document.getElementById("areaType").value;
-    const color = normalizeAreaColor(document.getElementById("areaColorHex").value)
-        || normalizeAreaColor(document.getElementById("areaColor").value);
-    const trackId = document.getElementById("areaTrack").value;
-    const startMeter = Number(document.getElementById("areaStartMeter").value);
-    const lengthMeter = Number(document.getElementById("areaLengthMeter").value);
-
-    const track = tracks.find(t => String(t.id) === String(trackId));
+    const widthBoxes = Number(document.getElementById("areaWidth").value);
+    const heightBoxes = Number(document.getElementById("areaHeight").value);
 
     if (!name) {
         alert("Bitte eine Bezeichnung für den Bereich eingeben.");
         return;
     }
 
-    if (!color) {
-        alert("Bitte eine gültige Farbe im Format #RRGGBB auswählen.");
-        return;
-    }
-
-    if (!track) {
-        alert("Bitte ein gültiges Gleis auswählen.");
-        return;
-    }
-
-    if (!Number.isFinite(startMeter) || startMeter < 0) {
-        alert("Bitte eine gültige Startposition eingeben.");
-        return;
-    }
-
-    if (!Number.isFinite(lengthMeter) || lengthMeter <= 0) {
-        alert("Bitte eine gültige Bereichslänge eingeben.");
-        return;
-    }
-
-    if (startMeter + lengthMeter > Number(track.length) + 0.001) {
-        alert(
-            `Der Bereich würde über das Gleis hinausgehen.\n\n` +
-            `Gleislänge: ${formatMeters(track.length)} m\n` +
-            `Start: ${formatMeters(startMeter)} m\n` +
-            `Bereich: ${formatMeters(lengthMeter)} m`
-        );
+    if (!Number.isFinite(widthBoxes) || widthBoxes < 4 ||
+        !Number.isFinite(heightBoxes) || heightBoxes < 3) {
+        alert("Bitte eine gültige Bereichsgröße eingeben.");
         return;
     }
 
@@ -5366,21 +5287,12 @@ async function addArea() {
         .from("areas")
         .insert({
             location_id: Number(currentLocationId),
-            track_id: Number(track.id),
             name,
             area_type: type,
-            color,
-            start_meter: startMeter,
-            length_meter: lengthMeter,
-
-            // Legacy-Felder bleiben gesetzt, damit bestehende NOT-NULL-Definitionen
-            // alter Datenbanken keine Inserts blockieren.
-            x_position: 0,
-            y_position: 0,
-            // Legacy-Felder müssen weiterhin die alten CHECK-Constraints erfüllen.
-            // Visuell werden diese Werte bei Gleisbereichen nicht mehr verwendet.
-            width_px: Math.max(100, lengthMeter * PIXELS_PER_METER),
-            height_px: 75
+            x_position: 25,
+            y_position: 25,
+            width_px: widthBoxes * 25,
+            height_px: heightBoxes * 25
         });
 
     if (error) {
@@ -5390,98 +5302,6 @@ async function addArea() {
 
     closeModals();
     document.getElementById("areaName").value = "";
-    await loadPlan();
-}
-
-
-async function editTrackAreaColor(areaId) {
-    if (!enforceEditMode()) return;
-
-    const area = areas.find(a => String(a.id) === String(areaId));
-    if (!area) return;
-
-    const value = prompt(
-        "Bereichsfarbe als HEX eingeben, z.B. #ff0000:",
-        normalizeAreaColor(area.color) || "#3b82f6"
-    );
-
-    if (value === null) return;
-
-    const color = normalizeAreaColor(value);
-    if (!color) {
-        alert("Ungültige Farbe. Bitte im Format #RRGGBB eingeben.");
-        return;
-    }
-
-    const { error } = await window.eetgSupabase
-        .from("areas")
-        .update({
-            color,
-            updated_at: new Date().toISOString()
-        })
-        .eq("id", Number(area.id));
-
-    if (error) {
-        showSupabaseError("Bereichsfarbe konnte nicht geändert werden.", error);
-        return;
-    }
-
-    await loadPlan();
-}
-
-async function editTrackArea(areaId) {
-    if (!enforceEditMode()) return;
-
-    const area = areas.find(a => String(a.id) === String(areaId));
-    if (!area || !area.trackId) return;
-
-    const track = tracks.find(t => String(t.id) === String(area.trackId));
-    if (!track) return;
-
-    const startValue = prompt(
-        `Startposition auf ${track.number} in Metern:`,
-        String(area.startMeter)
-    );
-    if (startValue === null) return;
-
-    const startMeter = Number(String(startValue).replace(",", "."));
-    if (!Number.isFinite(startMeter) || startMeter < 0 || startMeter > Number(track.length)) {
-        alert("Ungültige Startposition.");
-        return;
-    }
-
-    const lengthValue = prompt(
-        `Bereichslänge in Metern (Gleis: ${formatMeters(track.length)} m):`,
-        String(area.lengthMeter)
-    );
-    if (lengthValue === null) return;
-
-    const lengthMeter = Number(String(lengthValue).replace(",", "."));
-    if (!Number.isFinite(lengthMeter) || lengthMeter <= 0) {
-        alert("Ungültige Bereichslänge.");
-        return;
-    }
-
-    if (startMeter + lengthMeter > Number(track.length) + 0.001) {
-        alert("Der Bereich darf nicht über das Ende des Gleises hinausgehen.");
-        return;
-    }
-
-    const { error } = await window.eetgSupabase
-        .from("areas")
-        .update({
-            start_meter: startMeter,
-            length_meter: lengthMeter,
-            width_px: Math.max(100, lengthMeter * PIXELS_PER_METER),
-            updated_at: new Date().toISOString()
-        })
-        .eq("id", Number(area.id));
-
-    if (error) {
-        showSupabaseError("Bereich konnte nicht geändert werden.", error);
-        return;
-    }
-
     await loadPlan();
 }
 
@@ -5566,6 +5386,18 @@ function updatePlanCanvasSize() {
     let contentRight = 0;
     let contentBottom = 0;
 
+    areas.forEach(area => {
+        contentRight = Math.max(
+            contentRight,
+            Number(area.x || 0) + Number(area.width || 0)
+        );
+
+        contentBottom = Math.max(
+            contentBottom,
+            Number(area.y || 0) + Number(area.height || 0)
+        );
+    });
+
     tracks.forEach(track => {
         const trackWidth =
             track.length * PIXELS_PER_METER + 110 + 25;
@@ -5615,9 +5447,8 @@ function startTrackDrag(event, track, element) {
         track,
         element,
         pointerId: event.pointerId,
-        zoom: Number(planZoom) || 1,
-        offsetX: (event.clientX - planRect.left + plan.scrollLeft) / (Number(planZoom) || 1) - track.x,
-        offsetY: (event.clientY - planRect.top + plan.scrollTop) / (Number(planZoom) || 1) - track.y
+        offsetX: event.clientX - planRect.left + plan.scrollLeft - track.x,
+        offsetY: event.clientY - planRect.top + plan.scrollTop - track.y
     };
 
     element.classList.add("dragging-track");
@@ -5634,9 +5465,8 @@ function onTrackDragMove(event) {
     const plan = document.getElementById("plan");
     const planRect = plan.getBoundingClientRect();
 
-    const zoom = activeTrackDrag.zoom || Number(planZoom) || 1;
-    let x = (event.clientX - planRect.left + plan.scrollLeft) / zoom - activeTrackDrag.offsetX;
-    let y = (event.clientY - planRect.top + plan.scrollTop) / zoom - activeTrackDrag.offsetY;
+    let x = event.clientX - planRect.left + plan.scrollLeft - activeTrackDrag.offsetX;
+    let y = event.clientY - planRect.top + plan.scrollTop - activeTrackDrag.offsetY;
 
     // Kleine Rasterung für sauberes Ausrichten.
     const grid = 10;
@@ -6421,18 +6251,6 @@ function createLibraryVehicleCard(vehicle) {
     });
     editRow.appendChild(historyButton);
 
-    const deleteButton = document.createElement("button");
-    deleteButton.type = "button";
-    deleteButton.className = "library-delete-button";
-    deleteButton.textContent = "🗑 Löschen";
-    deleteButton.title = "Fahrzeug dauerhaft löschen";
-    deleteButton.addEventListener("click", event => {
-        event.preventDefault();
-        event.stopPropagation();
-        deleteVehicleFromLibrary(vehicle.id);
-    });
-    editRow.appendChild(deleteButton);
-
     item.appendChild(editRow);
 
     if (canWrite()) {
@@ -6459,34 +6277,6 @@ function toggleVehicleCategory(category) {
         collapsedCategories.add(category);
     }
     renderLibrary();
-}
-
-
-async function deleteVehicleFromLibrary(vehicleId){
-    if(!enforceEditMode()) return;
-
-    const vehicle = vehicles.find(v => String(v.id) === String(vehicleId));
-    if(!vehicle) return;
-
-    if(!confirm(`Fahrzeug „${vehicle.number}“ wirklich löschen?\n\nDas Fahrzeug wird dauerhaft aus der zentralen Datenbank entfernt.`)){
-        return;
-    }
-
-    const { error } = await window.eetgSupabase
-        .from("vehicles")
-        .delete()
-        .eq("id", Number(vehicle.id));
-
-    if(error){
-        showSupabaseError("Fahrzeug konnte nicht gelöscht werden.", error);
-        return;
-    }
-
-    if(String(selectedVehicle) === String(vehicle.id)){
-        selectedVehicle = null;
-    }
-
-    await loadPlan();
 }
 
 function renderLibrary() {
@@ -6894,6 +6684,8 @@ window.addEventListener("beforeunload",()=>{
     const ok = await requireLogin();
     if (!ok) return;
 
+    await updateVevConnectionState();
+
     // Globales Infofeld zuerst aus Supabase laden,
     // damit der gespeicherte Text nach einem Reload wieder erscheint.
     await loadGlobalInfo();
@@ -6916,32 +6708,5 @@ document.addEventListener("DOMContentLoaded", () => {
     if (state) state.textContent = "Gesperrt";
 });
 </script>
-
-<script>
-document.addEventListener("DOMContentLoaded", function(){
-    const picker = document.getElementById("areaColor");
-    const hex = document.getElementById("areaColorHex");
-
-    if (picker) {
-        picker.addEventListener("input", function(){
-            syncAreaColor("picker");
-        });
-    }
-
-    if (hex) {
-        hex.addEventListener("input", function(){
-            syncAreaColor("hex");
-        });
-        hex.addEventListener("blur", function(){
-            const valid = normalizeAreaColor(hex.value);
-            if (valid) {
-                hex.value = valid;
-                if (picker) picker.value = valid;
-            }
-        });
-    }
-});
-</script>
-
 </body>
 </html>
