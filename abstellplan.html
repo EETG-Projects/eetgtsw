@@ -2704,6 +2704,90 @@ body.dark .track-note{
     color:#fff!important;
 }
 
+
+/* =========================================================
+   SCHEMATISCHER GLEISPLAN
+   Nur waagerechte Gleise + Weichen exakt 45°
+========================================================= */
+
+/* Jedes Gleis ist eine feste horizontale Achse. */
+.track{
+    transform:none!important;
+}
+
+/* Die Hauptgleislinie ist immer 0° / waagerecht. */
+.track-line{
+    transform:none!important;
+    height:4px!important;
+    border-top:2px solid var(--diagram-track)!important;
+    border-bottom:2px solid var(--diagram-track)!important;
+    background:
+        repeating-linear-gradient(
+            90deg,
+            var(--diagram-track) 0 8px,
+            transparent 8px 12px
+        )!important;
+}
+
+/* Weichenansatz als saubere 45°-Diagonale. */
+.schematic-switch{
+    position:absolute;
+    top:73px;
+    width:58px;
+    height:4px;
+    background:var(--diagram-track);
+    transform-origin:left center;
+    z-index:4;
+    pointer-events:none;
+}
+
+/* linke Weiche fällt nach rechts unten */
+.schematic-switch-left{
+    left:80px;
+    transform:rotate(45deg);
+}
+
+/* rechte Weiche steigt nach rechts oben */
+.schematic-switch-right{
+    right:30px;
+    transform-origin:right center;
+    transform:rotate(-45deg);
+}
+
+/* Schwellen auf den 45°-Weichen als kleine Querstriche */
+.schematic-switch::after{
+    content:"";
+    position:absolute;
+    inset:-3px 0;
+    background:
+        repeating-linear-gradient(
+            90deg,
+            transparent 0 7px,
+            rgba(70,70,70,.9) 7px 9px,
+            transparent 9px 14px
+        );
+    opacity:.65;
+}
+
+/* Endmelder etwas nach außen setzen, damit Weiche nicht verdeckt wird. */
+.gleisbild-signal-left{left:66px!important}
+.gleisbild-signal-right{right:16px!important}
+
+/* Gleislagen optisch kompakter wie im Beispiel */
+.track{
+    min-height:175px!important;
+}
+
+/* Adminhinweis: Verschieben rastet auf festen Gleislagen */
+.track-drag-handle::after{
+    content:"";
+}
+
+/* Im Darkmode dieselbe Geometrie, nur hellere Gleisfarbe. */
+body.dark .schematic-switch{
+    background:var(--diagram-track);
+}
+
 </style>
 </head>
 
@@ -3947,6 +4031,18 @@ function renderPlan() {
         line.className = "track-line";
         trackElement.appendChild(line);
 
+        // Schematische Weichenansätze: immer exakt 45°.
+        // Die eigentliche Gleisachse bleibt ausschließlich waagerecht.
+        const switchLeft = document.createElement("div");
+        switchLeft.className = "schematic-switch schematic-switch-left";
+        switchLeft.setAttribute("aria-hidden", "true");
+        trackElement.appendChild(switchLeft);
+
+        const switchRight = document.createElement("div");
+        switchRight.className = "schematic-switch schematic-switch-right";
+        switchRight.setAttribute("aria-hidden", "true");
+        trackElement.appendChild(switchRight);
+
         const scale = document.createElement("div");
         scale.className = "scale";
         createScale(scale, track.length);
@@ -4155,8 +4251,10 @@ function onAreaDragMove(event) {
     let x = event.clientX - rect.left + plan.scrollLeft - activeAreaDrag.offsetX;
     let y = event.clientY - rect.top + plan.scrollTop - activeAreaDrag.offsetY;
 
-    x = Math.max(0, Math.round(x / grid) * grid);
-    y = Math.max(0, Math.round(y / grid) * grid);
+    // Gleise bleiben im schematischen Gleisbild immer waagerecht
+    // und rasten auf festen 50-px-Gleislagen ein.
+    x = Math.max(0, Math.round(x / 25) * 25);
+    y = Math.max(0, Math.round(y / 50) * 50);
 
     activeAreaDrag.area.x = x;
     activeAreaDrag.area.y = y;
