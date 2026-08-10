@@ -2303,6 +2303,18 @@ body.dark .area-title{
     font-size:13px;
 }
 
+
+/* AUSBAUSTUFE 2 */
+.track-capacity{margin-top:4px;font-size:10px;font-weight:900;color:var(--muted)}
+.track-capacity.warning{color:#d97706}.track-capacity.full{color:#b91c1c}
+.track.capacity-warning{border-color:#d97706!important}
+.track.capacity-full{border-color:#b91c1c!important;box-shadow:0 0 0 2px rgba(185,28,28,.14)!important}
+.consist-badge{position:absolute;top:-19px;left:0;z-index:12;padding:2px 5px;border-radius:5px;background:#20262c;color:#fff;font-size:8px;font-weight:900;white-space:nowrap;pointer-events:none}
+.stats-panel{position:sticky;left:calc(100% - 380px);top:10px;z-index:180;width:350px;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--panel);box-shadow:0 14px 36px rgba(0,0,0,.18);display:none}
+.stats-panel.open{display:block}.stats-panel h3{margin:0 0 10px}.stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}
+.stat-card{padding:9px;border:1px solid var(--border);border-radius:8px;background:var(--panel2)}.stat-value{font-size:18px;font-weight:900}.stat-label{font-size:9px;color:var(--muted);font-weight:800}
+.realtime-state{display:inline-flex;align-items:center;gap:5px;padding:5px 7px;border-radius:999px;background:var(--panel2);font-size:9px;font-weight:900}.realtime-dot{width:7px;height:7px;border-radius:50%;background:#d97706}.realtime-state.live .realtime-dot{background:#16a34a}.realtime-state.error .realtime-dot{background:#b91c1c}
+
 </style>
 </head>
 
@@ -2445,6 +2457,9 @@ body.dark .area-title{
         <button class="write-only" onclick="createConsist()">
             🔗 Zugverband bilden
         </button>
+        <button class="write-only" onclick="dissolveSelectedConsist()">⛓ Verband auflösen</button>
+        <button class="secondary" type="button" onclick="toggleStatistics()">📊 Statistik</button>
+        <span class="realtime-state" id="realtimeState"><span class="realtime-dot"></span><span id="realtimeText">Synchronisiere …</span></span>
 
         <button
             class="secondary"
@@ -2878,6 +2893,9 @@ let areas = [];
 let currentLocationId = null;
 let activeAreaDrag = null;
 let activeAreaResize = null;
+let consists = [];
+let statisticsOpen = false;
+let realtimeReloadTimer = null;
 
 let globalSearchQuery = "";
 const collapsedCategories = new Set();
@@ -3054,6 +3072,10 @@ function mapLocation(row) {
     };
 }
 
+function mapConsist(row) {
+    return {id:String(row.id),location:String(row.location_id),number:row.train_number||"",name:row.name||""};
+}
+
 function mapArea(row) {
     return {
         id: String(row.id),
@@ -3155,7 +3177,8 @@ async function loadPlan() {
     const [
         { data: trackRows, error: trackError },
         { data: vehicleRows, error: vehicleError },
-        { data: areaRows, error: areaError }
+        { data: areaRows, error: areaError },
+        { data: consistRows, error: consistError }
     ] = await Promise.all([
         window.eetgSupabase
             .from("tracks")
@@ -3172,13 +3195,12 @@ async function loadPlan() {
             .order("position"),
 
         window.eetgSupabase
-            .from("areas")
-            .select("*")
-            .eq("location_id", Number(currentLocationId))
-            .order("id")
+            .from("areas").select("*").eq("location_id", Number(currentLocationId)).order("id"),
+        window.eetgSupabase
+            .from("consists").select("*").eq("location_id", Number(currentLocationId)).order("id")
     ]);
 
-    const error = trackError || vehicleError || areaError;
+    const error = trackError || vehicleError || areaError || consistError;
 
     if (error) {
         showSupabaseError("Der Standort konnte nicht aus Supabase geladen werden.", error);
@@ -3188,14 +3210,39 @@ async function loadPlan() {
     tracks = (trackRows || []).map((row, index) => mapTrack(row, index));
     vehicles = (vehicleRows || []).map(mapVehicle);
     areas = (areaRows || []).map(mapArea);
+    consists = (consistRows || []).map(mapConsist);
 
     renderPlan();
     renderLibrary();
 }
 
+
+function formatMeters(v){return Number(v||0).toLocaleString("de-DE",{maximumFractionDigits:1})}
+function getTrackVehicles(trackId,exclude=[]){const x=new Set(exclude.map(String));return vehicles.filter(v=>String(v.track)===String(trackId)&&!x.has(String(v.id)))}
+function getTrackUsedLength(trackId,exclude=[]){return getTrackVehicles(trackId,exclude).reduce((s,v)=>s+Number(v.length||0),0)}
+function canFitOnTrack(trackId,moving){const t=tracks.find(x=>String(x.id)===String(trackId));if(!t)return false;const ids=moving.map(v=>String(v.id));return getTrackUsedLength(trackId,ids)+moving.reduce((s,v)=>s+Number(v.length||0),0)<=Number(t.length)+.001}
+function toggleStatistics(){statisticsOpen=!statisticsOpen;renderStatistics()}
+function renderStatistics(){
+ const p=document.getElementById("statsPanel");if(!p)return;p.classList.toggle("open",statisticsOpen);if(!statisticsOpen)return;
+ const total=tracks.reduce((s,t)=>s+Number(t.length||0),0),used=vehicles.filter(v=>v.track!=null).reduce((s,v)=>s+Number(v.length||0),0);
+ const counts={};["Einsatzbereit","Unterwegs","Abgestellt","Vermietet","In der Werkstatt"].forEach(s=>counts[s]=0);vehicles.forEach(v=>counts[v.status||"Abgestellt"]++);
+ p.innerHTML=`<h3>📊 Standortstatistik</h3><div class="stats-grid">
+ <div class="stat-card"><div class="stat-value">${vehicles.length}</div><div class="stat-label">Fahrzeuge</div></div>
+ <div class="stat-card"><div class="stat-value">${tracks.length}</div><div class="stat-label">Gleise</div></div>
+ <div class="stat-card"><div class="stat-value">${consists.length}</div><div class="stat-label">Zugverbände</div></div>
+ <div class="stat-card"><div class="stat-value">${vehicles.filter(v=>v.track==null).length}</div><div class="stat-label">Bibliothek</div></div>
+ <div class="stat-card"><div class="stat-value">${formatMeters(used)} m</div><div class="stat-label">belegt</div></div>
+ <div class="stat-card"><div class="stat-value">${formatMeters(total)} m</div><div class="stat-label">Gleislänge</div></div></div>
+ <div style="margin-top:10px;font-size:10px">${Object.entries(counts).map(([s,c])=>`<div><b>${escapeHtml(s)}:</b> ${c}</div>`).join("")}</div>`;
+}
+function scheduleRealtimeReload(){clearTimeout(realtimeReloadTimer);realtimeReloadTimer=setTimeout(()=>loadPlan(),120)}
+
 function renderPlan() {
     const plan = document.getElementById("plan");
     plan.innerHTML = "";
+    const statsPanel=document.createElement("div");
+    statsPanel.id="statsPanel";statsPanel.className="stats-panel"+(statisticsOpen?" open":"");
+    plan.appendChild(statsPanel);
 
     if (!currentLocationId) {
         plan.innerHTML = '<div class="location-empty">Bitte zuerst einen Standort anlegen oder auswählen.</div>';
@@ -3236,6 +3283,13 @@ function renderPlan() {
         lengthLabel.className = "track-length-label";
         lengthLabel.textContent = track.length + " m";
         titleBox.appendChild(lengthLabel);
+        const usedLength=getTrackUsedLength(track.id), freeLength=Math.max(0,track.length-usedLength);
+        const capacityLabel=document.createElement("div");capacityLabel.className="track-capacity";
+        capacityLabel.textContent=`${formatMeters(usedLength)} / ${formatMeters(track.length)} m · ${formatMeters(freeLength)} m frei`;
+        const ratio=track.length?usedLength/track.length:0;
+        if(ratio>=1){capacityLabel.classList.add("full");trackElement.classList.add("capacity-full")}
+        else if(ratio>=.85){capacityLabel.classList.add("warning");trackElement.classList.add("capacity-warning")}
+        titleBox.appendChild(capacityLabel);
 
         if (isAdmin() && adminEditMode) {
             const actions = document.createElement("div");
@@ -3377,6 +3431,8 @@ function renderPlan() {
                 if (vehicle.consist) {
                     await moveConsist(vehicle.consist, track.id, position);
                 } else {
+                    const movingVehicles=vehicle.consist?vehicles.filter(v=>String(v.consist)===String(vehicle.consist)):[vehicle];
+                    if(!canFitOnTrack(track.id,movingVehicles)){alert(`Nicht genügend Platz auf ${track.number}.`);return;}
                     vehicle.track = track.id;
                     vehicle.location = String(currentLocationId);
                     vehicle.position = position;
@@ -3930,7 +3986,7 @@ function createVehicleElement(vehicle) {
     wrap.className = "vehicle-wrap";
     wrap.style.left = (80 + vehicle.position * PIXELS_PER_METER) + "px";
     wrap.style.width = width + "px";
-
+    if(vehicle.consist){const c=consists.find(x=>x.id===String(vehicle.consist));if(c){const b=document.createElement("div");b.className="consist-badge";b.textContent=[c.number,c.name].filter(Boolean).join(" · ");wrap.appendChild(b)}}
     const element = document.createElement("div");
     element.className = "vehicle " + vehicle.type + " " + statusClass(vehicle.status);
     element.dataset.vehicleId = vehicle.id;
@@ -4114,27 +4170,23 @@ async function moveConsist(consistId, targetTrack, newStart) {
 
 async function createConsist() {
     if (!enforceWritePermission()) return;
-
-    const selected = vehicles.find(v => v.id === selectedVehicle);
-    if (!selected) {
-        alert("Bitte zuerst ein Fahrzeug auswählen.");
-        return;
-    }
-
-    const nearby = vehicles
-        .filter(v => v.track === selected.track)
-        .filter(v => Math.abs(v.position - selected.position) < 40);
-
-    if (nearby.length < 2) {
-        alert("Mindestens zwei nahe Fahrzeuge auf demselben Gleis werden benötigt.");
-        return;
-    }
-
-    const consistId = "zug_" + Date.now();
-    nearby.forEach(v => v.consist = consistId);
-
-    await Promise.all(nearby.map(updateVehicle));
-    renderPlan();
+    const selected=vehicles.find(v=>v.id===selectedVehicle);
+    if(!selected||selected.track==null){alert("Bitte zuerst ein Fahrzeug auf einem Gleis auswählen.");return}
+    const nearby=vehicles.filter(v=>String(v.track)===String(selected.track)).filter(v=>Math.abs(Number(v.position)-Number(selected.position))<40).sort((a,b)=>a.position-b.position);
+    if(nearby.length<2){alert("Mindestens zwei nahe Fahrzeuge werden benötigt.");return}
+    const trainNumber=prompt("Zugnummer (optional):","");if(trainNumber===null)return;
+    const name=prompt("Bezeichnung:","Zugverband");if(name===null)return;
+    const {data,error}=await window.eetgSupabase.from("consists").insert({location_id:Number(currentLocationId),train_number:trainNumber.trim()||null,name:name.trim()||"Zugverband"}).select().single();
+    if(error){showSupabaseError("Zugverband konnte nicht angelegt werden.",error);return}
+    nearby.forEach(v=>v.consist=String(data.id));
+    await Promise.all(nearby.map(updateVehicle));await loadPlan();
+}
+async function dissolveSelectedConsist(){
+    if(!enforceWritePermission())return;
+    const selected=vehicles.find(v=>v.id===selectedVehicle);if(!selected?.consist){alert("Kein Zugverband ausgewählt.");return}
+    const id=String(selected.consist);if(!confirm("Zugverband wirklich auflösen?"))return;
+    const members=vehicles.filter(v=>String(v.consist)===id);members.forEach(v=>v.consist=null);await Promise.all(members.map(updateVehicle));
+    const {error}=await window.eetgSupabase.from("consists").delete().eq("id",Number(id));if(error){showSupabaseError("Zugverband konnte nicht gelöscht werden.",error);return}await loadPlan();
 }
 
 function clearSelection() {
@@ -4751,6 +4803,7 @@ function applySearchHighlights(scrollToFirst = false) {
             `.vehicle[data-vehicle-id="${CSS.escape(String(vehicle.id))}"]`
         );
         if (trackVehicle) trackVehicle.classList.add("search-highlight");
+        if(vehicle.track!=null){const t=document.querySelector(`.track[data-track="${CSS.escape(String(vehicle.track))}"]`);if(t)t.classList.add("search-highlight")}
     });
 
     matchingTracks.forEach(track => {
@@ -4902,24 +4955,15 @@ function escapeHtml(text) {
 }
 
 function subscribeRealtime() {
-    if (realtimeChannel) {
-        window.eetgSupabase.removeChannel(realtimeChannel);
-    }
-
-    realtimeChannel = window.eetgSupabase
-        .channel("eetg-abstellplan")
-        .on("postgres_changes", { event: "*", schema: "public", table: "locations" }, async () => {
-            await loadLocations();
-            await loadPlan();
-        })
-        .on("postgres_changes", { event: "*", schema: "public", table: "areas" }, () => {
-            if (!activeAreaDrag && !activeAreaResize) loadPlan();
-        })
-        .on("postgres_changes", { event: "*", schema: "public", table: "tracks" }, () => {
-            if (!activeTrackDrag) loadPlan();
-        })
-        .on("postgres_changes", { event: "*", schema: "public", table: "vehicles" }, () => loadPlan())
-        .subscribe();
+ if(realtimeChannel)window.eetgSupabase.removeChannel(realtimeChannel);
+ const state=document.getElementById("realtimeState"),txt=document.getElementById("realtimeText");
+ realtimeChannel=window.eetgSupabase.channel("eetg-abstellplan-live")
+ .on("postgres_changes",{event:"*",schema:"public",table:"locations"},async()=>{await loadLocations();scheduleRealtimeReload()})
+ .on("postgres_changes",{event:"*",schema:"public",table:"areas"},()=>{if(!activeAreaDrag&&!activeAreaResize)scheduleRealtimeReload()})
+ .on("postgres_changes",{event:"*",schema:"public",table:"tracks"},()=>{if(!activeTrackDrag)scheduleRealtimeReload()})
+ .on("postgres_changes",{event:"*",schema:"public",table:"vehicles"},scheduleRealtimeReload)
+ .on("postgres_changes",{event:"*",schema:"public",table:"consists"},scheduleRealtimeReload)
+ .subscribe(status=>{if(!state||!txt)return;state.classList.remove("live","error");if(status==="SUBSCRIBED"){state.classList.add("live");txt.textContent="Live"}else if(status==="CHANNEL_ERROR"||status==="TIMED_OUT"){state.classList.add("error");txt.textContent="Verbindung gestört"}else txt.textContent="Synchronisiere …"});
 }
 
 (async function init() {
