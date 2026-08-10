@@ -251,6 +251,12 @@ body.dark .vehicle-library-location{
     color:#aeb6bd;
 }
 
+
+/* Globalbibliothek-Fix: Plan bleibt auch bei Bibliotheks-Ladefehler sichtbar. */
+.vehicle-list .empty{
+    min-height:40px;
+}
+
 </style>
 
 
@@ -4754,14 +4760,20 @@ async function loadPlan() {
         tracks = [];
         vehicles = [];
         areas = [];
+        consists = [];
         renderPlan();
         renderLibrary();
         return;
     }
 
+    /*
+     * Wichtig:
+     * Die globale Fahrzeugbibliothek darf den eigentlichen Abstellplan
+     * niemals blockieren. Deshalb werden Standortdaten und Bibliothek
+     * getrennt geladen.
+     */
     const [
         { data: trackRows, error: trackError },
-        { data: vehicleRows, error: vehicleError },
         { data: areaRows, error: areaError },
         { data: consistRows, error: consistError }
     ] = await Promise.all([
@@ -4772,49 +4784,90 @@ async function loadPlan() {
             .order("sort_order", { ascending: true })
             .order("id"),
 
-        // Fahrzeugbibliothek ist standortübergreifend:
-        // alle Fahrzeuge laden, der Plan selbst filtert danach auf den Standort.
-        window.eetgSupabase
-            .from("vehicles")
-            .select("*")
-            .order("company")
-            .order("category")
-            .order("number"),
-
         window.eetgSupabase
             .from("areas")
             .select("*")
             .or(`location_id.eq.${Number(currentLocationId)},location_id.is.null`)
             .order("id"),
+
         window.eetgSupabase
-            .from("consists").select("*").eq("location_id", Number(currentLocationId)).order("id")
+            .from("consists")
+            .select("*")
+            .eq("location_id", Number(currentLocationId))
+            .order("id")
     ]);
 
-    const error = trackError || vehicleError || areaError || consistError;
+    const planError = trackError || areaError || consistError;
 
-    if (error) {
-        showSupabaseError("Der Standort konnte nicht aus Supabase geladen werden.", error);
+    if (planError) {
+        showSupabaseError(
+            "Der Abstellplan des Standorts konnte nicht aus Supabase geladen werden.",
+            planError
+        );
         return;
     }
 
+    // Zuerst Planbasis setzen, damit die Gleise unabhängig von der Bibliothek sichtbar bleiben.
     tracks = (trackRows || []).map((row, index) => mapTrack(row, index));
-
-    // Eine zentrale Fahrzeugbibliothek für ALLE Standorte.
-    libraryVehicles = (vehicleRows || []).map(mapVehicle);
-
-    // Auf dem eigentlichen Abstellplan werden weiterhin nur Fahrzeuge
-    // des aktuell ausgewählten Standorts verwendet.
-    vehicles = libraryVehicles.filter(vehicle =>
-        String(vehicle.location) === String(currentLocationId)
-    );
-
     areas = (areaRows || []).map(mapArea);
     consists = (consistRows || []).map(mapConsist);
+
+    /*
+     * Alle Fahrzeuge für die standortübergreifende Bibliothek laden.
+     * Keine Sortierung auf möglicherweise projektspezifischen DB-Spalten:
+     * sortiert wird anschließend rein im Browser.
+     */
+    let globalVehicleRows = [];
+    let globalVehicleError = null;
+
+    {
+        const result = await window.eetgSupabase
+            .from("vehicles")
+            .select("*")
+            .order("id");
+
+        globalVehicleRows = result.data || [];
+        globalVehicleError = result.error || null;
+    }
+
+    if (globalVehicleError) {
+        console.warn(
+            "Globale Fahrzeugbibliothek konnte nicht vollständig geladen werden. " +
+            "Es wird auf den aktuellen Standort zurückgefallen.",
+            globalVehicleError
+        );
+
+        const fallback = await window.eetgSupabase
+            .from("vehicles")
+            .select("*")
+            .eq("location_id", Number(currentLocationId))
+            .order("track_id")
+            .order("position");
+
+        if (fallback.error) {
+            /*
+             * Selbst ein Fahrzeugfehler soll die Gleise nicht verschwinden lassen.
+             * Wir zeigen den Standort daher wenigstens ohne Fahrzeuge.
+             */
+            console.error("Fahrzeuge konnten nicht geladen werden:", fallback.error);
+            libraryVehicles = [];
+            vehicles = [];
+        } else {
+            libraryVehicles = (fallback.data || []).map(mapVehicle);
+            vehicles = [...libraryVehicles];
+        }
+    } else {
+        libraryVehicles = globalVehicleRows.map(mapVehicle);
+
+        // Der Gleisplan zeigt weiterhin ausschließlich Fahrzeuge dieses Standorts.
+        vehicles = libraryVehicles.filter(vehicle =>
+            String(vehicle.location) === String(currentLocationId)
+        );
+    }
 
     renderPlan();
     renderLibrary();
 }
-
 
 function formatMeters(v){return Number(v||0).toLocaleString("de-DE",{maximumFractionDigits:1})}
 function getTrackVehicles(trackId,exclude=[]){const x=new Set(exclude.map(String));return vehicles.filter(v=>String(v.track)===String(trackId)&&!x.has(String(v.id)))}
