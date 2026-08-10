@@ -3235,6 +3235,99 @@ body.public-mode #publicPreview{display:block!important}
     margin-left:auto!important;
 }
 
+
+/* Öffentlicher White-/Darkmode-Schalter */
+.public-theme-toggle{
+    margin-left:auto;
+    min-width:92px;
+    height:42px;
+    padding:0 14px;
+    border:1px solid #d9dde1;
+    border-radius:9px;
+    background:#fff;
+    color:#20252a;
+    font:inherit;
+    font-size:13px;
+    font-weight:900;
+    cursor:pointer;
+}
+.public-login{margin-left:10px!important}
+
+body.public-light .public-preview{background:#f4f6f7;color:#20252a}
+body.public-light .public-header{background:#fff;border-color:#dfe3e6}
+body.public-light .public-brand{color:#20252a}
+body.public-light .public-main{background:#f4f6f7;color:#20252a}
+body.public-light .public-hero p{color:#4f5962}
+body.public-light .public-demo{background:#fff;border-color:#dfe3e6}
+body.public-light .public-demo-title,
+body.public-light .public-demo-grid aside,
+body.public-light .public-legend{border-color:#dfe3e6}
+body.public-light .public-cat{border-color:#dfe3e6}
+body.public-light .public-cat>strong{background:#eef1f3}
+body.public-light .public-cat>div{border-color:#dfe3e6}
+body.public-light .public-plan{
+    background:
+      linear-gradient(rgba(0,0,0,.045) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(0,0,0,.045) 1px,transparent 1px),#f7f8f9;
+    background-size:25px 25px
+}
+body.public-light .public-track{background:#fff;border-color:#dfe3e6}
+body.public-light .public-theme-toggle{background:#20252a;color:#fff;border-color:#20252a}
+
+body.public-dark .public-theme-toggle{background:#fff;color:#20252a;border-color:#d9dde1}
+
+
+/* =========================================================
+   PUBLIC THEME BUTTON – SICHTBARKEITSFIX
+========================================================= */
+body.public-mode #publicThemeToggle{
+    display:inline-flex!important;
+    visibility:visible!important;
+    opacity:1!important;
+    position:relative!important;
+    z-index:999!important;
+    flex:0 0 auto!important;
+    width:auto!important;
+    min-width:96px!important;
+    height:42px!important;
+    min-height:42px!important;
+    margin-left:auto!important;
+    margin-right:0!important;
+    padding:0 14px!important;
+    border:1px solid #4a5158!important;
+    border-radius:9px!important;
+    background:#242a30!important;
+    color:#fff!important;
+    font-size:13px!important;
+    font-weight:900!important;
+    line-height:1!important;
+    cursor:pointer!important;
+}
+
+body.public-mode.public-light #publicThemeToggle{
+    background:#242a30!important;
+    color:#fff!important;
+    border-color:#242a30!important;
+}
+
+body.public-mode.public-dark #publicThemeToggle{
+    background:#f4f6f7!important;
+    color:#20252a!important;
+    border-color:#d9dde1!important;
+}
+
+/* Anmeldung sitzt direkt rechts daneben. */
+body.public-mode .public-login{
+    margin-left:10px!important;
+    margin-right:0!important;
+    flex:0 0 auto!important;
+}
+
+/* Navigation darf den rechten Bereich nicht verdrängen. */
+body.public-mode .public-nav nav{
+    flex:0 1 auto!important;
+}
+
 </style>
 </head>
 
@@ -3255,6 +3348,14 @@ body.public-mode #publicPreview{display:block!important}
                 <a href="leistungen.html">Leistungen</a>
                 <a href="kontakt.html">Kontakt</a>
             </nav>
+            <button
+                class="public-theme-toggle"
+                id="publicThemeToggle"
+                type="button"
+                aria-label="Farbschema wechseln"
+                style="display:inline-flex;align-items:center;justify-content:center;visibility:visible;opacity:1">
+                🌙 Dark
+            </button>
             <a class="public-login" href="login.html?next=abstellplan.html">Anmelden</a>
         </div>
     </header>
@@ -7110,6 +7211,32 @@ document.addEventListener("DOMContentLoaded", function(){
         });
     }
 });
+</script>
+
+
+<script>
+(function(){
+    const btn = document.getElementById("publicThemeToggle");
+    if(!btn) return;
+
+    function applyPublicTheme(theme){
+        const light = theme === "light";
+        document.body.classList.toggle("public-light", light);
+        document.body.classList.toggle("public-dark", !light);
+        btn.textContent = light ? "🌙 Dark" : "☀️ White";
+        try{ localStorage.setItem("eetg_public_theme", theme); }catch(_){}
+    }
+
+    let saved = "dark";
+    try{ saved = localStorage.getItem("eetg_public_theme") || "dark"; }catch(_){}
+    applyPublicTheme(saved);
+
+    btn.addEventListener("click", function(){
+        applyPublicTheme(
+            document.body.classList.contains("public-light") ? "dark" : "light"
+        );
+    });
+})();
 </script>
 
 </body>
