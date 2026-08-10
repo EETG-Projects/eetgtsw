@@ -334,7 +334,7 @@ button.danger {
 .plan-container::before {
     content: "";
     display: block;
-    width: max(var(--canvas-width), calc(100% + 1000px));
+    width: var(--canvas-width);
     height: max(var(--canvas-height), calc(100% + 800px));
     pointer-events: none;
 }
@@ -1915,7 +1915,6 @@ body.dark .vehicle-company-heading{
 
 /* Force a visible horizontal scroll range wider than viewport. */
 .plan-container::before{
-    min-width:calc(100vw + 1800px);
     min-height:calc(100vh + 1000px);
 }
 
@@ -2036,7 +2035,6 @@ header{
     display:block;
     width:var(--canvas-width)!important;
     height:var(--canvas-height)!important;
-    min-width:2600px!important;
     min-height:1500px!important;
     pointer-events:none;
 }
@@ -2068,6 +2066,38 @@ header{
 
 .plan-container::-webkit-scrollbar-corner{
     background:var(--panel2)!important;
+}
+
+
+/* =========================================================
+   SIDEBAR FOOTER FIX
+   Zentrale Datenbank bündig an die Unterkante.
+========================================================= */
+.database-section{
+    transform:none!important;
+    margin:0!important;
+    padding:10px 12px 12px!important;
+    flex:0 0 auto!important;
+    background:var(--panel)!important;
+    border-top:1px solid var(--border)!important;
+    border-bottom:0!important;
+    position:relative!important;
+    bottom:0!important;
+}
+
+/* Keine zusätzliche dunkle/ schwarze Kachel unter den Buttons. */
+.sidebar{
+    padding-bottom:0!important;
+}
+
+.database-section .sidebar-title{
+    margin-top:0!important;
+}
+
+.database-section .sidebar-actions,
+.database-section .button-row{
+    margin-bottom:0!important;
+    padding-bottom:0!important;
 }
 
 </style>
@@ -2875,20 +2905,32 @@ function updatePlanCanvasSize() {
     const plan = document.getElementById("plan");
     if (!plan) return;
 
-    const EXTRA_RIGHT = 1800;
+    /*
+     * Horizontale Fläche:
+     * endet direkt hinter dem längsten / am weitesten rechts liegenden Gleis.
+     * Es gibt nur noch einen kleinen rechten Sicherheitsabstand.
+     */
+    const RIGHT_PADDING = 60;
+
+    /*
+     * Vertikal bleibt zusätzliche Arbeitsfläche erhalten,
+     * damit Gleise weiterhin nach unten verschoben werden können.
+     */
     const EXTRA_BOTTOM = 900;
 
     let contentRight = 0;
     let contentBottom = 0;
 
     tracks.forEach(track => {
-        const width = track.length * PIXELS_PER_METER + 110 + 25;
+        const trackWidth =
+            track.length * PIXELS_PER_METER + 110 + 25;
+
         const visibleTrackHeight =
             (isAdmin() && adminEditMode) ? 285 : 215;
 
         contentRight = Math.max(
             contentRight,
-            Number(track.x || 0) + width
+            Number(track.x || 0) + trackWidth
         );
 
         contentBottom = Math.max(
@@ -2897,10 +2939,13 @@ function updatePlanCanvasSize() {
         );
     });
 
+    /*
+     * Ist das längste Gleis kürzer als der sichtbare Bereich,
+     * gibt es keine unnötige horizontale Scrollstrecke.
+     */
     const canvasWidth = Math.max(
-        2600,
-        plan.clientWidth + 1200,
-        contentRight + EXTRA_RIGHT
+        plan.clientWidth,
+        contentRight + RIGHT_PADDING
     );
 
     const canvasHeight = Math.max(
