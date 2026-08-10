@@ -3328,6 +3328,139 @@ body.public-mode .public-nav nav{
     flex:0 1 auto!important;
 }
 
+
+/* =========================================================
+   ÖFFENTLICHER HEADER – GEORDNETE FINALE VERSION
+========================================================= */
+body.public-mode .public-header{
+    height:72px!important;
+}
+
+body.public-mode .public-nav{
+    width:100%!important;
+    max-width:none!important;
+    height:72px!important;
+    margin:0!important;
+    padding:0 58px!important;
+    box-sizing:border-box!important;
+
+    display:grid!important;
+    grid-template-columns:minmax(260px,auto) minmax(0,1fr) auto!important;
+    align-items:center!important;
+    column-gap:42px!important;
+}
+
+body.public-mode .public-brand{
+    min-width:0!important;
+    justify-self:start!important;
+}
+
+body.public-mode .public-nav-links{
+    min-width:0!important;
+    margin:0!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    gap:24px!important;
+}
+
+body.public-mode .public-nav-links a{
+    display:inline-flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    min-height:38px!important;
+    padding:0 13px!important;
+    white-space:nowrap!important;
+}
+
+body.public-mode .public-nav-actions{
+    justify-self:end!important;
+    display:flex!important;
+    align-items:center!important;
+    gap:12px!important;
+    min-width:max-content!important;
+}
+
+/* Theme-Schalter als Link statt <button>, damit alte Button-Regeln ihn nie ausblenden. */
+body.public-mode a#publicThemeToggle{
+    display:inline-flex!important;
+    visibility:visible!important;
+    opacity:1!important;
+    align-items:center!important;
+    justify-content:center!important;
+    min-width:96px!important;
+    height:42px!important;
+    padding:0 14px!important;
+    box-sizing:border-box!important;
+    border:1px solid #4a5158!important;
+    border-radius:9px!important;
+    background:#242a30!important;
+    color:#fff!important;
+    text-decoration:none!important;
+    font-size:13px!important;
+    font-weight:900!important;
+    line-height:1!important;
+    cursor:pointer!important;
+    position:relative!important;
+    z-index:999!important;
+}
+
+body.public-mode.public-dark a#publicThemeToggle{
+    background:#f4f6f7!important;
+    border-color:#d9dde1!important;
+    color:#20252a!important;
+}
+
+body.public-mode.public-light a#publicThemeToggle{
+    background:#242a30!important;
+    border-color:#242a30!important;
+    color:#fff!important;
+}
+
+body.public-mode .public-login{
+    display:inline-flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    min-width:108px!important;
+    height:42px!important;
+    margin:0!important;
+    padding:0 18px!important;
+    box-sizing:border-box!important;
+    white-space:nowrap!important;
+}
+
+/* Etwas mehr Luft links/rechts bei großen Monitoren. */
+@media(min-width:1500px){
+    body.public-mode .public-nav{
+        padding-left:90px!important;
+        padding-right:58px!important;
+    }
+}
+
+@media(max-width:1200px){
+    body.public-mode .public-nav{
+        padding:0 24px!important;
+        grid-template-columns:auto 1fr auto!important;
+        column-gap:20px!important;
+    }
+    body.public-mode .public-nav-links{
+        gap:10px!important;
+    }
+    body.public-mode .public-nav-links a{
+        padding:0 8px!important;
+        font-size:12px!important;
+    }
+}
+
+@media(max-width:900px){
+    body.public-mode .public-nav-links{
+        display:none!important;
+    }
+    body.public-mode .public-nav{
+        grid-template-columns:1fr auto!important;
+    }
+}
+
 </style>
 </head>
 
@@ -3340,7 +3473,8 @@ body.public-mode .public-nav nav{
                 <img src="./assets/img/eetg-logo.png" alt="EETG Logo">
                 <span>EETG<small>ERFURTER EISENBAHN TRANSPORT GESELLSCHAFT</small></span>
             </a>
-            <nav>
+
+            <nav class="public-nav-links" aria-label="Hauptnavigation">
                 <a href="index.html">Startseite</a>
                 <a href="fuhrpark.html">Fahrzeugfuhrpark</a>
                 <a class="active" href="abstellplan.html">Abstellplan</a>
@@ -3348,15 +3482,11 @@ body.public-mode .public-nav nav{
                 <a href="leistungen.html">Leistungen</a>
                 <a href="kontakt.html">Kontakt</a>
             </nav>
-            <button
-                class="public-theme-toggle"
-                id="publicThemeToggle"
-                type="button"
-                aria-label="Farbschema wechseln"
-                style="display:inline-flex;align-items:center;justify-content:center;visibility:visible;opacity:1">
-                🌙 Dark
-            </button>
-            <a class="public-login" href="login.html?next=abstellplan.html">Anmelden</a>
+
+            <div class="public-nav-actions">
+                <a href="#" class="public-theme-toggle" id="publicThemeToggle" role="button" aria-label="Farbschema wechseln">🌙 Dark</a>
+                <a class="public-login" href="login.html?next=abstellplan.html">Anmelden</a>
+            </div>
         </div>
     </header>
 
@@ -7231,7 +7361,8 @@ document.addEventListener("DOMContentLoaded", function(){
     try{ saved = localStorage.getItem("eetg_public_theme") || "dark"; }catch(_){}
     applyPublicTheme(saved);
 
-    btn.addEventListener("click", function(){
+    btn.addEventListener("click", function(event){
+        event.preventDefault();
         applyPublicTheme(
             document.body.classList.contains("public-light") ? "dark" : "light"
         );
