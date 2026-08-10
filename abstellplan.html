@@ -5230,7 +5230,7 @@ function closeVehicleEditModal() {
     document.getElementById("vehicleEditModal").classList.remove("active");
 }
 
-async async function saveVehicleEdit() {
+async function saveVehicleEdit() {
     if (!enforceEditMode()) return;
 
     const vehicle = vehicles.find(v => v.id === String(editingVehicleId));
