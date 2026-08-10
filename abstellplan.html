@@ -2315,6 +2315,68 @@ body.dark .area-title{
 .stat-card{padding:9px;border:1px solid var(--border);border-radius:8px;background:var(--panel2)}.stat-value{font-size:18px;font-weight:900}.stat-label{font-size:9px;color:var(--muted);font-weight:800}
 .realtime-state{display:inline-flex;align-items:center;gap:5px;padding:5px 7px;border-radius:999px;background:var(--panel2);font-size:9px;font-weight:900}.realtime-dot{width:7px;height:7px;border-radius:50%;background:#d97706}.realtime-state.live .realtime-dot{background:#16a34a}.realtime-state.error .realtime-dot{background:#b91c1c}
 
+
+/* =========================================================
+   STATISTIK ALS DROPDOWN IN DER OBEREN LEISTE
+========================================================= */
+.statistics-dropdown{
+    position:relative;
+    display:inline-flex;
+    align-items:center;
+}
+
+.statistics-dropdown-menu{
+    position:absolute;
+    top:calc(100% + 7px);
+    right:0;
+    z-index:1000;
+    width:360px;
+    max-width:min(360px, calc(100vw - 24px));
+    padding:14px;
+    border:1px solid var(--border);
+    border-radius:12px;
+    background:var(--panel);
+    box-shadow:0 16px 40px rgba(0,0,0,.24);
+    display:none;
+}
+
+.statistics-dropdown.open .statistics-dropdown-menu{
+    display:block;
+}
+
+.statistics-dropdown-menu h3{
+    margin:0 0 10px;
+}
+
+.statistics-dropdown .stats-grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:7px;
+}
+
+.statistics-dropdown .stat-card{
+    padding:9px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    background:var(--panel2);
+}
+
+.statistics-dropdown .stat-value{
+    font-size:18px;
+    font-weight:900;
+}
+
+.statistics-dropdown .stat-label{
+    font-size:9px;
+    color:var(--muted);
+    font-weight:800;
+}
+
+/* Das alte Statistikfenster im Abstellplan wird nicht mehr verwendet. */
+#plan > .stats-panel{
+    display:none!important;
+}
+
 </style>
 </head>
 
@@ -2458,7 +2520,21 @@ body.dark .area-title{
             🔗 Zugverband bilden
         </button>
         <button class="write-only" onclick="dissolveSelectedConsist()">⛓ Verband auflösen</button>
-        <button class="secondary" type="button" onclick="toggleStatistics()">📊 Statistik</button>
+        <div class="statistics-dropdown" id="statisticsDropdown">
+            <button
+                class="secondary"
+                type="button"
+                id="statisticsButton"
+                onclick="toggleStatistics(event)"
+                aria-expanded="false">
+                📊 Statistik ▾
+            </button>
+            <div
+                class="statistics-dropdown-menu"
+                id="statisticsDropdownMenu"
+                onclick="event.stopPropagation()">
+            </div>
+        </div>
         <span class="realtime-state" id="realtimeState"><span class="realtime-dot"></span><span id="realtimeText">Synchronisiere …</span></span>
 
         <button
@@ -3221,28 +3297,113 @@ function formatMeters(v){return Number(v||0).toLocaleString("de-DE",{maximumFrac
 function getTrackVehicles(trackId,exclude=[]){const x=new Set(exclude.map(String));return vehicles.filter(v=>String(v.track)===String(trackId)&&!x.has(String(v.id)))}
 function getTrackUsedLength(trackId,exclude=[]){return getTrackVehicles(trackId,exclude).reduce((s,v)=>s+Number(v.length||0),0)}
 function canFitOnTrack(trackId,moving){const t=tracks.find(x=>String(x.id)===String(trackId));if(!t)return false;const ids=moving.map(v=>String(v.id));return getTrackUsedLength(trackId,ids)+moving.reduce((s,v)=>s+Number(v.length||0),0)<=Number(t.length)+.001}
-function toggleStatistics(){statisticsOpen=!statisticsOpen;renderStatistics()}
-function renderStatistics(){
- const p=document.getElementById("statsPanel");if(!p)return;p.classList.toggle("open",statisticsOpen);if(!statisticsOpen)return;
- const total=tracks.reduce((s,t)=>s+Number(t.length||0),0),used=vehicles.filter(v=>v.track!=null).reduce((s,v)=>s+Number(v.length||0),0);
- const counts={};["Einsatzbereit","Unterwegs","Abgestellt","Vermietet","In der Werkstatt"].forEach(s=>counts[s]=0);vehicles.forEach(v=>counts[v.status||"Abgestellt"]++);
- p.innerHTML=`<h3>📊 Standortstatistik</h3><div class="stats-grid">
- <div class="stat-card"><div class="stat-value">${vehicles.length}</div><div class="stat-label">Fahrzeuge</div></div>
- <div class="stat-card"><div class="stat-value">${tracks.length}</div><div class="stat-label">Gleise</div></div>
- <div class="stat-card"><div class="stat-value">${consists.length}</div><div class="stat-label">Zugverbände</div></div>
- <div class="stat-card"><div class="stat-value">${vehicles.filter(v=>v.track==null).length}</div><div class="stat-label">Bibliothek</div></div>
- <div class="stat-card"><div class="stat-value">${formatMeters(used)} m</div><div class="stat-label">belegt</div></div>
- <div class="stat-card"><div class="stat-value">${formatMeters(total)} m</div><div class="stat-label">Gleislänge</div></div></div>
- <div style="margin-top:10px;font-size:10px">${Object.entries(counts).map(([s,c])=>`<div><b>${escapeHtml(s)}:</b> ${c}</div>`).join("")}</div>`;
+function toggleStatistics(event){
+    if(event) event.stopPropagation();
+
+    statisticsOpen = !statisticsOpen;
+
+    const dropdown = document.getElementById("statisticsDropdown");
+    const button = document.getElementById("statisticsButton");
+
+    if(dropdown) dropdown.classList.toggle("open", statisticsOpen);
+    if(button) button.setAttribute("aria-expanded", statisticsOpen ? "true" : "false");
+
+    renderStatistics();
 }
+
+function closeStatisticsDropdown(){
+    statisticsOpen = false;
+
+    const dropdown = document.getElementById("statisticsDropdown");
+    const button = document.getElementById("statisticsButton");
+
+    if(dropdown) dropdown.classList.remove("open");
+    if(button) button.setAttribute("aria-expanded", "false");
+}
+
+function renderStatistics(){
+    const p = document.getElementById("statisticsDropdownMenu");
+    if(!p) return;
+
+    const total = tracks.reduce((s,t)=>s+Number(t.length||0),0);
+    const used = vehicles
+        .filter(v=>v.track!=null)
+        .reduce((s,v)=>s+Number(v.length||0),0);
+
+    const counts = {};
+    ["Einsatzbereit","Unterwegs","Abgestellt","Vermietet","In der Werkstatt"]
+        .forEach(s=>counts[s]=0);
+
+    vehicles.forEach(v=>{
+        const status = v.status || "Abgestellt";
+        counts[status] = (counts[status] || 0) + 1;
+    });
+
+    const location = locations.find(
+        location => location.id === String(currentLocationId)
+    );
+
+    p.innerHTML = `
+        <h3>📊 ${escapeHtml(location?.name || "Standort")}</h3>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">${vehicles.length}</div>
+                <div class="stat-label">Fahrzeuge</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-value">${tracks.length}</div>
+                <div class="stat-label">Gleise</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-value">${consists.length}</div>
+                <div class="stat-label">Zugverbände</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-value">${vehicles.filter(v=>v.track==null).length}</div>
+                <div class="stat-label">Bibliothek</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-value">${formatMeters(used)} m</div>
+                <div class="stat-label">belegt</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-value">${formatMeters(total)} m</div>
+                <div class="stat-label">Gleislänge</div>
+            </div>
+        </div>
+
+        <div style="margin-top:10px;font-size:10px;display:grid;gap:4px">
+            ${Object.entries(counts)
+                .map(([s,c])=>`<div><b>${escapeHtml(s)}:</b> ${c}</div>`)
+                .join("")}
+        </div>
+    `;
+}
+
+document.addEventListener("click", event => {
+    const dropdown = document.getElementById("statisticsDropdown");
+
+    if(
+        statisticsOpen &&
+        dropdown &&
+        !dropdown.contains(event.target)
+    ){
+        closeStatisticsDropdown();
+    }
+});
+
 function scheduleRealtimeReload(){clearTimeout(realtimeReloadTimer);realtimeReloadTimer=setTimeout(()=>loadPlan(),120)}
 
 function renderPlan() {
     const plan = document.getElementById("plan");
     plan.innerHTML = "";
-    const statsPanel=document.createElement("div");
-    statsPanel.id="statsPanel";statsPanel.className="stats-panel"+(statisticsOpen?" open":"");
-    plan.appendChild(statsPanel);
+
 
     if (!currentLocationId) {
         plan.innerHTML = '<div class="location-empty">Bitte zuerst einen Standort anlegen oder auswählen.</div>';
