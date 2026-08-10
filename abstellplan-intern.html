@@ -3024,6 +3024,136 @@ body.is-admin.admin-edit-enabled .track-drag-handle{
     cursor:grab!important;
 }
 
+
+/* =========================================================
+   BEREICHE DIREKT AUF DEM GLEIS
+   Nur der schmale, im Screenshot gezeigte Schienenbereich.
+========================================================= */
+
+/* Alte frei platzierte Flächen werden nicht mehr dargestellt. */
+.plan-zoom-layer > .area{
+    display:none!important;
+}
+
+.area-track-info{
+    margin-top:5px;
+    color:var(--muted);
+    font-size:10px;
+    font-weight:700;
+}
+
+.track-section-area{
+    position:absolute;
+    top:51px;
+    height:34px;
+    min-width:2px;
+    z-index:8; /* vor Gleislinie, unter Fahrzeugen (z-index 10) */
+    box-sizing:border-box;
+    border:2px solid rgba(59,130,246,.95);
+    border-radius:5px;
+    background:rgba(59,130,246,.32);
+    pointer-events:auto;
+    overflow:visible;
+}
+
+.track-section-area[data-area-type="werkstatt"]{
+    border-color:rgba(249,115,22,.98);
+    background:rgba(249,115,22,.34);
+}
+.track-section-area[data-area-type="abstellung"]{
+    border-color:rgba(59,130,246,.98);
+    background:rgba(59,130,246,.32);
+}
+.track-section-area[data-area-type="service"]{
+    border-color:rgba(34,197,94,.98);
+    background:rgba(34,197,94,.32);
+}
+.track-section-area[data-area-type="sonstiges"]{
+    border-color:rgba(168,85,247,.98);
+    background:rgba(168,85,247,.32);
+}
+
+.track-section-area-label{
+    position:absolute;
+    left:4px;
+    top:50%;
+    transform:translateY(-50%);
+    max-width:calc(100% - 8px);
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    color:var(--text);
+    font-size:9px;
+    font-weight:900;
+    text-shadow:0 1px 2px rgba(255,255,255,.8);
+    pointer-events:none;
+}
+
+body.dark .track-section-area-label{
+    color:#fff;
+    text-shadow:0 1px 2px rgba(0,0,0,.9);
+}
+
+.track-section-area-actions{
+    display:none;
+    position:absolute;
+    left:50%;
+    bottom:calc(100% + 5px);
+    transform:translateX(-50%);
+    gap:4px;
+    z-index:300;
+    padding:4px;
+    border:1px solid var(--border);
+    border-radius:7px;
+    background:var(--panel);
+    box-shadow:0 8px 20px rgba(0,0,0,.25);
+}
+
+body.is-admin.admin-edit-enabled .track-section-area:hover{
+    z-index:220;
+    box-shadow:0 0 0 2px rgba(255,255,255,.8),0 5px 18px rgba(0,0,0,.35);
+}
+
+body.is-admin.admin-edit-enabled .track-section-area:hover .track-section-area-actions,
+body.is-admin.admin-edit-enabled .track-section-area:focus-within .track-section-area-actions{
+    display:flex;
+}
+
+.track-section-area-actions button{
+    width:30px!important;
+    min-width:30px!important;
+    height:28px!important;
+    min-height:28px!important;
+    padding:0!important;
+}
+
+/* Fahrzeuge bleiben über den Bereichen sichtbar. */
+.vehicle,
+.vehicle-wrap{
+    z-index:10!important;
+}
+
+
+/* Freie Farbauswahl für Gleisbereiche */
+.area-color-picker{
+    display:grid;
+    grid-template-columns:54px 1fr;
+    gap:8px;
+    align-items:center;
+}
+.area-color-picker input[type="color"]{
+    width:54px;
+    height:38px;
+    padding:3px;
+    border:1px solid var(--border);
+    border-radius:7px;
+    background:var(--panel);
+    cursor:pointer;
+}
+.area-color-picker input[type="text"]{
+    width:100%;
+}
+
 </style>
 </head>
 
@@ -3484,11 +3614,11 @@ body.is-admin.admin-edit-enabled .track-drag-handle{
 ===================================================== -->
 <div class="modal" id="areaModal">
     <div class="modal-box">
-        <h2>Bereich hinzufügen</h2>
+        <h2>Bereich auf Gleis hinzufügen</h2>
 
         <div class="form-row">
             <label>Bezeichnung</label>
-            <input id="areaName" placeholder="z.B. Werkstatt">
+            <input id="areaName" placeholder="z.B. Werkstatt / Tankstelle / Abstellung">
         </div>
 
         <div class="form-row">
@@ -3502,13 +3632,28 @@ body.is-admin.admin-edit-enabled .track-drag-handle{
         </div>
 
         <div class="form-row">
-            <label>Breite in Raster-Kästchen</label>
-            <input id="areaWidth" type="number" min="4" value="20">
+            <label>Farbe</label>
+            <div class="area-color-picker">
+                <input id="areaColor" type="color" value="#3b82f6" aria-label="Bereichsfarbe auswählen">
+                <input id="areaColorHex" type="text" value="#3b82f6" maxlength="7" placeholder="#3b82f6" aria-label="Bereichsfarbe als HEX">
+            </div>
         </div>
 
         <div class="form-row">
-            <label>Höhe in Raster-Kästchen</label>
-            <input id="areaHeight" type="number" min="3" value="8">
+            <label>Gleis</label>
+            <select id="areaTrack" onchange="updateAreaTrackInfo()"></select>
+            <div class="area-track-info" id="areaTrackInfo">Gleislänge: –</div>
+        </div>
+
+        <div class="form-row">
+            <label>Startposition in Metern</label>
+            <input id="areaStartMeter" type="number" min="0" step="0.1" value="0" oninput="updateAreaTrackInfo()">
+        </div>
+
+        <div class="form-row">
+            <label>Länge des Bereichs in Metern</label>
+            <input id="areaLengthMeter" type="number" min="0.1" step="0.1" value="25" oninput="updateAreaTrackInfo()">
+            <div class="area-track-info" id="areaRemainingInfo">Verfügbar: –</div>
         </div>
 
         <div class="modal-buttons">
@@ -3907,6 +4052,11 @@ function mapArea(row) {
         location: row.location_id == null ? null : String(row.location_id),
         name: row.name,
         type: row.area_type || "sonstiges",
+        color: row.color || "#3b82f6",
+        trackId: row.track_id == null ? null : String(row.track_id),
+        startMeter: Number(row.start_meter || 0),
+        lengthMeter: Number(row.length_meter || 0),
+        // Legacy-Felder bleiben nur für alte Datensätze erhalten.
         x: Number(row.x_position || 0),
         y: Number(row.y_position || 0),
         width: Number(row.width_px || 500),
@@ -4431,10 +4581,8 @@ function renderPlan() {
         return;
     }
 
-    areas.forEach(area => {
-        plan.appendChild(createAreaElement(area));
-    });
-
+    // Bereiche werden nicht mehr frei auf der Planfläche gezeichnet.
+    // Sie erscheinen ausschließlich auf dem zugehörigen Gleisabschnitt.
     tracks.forEach(track => {
         const trackElement = document.createElement("div");
         trackElement.className = "track";
@@ -4527,6 +4675,14 @@ function renderPlan() {
         const line = document.createElement("div");
         line.className = "track-line";
         trackElement.appendChild(line);
+
+        // Nur der im Screenshot gezeigte Gleisbereich wird mit Bereichen belegt:
+        // der schmale Korridor direkt über den Schienen.
+        areas
+            .filter(area => String(area.trackId) === String(track.id))
+            .forEach(area => {
+                trackElement.appendChild(createTrackAreaElement(area, track));
+            });
 
         const scale = document.createElement("div");
         scale.className = "scale";
@@ -4636,6 +4792,86 @@ function renderPlan() {
 
     updatePlanCanvasSize();
     applySearchHighlights(false);
+}
+
+
+function createTrackAreaElement(area, track) {
+    const element = document.createElement("div");
+    element.className = "track-section-area";
+    element.dataset.areaId = area.id;
+    element.dataset.areaType = area.type;
+
+    const areaColor = normalizeAreaColor(area.color) || "#3b82f6";
+    element.style.setProperty("--area-color", areaColor);
+    element.style.borderColor = areaColor;
+    element.style.backgroundColor = areaColor + "55";
+
+    const safeStart = Math.max(0, Math.min(Number(area.startMeter || 0), Number(track.length || 0)));
+    const maxLength = Math.max(0, Number(track.length || 0) - safeStart);
+    const safeLength = Math.max(0, Math.min(Number(area.lengthMeter || 0), maxLength));
+
+    element.style.left = (80 + safeStart * PIXELS_PER_METER) + "px";
+    element.style.width = Math.max(2, safeLength * PIXELS_PER_METER) + "px";
+
+    const label = document.createElement("div");
+    label.className = "track-section-area-label";
+    label.textContent =
+        `${area.name} · ${formatMeters(safeLength)} m`;
+    element.appendChild(label);
+
+    if (isAdmin() && adminEditMode) {
+        const actions = document.createElement("div");
+        actions.className = "track-section-area-actions";
+
+        const editButton = document.createElement("button");
+        editButton.type = "button";
+        editButton.className = "secondary";
+        editButton.textContent = "📏";
+        editButton.title = "Start und Länge ändern";
+        editButton.addEventListener("click", event => {
+            event.preventDefault();
+            event.stopPropagation();
+            editTrackArea(area.id);
+        });
+
+        const colorButton = document.createElement("button");
+        colorButton.type = "button";
+        colorButton.className = "secondary";
+        colorButton.textContent = "🎨";
+        colorButton.title = "Farbe ändern";
+        colorButton.addEventListener("click", event => {
+            event.preventDefault();
+            event.stopPropagation();
+            editTrackAreaColor(area.id);
+        });
+
+        const renameButton = document.createElement("button");
+        renameButton.type = "button";
+        renameButton.className = "secondary";
+        renameButton.textContent = "✏";
+        renameButton.title = "Bereich umbenennen";
+        renameButton.addEventListener("click", event => {
+            event.preventDefault();
+            event.stopPropagation();
+            renameArea(area.id);
+        });
+
+        const deleteButton = document.createElement("button");
+        deleteButton.type = "button";
+        deleteButton.className = "danger";
+        deleteButton.textContent = "🗑";
+        deleteButton.title = "Bereich löschen";
+        deleteButton.addEventListener("click", event => {
+            event.preventDefault();
+            event.stopPropagation();
+            deleteArea(area.id);
+        });
+
+        actions.append(editButton, colorButton, renameButton, deleteButton);
+        element.appendChild(actions);
+    }
+
+    return element;
 }
 
 function createAreaElement(area) {
@@ -4987,6 +5223,26 @@ async function deleteCurrentLocation() {
     }
 }
 
+
+function normalizeAreaColor(value) {
+    const color = String(value || "").trim();
+    return /^#[0-9a-fA-F]{6}$/.test(color) ? color.toLowerCase() : null;
+}
+
+function syncAreaColor(source) {
+    const picker = document.getElementById("areaColor");
+    const hex = document.getElementById("areaColorHex");
+    if (!picker || !hex) return;
+
+    if (source === "picker") {
+        hex.value = picker.value.toLowerCase();
+        return;
+    }
+
+    const valid = normalizeAreaColor(hex.value);
+    if (valid) picker.value = valid;
+}
+
 function openAreaModal() {
     if (!enforceEditMode()) return;
 
@@ -4995,27 +5251,114 @@ function openAreaModal() {
         return;
     }
 
+    if (!tracks.length) {
+        alert("An diesem Standort ist noch kein Gleis vorhanden.");
+        return;
+    }
+
+    const colorPicker = document.getElementById("areaColor");
+    const colorHex = document.getElementById("areaColorHex");
+    if (colorPicker) colorPicker.value = "#3b82f6";
+    if (colorHex) colorHex.value = "#3b82f6";
+
+    const select = document.getElementById("areaTrack");
+    select.innerHTML = "";
+
+    tracks.forEach(track => {
+        const option = document.createElement("option");
+        option.value = track.id;
+        option.textContent = `${track.number} · ${formatMeters(track.length)} m`;
+        select.appendChild(option);
+    });
+
+    document.getElementById("areaStartMeter").value = "0";
+
+    const firstTrack = tracks[0];
+    document.getElementById("areaLengthMeter").value =
+        String(Math.min(25, Number(firstTrack?.length || 25)));
+
+    updateAreaTrackInfo();
     document.getElementById("areaModal").classList.add("active");
+}
+
+function updateAreaTrackInfo() {
+    const trackId = document.getElementById("areaTrack")?.value;
+    const track = tracks.find(t => String(t.id) === String(trackId));
+
+    const trackInfo = document.getElementById("areaTrackInfo");
+    const remainingInfo = document.getElementById("areaRemainingInfo");
+    const startInput = document.getElementById("areaStartMeter");
+    const lengthInput = document.getElementById("areaLengthMeter");
+
+    if (!track) {
+        if (trackInfo) trackInfo.textContent = "Gleislänge: –";
+        if (remainingInfo) remainingInfo.textContent = "Verfügbar: –";
+        return;
+    }
+
+    const trackLength = Number(track.length || 0);
+    const start = Math.max(0, Number(startInput?.value || 0));
+    const available = Math.max(0, trackLength - start);
+
+    if (startInput) startInput.max = String(trackLength);
+    if (lengthInput) lengthInput.max = String(available);
+
+    if (trackInfo) {
+        trackInfo.textContent = `Gleislänge aus Abstellplan: ${formatMeters(trackLength)} m`;
+    }
+
+    if (remainingInfo) {
+        remainingInfo.textContent =
+            `Ab ${formatMeters(start)} m noch ${formatMeters(available)} m verfügbar`;
+    }
 }
 
 async function addArea() {
     if (!enforceEditMode()) return;
-
     if (!currentLocationId) return;
 
     const name = document.getElementById("areaName").value.trim();
     const type = document.getElementById("areaType").value;
-    const widthBoxes = Number(document.getElementById("areaWidth").value);
-    const heightBoxes = Number(document.getElementById("areaHeight").value);
+    const color = normalizeAreaColor(document.getElementById("areaColorHex").value)
+        || normalizeAreaColor(document.getElementById("areaColor").value);
+    const trackId = document.getElementById("areaTrack").value;
+    const startMeter = Number(document.getElementById("areaStartMeter").value);
+    const lengthMeter = Number(document.getElementById("areaLengthMeter").value);
+
+    const track = tracks.find(t => String(t.id) === String(trackId));
 
     if (!name) {
         alert("Bitte eine Bezeichnung für den Bereich eingeben.");
         return;
     }
 
-    if (!Number.isFinite(widthBoxes) || widthBoxes < 4 ||
-        !Number.isFinite(heightBoxes) || heightBoxes < 3) {
-        alert("Bitte eine gültige Bereichsgröße eingeben.");
+    if (!color) {
+        alert("Bitte eine gültige Farbe im Format #RRGGBB auswählen.");
+        return;
+    }
+
+    if (!track) {
+        alert("Bitte ein gültiges Gleis auswählen.");
+        return;
+    }
+
+    if (!Number.isFinite(startMeter) || startMeter < 0) {
+        alert("Bitte eine gültige Startposition eingeben.");
+        return;
+    }
+
+    if (!Number.isFinite(lengthMeter) || lengthMeter <= 0) {
+        alert("Bitte eine gültige Bereichslänge eingeben.");
+        return;
+    }
+
+    if (startMeter + lengthMeter > Number(track.length) + 0.001) {
+        alert(
+            `Der Bereich würde über das Gleis hinausgehen.\n\n` +
+            `Gleislänge: ${formatMeters(track.length)} m\n` +
+            `Start: ${formatMeters(startMeter)} m\n` +
+            `Bereich: ${formatMeters(lengthMeter)} m`
+        );
         return;
     }
 
@@ -5023,12 +5366,19 @@ async function addArea() {
         .from("areas")
         .insert({
             location_id: Number(currentLocationId),
+            track_id: Number(track.id),
             name,
             area_type: type,
-            x_position: 25,
-            y_position: 25,
-            width_px: widthBoxes * 25,
-            height_px: heightBoxes * 25
+            color,
+            start_meter: startMeter,
+            length_meter: lengthMeter,
+
+            // Legacy-Felder bleiben gesetzt, damit bestehende NOT-NULL-Definitionen
+            // alter Datenbanken keine Inserts blockieren.
+            x_position: 0,
+            y_position: 0,
+            width_px: Math.max(1, lengthMeter * PIXELS_PER_METER),
+            height_px: 30
         });
 
     if (error) {
@@ -5038,6 +5388,98 @@ async function addArea() {
 
     closeModals();
     document.getElementById("areaName").value = "";
+    await loadPlan();
+}
+
+
+async function editTrackAreaColor(areaId) {
+    if (!enforceEditMode()) return;
+
+    const area = areas.find(a => String(a.id) === String(areaId));
+    if (!area) return;
+
+    const value = prompt(
+        "Bereichsfarbe als HEX eingeben, z.B. #ff0000:",
+        normalizeAreaColor(area.color) || "#3b82f6"
+    );
+
+    if (value === null) return;
+
+    const color = normalizeAreaColor(value);
+    if (!color) {
+        alert("Ungültige Farbe. Bitte im Format #RRGGBB eingeben.");
+        return;
+    }
+
+    const { error } = await window.eetgSupabase
+        .from("areas")
+        .update({
+            color,
+            updated_at: new Date().toISOString()
+        })
+        .eq("id", Number(area.id));
+
+    if (error) {
+        showSupabaseError("Bereichsfarbe konnte nicht geändert werden.", error);
+        return;
+    }
+
+    await loadPlan();
+}
+
+async function editTrackArea(areaId) {
+    if (!enforceEditMode()) return;
+
+    const area = areas.find(a => String(a.id) === String(areaId));
+    if (!area || !area.trackId) return;
+
+    const track = tracks.find(t => String(t.id) === String(area.trackId));
+    if (!track) return;
+
+    const startValue = prompt(
+        `Startposition auf ${track.number} in Metern:`,
+        String(area.startMeter)
+    );
+    if (startValue === null) return;
+
+    const startMeter = Number(String(startValue).replace(",", "."));
+    if (!Number.isFinite(startMeter) || startMeter < 0 || startMeter > Number(track.length)) {
+        alert("Ungültige Startposition.");
+        return;
+    }
+
+    const lengthValue = prompt(
+        `Bereichslänge in Metern (Gleis: ${formatMeters(track.length)} m):`,
+        String(area.lengthMeter)
+    );
+    if (lengthValue === null) return;
+
+    const lengthMeter = Number(String(lengthValue).replace(",", "."));
+    if (!Number.isFinite(lengthMeter) || lengthMeter <= 0) {
+        alert("Ungültige Bereichslänge.");
+        return;
+    }
+
+    if (startMeter + lengthMeter > Number(track.length) + 0.001) {
+        alert("Der Bereich darf nicht über das Ende des Gleises hinausgehen.");
+        return;
+    }
+
+    const { error } = await window.eetgSupabase
+        .from("areas")
+        .update({
+            start_meter: startMeter,
+            length_meter: lengthMeter,
+            width_px: Math.max(1, lengthMeter * PIXELS_PER_METER),
+            updated_at: new Date().toISOString()
+        })
+        .eq("id", Number(area.id));
+
+    if (error) {
+        showSupabaseError("Bereich konnte nicht geändert werden.", error);
+        return;
+    }
+
     await loadPlan();
 }
 
@@ -5121,18 +5563,6 @@ function updatePlanCanvasSize() {
 
     let contentRight = 0;
     let contentBottom = 0;
-
-    areas.forEach(area => {
-        contentRight = Math.max(
-            contentRight,
-            Number(area.x || 0) + Number(area.width || 0)
-        );
-
-        contentBottom = Math.max(
-            contentBottom,
-            Number(area.y || 0) + Number(area.height || 0)
-        );
-    });
 
     tracks.forEach(track => {
         const trackWidth =
@@ -6484,5 +6914,32 @@ document.addEventListener("DOMContentLoaded", () => {
     if (state) state.textContent = "Gesperrt";
 });
 </script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+    const picker = document.getElementById("areaColor");
+    const hex = document.getElementById("areaColorHex");
+
+    if (picker) {
+        picker.addEventListener("input", function(){
+            syncAreaColor("picker");
+        });
+    }
+
+    if (hex) {
+        hex.addEventListener("input", function(){
+            syncAreaColor("hex");
+        });
+        hex.addEventListener("blur", function(){
+            const valid = normalizeAreaColor(hex.value);
+            if (valid) {
+                hex.value = valid;
+                if (picker) picker.value = valid;
+            }
+        });
+    }
+});
+</script>
+
 </body>
 </html>
