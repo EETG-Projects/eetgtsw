@@ -84,6 +84,115 @@ background-size:25px 25px}
   .preview-sidebar{display:none}
   .info-grid{grid-template-columns:1fr}
 }
+
+/* =========================================================
+   DARKMODE – ÖFFENTLICHE ABSTELLPLAN-VORSCHAU
+========================================================= */
+body.dark{
+  --ink:#f5f6f7;
+  --muted:#aeb6bd;
+  --line:#343a40;
+  --soft:#111417;
+  --paper:#1b2025;
+  background:#111417!important;
+  color:#f5f6f7!important;
+}
+
+body.dark .header{
+  background:#15191d!important;
+  border-bottom-color:#343a40!important;
+  box-shadow:0 2px 12px rgba(0,0,0,.28)!important;
+}
+
+body.dark .brand,
+body.dark .nav-links a{
+  color:#f5f6f7!important;
+}
+
+body.dark .brand-text small{
+  color:#9ba4ad!important;
+}
+
+body.dark .nav-links a:hover{
+  background:#20262c!important;
+}
+
+body.dark .nav-links a.active{
+  background:#371a1d!important;
+  color:#ff6b72!important;
+}
+
+body.dark .icon-btn,
+body.dark .menu-btn{
+  background:#20262c!important;
+  color:#f5f6f7!important;
+  border-color:#434a51!important;
+}
+
+body.dark .hero,
+body.dark main{
+  background:#111417!important;
+}
+
+body.dark .lead,
+body.dark .preview-note,
+body.dark .vehicle-meta,
+body.dark .track-length,
+body.dark .info-card p{
+  color:#aeb6bd!important;
+}
+
+body.dark .preview-shell,
+body.dark .preview-top,
+body.dark .preview-sidebar,
+body.dark .legend,
+body.dark .track,
+body.dark .info-card,
+body.dark .vehicle-card{
+  background:#1b2025!important;
+  border-color:#343a40!important;
+  color:#f5f6f7!important;
+}
+
+body.dark .fake-search,
+body.dark .category-head{
+  background:#20262c!important;
+  color:#aeb6bd!important;
+  border-color:#343a40!important;
+}
+
+body.dark .category{
+  border-color:#343a40!important;
+  background:#15191d!important;
+}
+
+body.dark .preview-main{
+  background:
+    linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px),
+    #111417!important;
+  background-size:25px 25px!important;
+}
+
+body.dark .rail{
+  background:#8d959c!important;
+}
+
+body.dark .rail:before,
+body.dark .rail:after{
+  background:#69727b!important;
+}
+
+body.dark .lock-overlay{
+  background:rgba(0,0,0,.82)!important;
+}
+
+body.dark .status-pill{
+  background:#123a20!important;
+  color:#d7ffe2!important;
+  border-color:#22c55e!important;
+}
+
 </style>
 </head>
 <body>
@@ -115,9 +224,9 @@ background-size:25px 25px}
       <div>
         <span class="eyebrow">Betriebsübersicht</span>
         <h1>Digitaler Abstellplan</h1>
-        <p class="lead">Eine Vorschau auf die interne EETG-Fahrzeug- und Gleisdisposition. Für die vollständige Live-Ansicht mit Standorten, Fahrzeugstatus, Gleisen und Bearbeitungsfunktionen ist eine Anmeldung erforderlich.</p>
+        <p class="lead">Eine Vorschau auf die interne EETG-Fahrzeug- und Gleisdisposition. Für die vollständige Ansicht mit Standorten, Fahrzeugstatus, Gleisen und Bearbeitungsfunktionen ist eine Anmeldung erforderlich.</p>
       </div>
-      <a class="cta" href="login.html?next=abstellplan-intern.html">Zum Login</a>
+      
     </div>
   </section>
 
@@ -204,5 +313,69 @@ background-size:25px 25px}
   </section>
 </main>
 <script src="./assets/js/app.js"></script>
+
+<script>
+(function(){
+  const STORAGE_KEY = "eetg_public_theme";
+
+  function applyPublicTheme(theme){
+    const dark = theme === "dark";
+    document.body.classList.toggle("dark", dark);
+
+    // Zusätzlich mit der Hauptseite kompatibel halten.
+    document.documentElement.dataset.theme = dark ? "dark" : "light";
+
+    const btn = document.getElementById("themeToggle");
+    if(btn){
+      btn.textContent = dark ? "☀" : "◐";
+      btn.setAttribute(
+        "aria-label",
+        dark ? "Helles Farbschema wechseln" : "Dunkles Farbschema wechseln"
+      );
+      btn.title = dark ? "White Mode" : "Dark Mode";
+    }
+  }
+
+  let saved = null;
+  try{
+    saved = localStorage.getItem(STORAGE_KEY)
+      || localStorage.getItem("theme")
+      || localStorage.getItem("eetg_theme");
+  }catch(_){}
+
+  if(saved !== "dark" && saved !== "light"){
+    saved = window.matchMedia &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light";
+  }
+
+  applyPublicTheme(saved);
+
+  const btn = document.getElementById("themeToggle");
+  if(btn){
+    /*
+     * Capture-Modus verhindert, dass eine eventuell bereits in app.js
+     * registrierte Theme-Funktion den Klick ein zweites Mal umschaltet.
+     */
+    btn.addEventListener("click", function(event){
+      event.preventDefault();
+      event.stopImmediatePropagation();
+
+      const next = document.body.classList.contains("dark")
+        ? "light"
+        : "dark";
+
+      try{
+        localStorage.setItem(STORAGE_KEY, next);
+        localStorage.setItem("theme", next);
+      }catch(_){}
+
+      applyPublicTheme(next);
+    }, true);
+  }
+})();
+</script>
+
 </body>
 </html>
