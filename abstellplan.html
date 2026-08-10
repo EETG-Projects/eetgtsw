@@ -3461,6 +3461,43 @@ body.public-mode .public-login{
     }
 }
 
+
+/* Theme-Schalter als kompaktes Halbkreis-Icon */
+body.public-mode a#publicThemeToggle{
+    width:42px!important;
+    min-width:42px!important;
+    height:42px!important;
+    padding:0!important;
+    border-radius:12px!important;
+}
+
+.theme-half-icon{
+    display:block;
+    width:15px;
+    height:15px;
+    border:2px solid currentColor;
+    border-radius:50%;
+    box-sizing:border-box;
+    position:relative;
+    overflow:hidden;
+}
+
+.theme-half-icon::after{
+    content:"";
+    position:absolute;
+    top:-2px;
+    bottom:-2px;
+    right:-2px;
+    width:8px;
+    background:currentColor;
+}
+
+/* Im Darkmode Icon optisch umkehren */
+body.public-mode.public-dark .theme-half-icon::after{
+    right:auto;
+    left:-2px;
+}
+
 </style>
 </head>
 
@@ -3484,7 +3521,7 @@ body.public-mode .public-login{
             </nav>
 
             <div class="public-nav-actions">
-                <a href="#" class="public-theme-toggle" id="publicThemeToggle" role="button" aria-label="Farbschema wechseln">🌙 Dark</a>
+                <a href="#" class="public-theme-toggle" id="publicThemeToggle" role="button" aria-label="Farbschema wechseln" title="White / Dark Mode"><span class="theme-half-icon" aria-hidden="true"></span></a>
                 <a class="public-login" href="login.html?next=abstellplan.html">Anmelden</a>
             </div>
         </div>
@@ -7353,7 +7390,8 @@ document.addEventListener("DOMContentLoaded", function(){
         const light = theme === "light";
         document.body.classList.toggle("public-light", light);
         document.body.classList.toggle("public-dark", !light);
-        btn.textContent = light ? "🌙 Dark" : "☀️ White";
+        btn.setAttribute("aria-label", light ? "Dark Mode aktivieren" : "White Mode aktivieren");
+        btn.title = light ? "Dark Mode" : "White Mode";
         try{ localStorage.setItem("eetg_public_theme", theme); }catch(_){}
     }
 
