@@ -5377,8 +5377,10 @@ async function addArea() {
             // alter Datenbanken keine Inserts blockieren.
             x_position: 0,
             y_position: 0,
-            width_px: Math.max(1, lengthMeter * PIXELS_PER_METER),
-            height_px: 30
+            // Legacy-Felder müssen weiterhin die alten CHECK-Constraints erfüllen.
+            // Visuell werden diese Werte bei Gleisbereichen nicht mehr verwendet.
+            width_px: Math.max(100, lengthMeter * PIXELS_PER_METER),
+            height_px: 75
         });
 
     if (error) {
@@ -5470,7 +5472,7 @@ async function editTrackArea(areaId) {
         .update({
             start_meter: startMeter,
             length_meter: lengthMeter,
-            width_px: Math.max(1, lengthMeter * PIXELS_PER_METER),
+            width_px: Math.max(100, lengthMeter * PIXELS_PER_METER),
             updated_at: new Date().toISOString()
         })
         .eq("id", Number(area.id));
