@@ -1,238 +1,5552 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>FGM Gleisbild-Prototyp | EETG</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Digitaler Abstellplan</title>
+
 <style>
-:root{
-  --bg:#f4f6f7;--panel:#fff;--line:#dfe3e6;--text:#20252a;--muted:#69727b;
-  --accent:#b5121b;--track:#3b4147;--yard:#6f767d;--switch:#b5121b;
+* {
+    box-sizing: border-box;
 }
-*{box-sizing:border-box}
-body{margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
+
+:root {
+    --bg: #f4f6f7;
+    --panel: #ffffff;
+    --panel2: #f7f8f9;
+    --border: #dfe3e6;
+    --text: #20252a;
+    --muted: #69727b;
+    --accent: #b5121b;
+    --danger: #b5121b;
+    --track: #6f767d;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+}
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+header {
+height:64px;
+min-height:64px;
+flex:0 0 64px;
+background: #ffffff;
+border-bottom: 1px solid var(--border);
+box-shadow: 0 2px 12px rgba(24,27,31,.06);
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 0 20px;
+}
+
+.logo {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.header-info {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.user-box{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted)}
+.role-badge{padding:4px 8px;border-radius:999px;background:#30343b;color:#fff;font-weight:700}
+.readonly-note{padding:10px 12px;margin:10px 15px;border:1px solid #6b7280;border-radius:6px;color:#d1d5db;font-size:12px;display:none}
+body.readonly .readonly-note{display:block}
+body.readonly .write-only{display:none!important}
+.admin-only{display:none!important}
+body.is-admin .admin-only{display:flex!important}
+
+.track {
+    min-height: 215px;
+}
+
+.track-title-box{
+    position:absolute;
+    left:10px;
+    top:14px;
+    width:60px;
+    z-index:25;
+    text-align:center;
+}
+.track-title{
+    font-size:14px;
+    font-weight:800;
+    line-height:1.15;
+    word-break:break-word;
+}
+.track-length-label{
+    margin-top:4px;
+    color:var(--muted);
+    font-size:10px;
+}
+.track-edit-btn{
+    margin-top:7px;
+    padding:4px 6px;
+    font-size:10px;
+    background:#5d646b;
+}
+
+.vehicle-wrap{
+    position:absolute;
+    top:48px;
+    z-index:10;
+}
+
+.vehicle-wrap .vehicle{
+    position:relative;
+    top:0;
+    left:0!important;
+    width:100%;
+}
+
+.vehicle-status-old{
+    width:100%;
+    margin-top:4px;
+    height:26px;
+    padding:2px 5px;
+    border:1px solid var(--border);
+    border-radius:5px;
+    background:#ffffff;
+    color:var(--text);
+    font-size:10px;
+    font-weight:700;
+    cursor:pointer;
+}
+
+.vehicle-status-old:disabled{
+    cursor:default;
+    opacity:.75;
+}
+
+.vehicle-status-old.status-unterwegs{border-color:#facc15;background:#3a3210;color:#fff}
+.vehicle-status-old.status-werkstatt{border-color:#f97316;background:#3b2110;color:#fff}
+.vehicle-status-old.status-vermietet{border-color:#3b82f6;background:#10264a;color:#fff}
+.vehicle-status-old.status-abgestellt{border-color:#ef4444;background:#451515;color:#fff}
+.vehicle-status-old.status-einsatzbereit{border-color:#22c55e;background:#123a20;color:#fff;font-weight:800}
+
+
+
+/* =========================================================
+   APP
+========================================================= */
+
+.app {
+    display: flex;
+    height: calc(100vh - 64px);
+}
+
+
+/* =========================================================
+   SIDEBAR
+========================================================= */
+
+.sidebar {
+    width: 325px;
+    min-width: 325px;
+
+    background: var(--panel);
+
+    border-right: 1px solid var(--border);
+
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-section {
+    padding: 15px;
+    border-bottom: 1px solid var(--border);
+}
+
+.sidebar-title {
+    font-size: 14px;
+    font-weight: bold;
+
+    margin-bottom: 10px;
+}
+
+
+/* Buttons */
+
+button {
+    border: none;
+    border-radius: 5px;
+
+    padding: 9px 12px;
+
+    background: var(--accent);
+    color: white;
+
+    cursor: pointer;
+}
+
+button:hover {
+    filter: brightness(1.1);
+}
+
+button.secondary {
+    background: #5d646b;
+}
+
+button.danger {
+    background: var(--danger);
+}
+
+.button-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+
+/* =========================================================
+   VEHICLE LIST
+========================================================= */
+
+.vehicle-list {
+    overflow-y: auto;
+    flex: 1;
+    padding: 10px;
+}
+
+.vehicle-item {
+    background: var(--panel2);
+
+    border: 1px solid var(--border);
+
+    border-radius: 6px;
+
+    padding: 9px;
+
+    margin-bottom: 7px;
+
+    cursor: grab;
+}
+
+.vehicle-item:hover {
+    border-color: var(--accent);
+}
+
+.vehicle-name {
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.vehicle-info {
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 3px;
+}
+
+
+/* =========================================================
+   WORKSPACE
+========================================================= */
+
+.workspace {
+    flex: 1;
+
+    display: flex;
+    flex-direction: column;
+
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
+
+/* Toolbar */
+
+.workspace-toolbar {
+    height: 48px;
+
+    background: var(--panel);
+
+    border-bottom: 1px solid var(--border);
+
+    display: flex;
+    align-items: center;
+
+    gap: 8px;
+
+    padding: 0 12px;
+}
+
+.scale-info {
+    margin-left: auto;
+
+    color: var(--muted);
+
+    font-size: 12px;
+}
+
+
+/* =========================================================
+   PLAN
+========================================================= */
+
+.plan-container {
+    flex: 1 1 0;
+    width: 100%;
+    height: 100%;
+    position: relative;
+    min-width: 0;
+    min-height: 0;
+
+    /* Horizontale und vertikale Scrollbar dauerhaft ermöglichen */
+    overflow-x: scroll !important;
+    overflow-y: scroll !important;
+    scrollbar-gutter: stable both-edges;
+    overscroll-behavior: contain;
+
+    --canvas-width: 3000px;
+    --canvas-height: 1800px;
+
+    background:
+        linear-gradient(
+            rgba(255,255,255,0.025) 1px,
+            transparent 1px
+        ),
+        linear-gradient(
+            90deg,
+            rgba(255,255,255,0.025) 1px,
+            transparent 1px
+        );
+
+    background-size: 25px 25px;
+
+    padding: 25px;
+}
+
+/* Unsichtbare Zeichenfläche erzeugt den scrollbaren Bereich.
+   Die Gleise bleiben absolut darüber positioniert. */
+.plan-container::before {
+    content: "";
+    display: block;
+    width: var(--canvas-width);
+    height: max(var(--canvas-height), calc(100% + 800px));
+    pointer-events: none;
+}
+
+/* Besser sichtbare Slider / Scrollbars */
+.plan-container::-webkit-scrollbar {
+    width: 14px;
+    height: 14px;
+}
+
+.plan-container::-webkit-scrollbar-track {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+}
+
+.plan-container::-webkit-scrollbar-thumb {
+    background: #5d646b;
+    border: 3px solid var(--panel2);
+    border-radius: 999px;
+}
+
+.plan-container::-webkit-scrollbar-thumb:hover {
+    background: #737b84;
+}
+
+.plan-container {
+    scrollbar-width: auto;
+    scrollbar-color: #5d646b var(--panel2);
+}
+
+
+/* =========================================================
+   TRACK
+========================================================= */
+
+.track {
+    position: absolute;
+
+    height: 215px;
+
+    margin-bottom: 25px;
+
+    background: rgba(255,255,255,0.025);
+
+    border: 1px solid var(--border);
+
+    border-radius: 7px;
+
+    min-width: 0;
+}
+
+
+/* Track number */
+
+.track-number {
+    position: absolute;
+
+    left: 10px;
+    top: 50%;
+
+    transform: translateY(-50%);
+
+    width: 55px;
+
+    font-size: 16px;
+    font-weight: bold;
+
+    text-align: center;
+
+    z-index: 20;
+}
+
+
+/* Track itself */
+
+.track-line {
+    position: absolute;
+
+    left: 80px;
+    right: 30px;
+
+    top: 68px;
+
+    height: 6px;
+
+    background: var(--track);
+
+    border-radius: 4px;
+
+    z-index: 1;
+}
+
+
+/* Rails */
+
+.track-line::before,
+.track-line::after {
+    content: "";
+
+    position: absolute;
+
+    left: 0;
+    right: 0;
+
+    height: 2px;
+
+    background: #aaa;
+}
+
+.track-line::before {
+    top: -7px;
+}
+
+.track-line::after {
+    bottom: -7px;
+}
+
+
+/* =========================================================
+   SCALE
+========================================================= */
+
+.scale {
+    position: absolute;
+
+    left: 80px;
+    right: 30px;
+
+    top: 15px;
+
+    height: 20px;
+
+    pointer-events: none;
+}
+
+.scale-mark {
+    position: absolute;
+    height: 7px;
+    border-left: 1px solid #9aa0a6;
+    color: var(--muted);
+    font-size: 10px;
+    padding-left: 0;
+}
+
+.scale-mark.scale-major {
+    height: 14px;
+    border-left: 2px solid var(--text);
+    color: var(--text);
+    font-size: 11px;
+    font-weight: 700;
+    padding-left: 4px;
+    white-space: nowrap;
+    transform: translateY(-3px);
+}
+
+
+/* =========================================================
+   VEHICLES ON TRACK
+========================================================= */
+
+.vehicle {
+    position: absolute;
+
+    top: 48px;
+
+    height: 40px;
+
+    border-radius: 5px;
+
+    border: 2px solid;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    font-size: 11px;
+
+    font-weight: bold;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+
+    cursor: grab;
+
+    user-select: none;
+
+    z-index: 10;
+
+    transition:
+        box-shadow .1s,
+        transform .1s;
+}
+
+.vehicle:hover {
+    transform: translateY(-2px);
+}
+
+.vehicle.selected {
+    box-shadow:
+        0 0 0 2px white,
+        0 0 12px rgba(59,130,246,.8);
+}
+
+.vehicle.lok {
+    background: #a61b1b;
+    border-color: #f87171;
+}
+
+.vehicle.wagen {
+    background: #3f4650;
+    border-color: #aeb4bc;
+}
+
+
+/* =========================================================
+   MODAL
+========================================================= */
+
+.modal {
+    position: fixed;
+
+    inset: 0;
+
+    background: rgba(0,0,0,.7);
+
+    display: none;
+
+    align-items: center;
+    justify-content: center;
+
+    z-index: 1000;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-box {
+    width: 420px;
+
+    background: var(--panel);
+
+    border: 1px solid var(--border);
+
+    border-radius: 9px;
+
+    padding: 20px;
+}
+
+.modal-box h2 {
+    margin-top: 0;
+}
+
+.form-row {
+    margin-bottom: 13px;
+}
+
+.form-row label {
+    display: block;
+
+    font-size: 12px;
+
+    color: var(--muted);
+
+    margin-bottom: 5px;
+}
+
+.form-row input,
+.form-row select {
+    width: 100%;
+
+    padding: 10px;
+
+    background: #15171a;
+
+    color: white;
+
+    border: 1px solid var(--border);
+
+    border-radius: 5px;
+}
+
+.modal-buttons {
+    display: flex;
+
+    justify-content: flex-end;
+
+    gap: 8px;
+
+    margin-top: 18px;
+}
+
+
+/* =========================================================
+   CONTEXT MENU
+========================================================= */
+
+.context-menu {
+    position: fixed;
+
+    display: none;
+
+    width: 180px;
+
+    background: #ffffff;
+
+    border: 1px solid var(--border);
+
+    border-radius: 6px;
+
+    padding: 5px;
+
+    z-index: 2000;
+
+    box-shadow: 0 10px 30px rgba(0,0,0,.4);
+}
+
+.context-menu button {
+    width: 100%;
+
+    text-align: left;
+
+    background: transparent;
+
+    border-radius: 4px;
+}
+
+.context-menu button:hover {
+    background: #30343b;
+}
+
+
+/* =========================================================
+   EMPTY
+========================================================= */
+
+.empty {
+    color: var(--muted);
+
+    text-align: center;
+
+    padding: 20px;
+
+    font-size: 13px;
+}
+
+.status-legend{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px 16px;
+    align-items:center;
+    padding:10px 14px;
+    margin:0 20px 14px;
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:10px;
+    font-size:12px;
+}
+.status-legend strong{margin-right:4px}
+.legend-item{display:flex;align-items:center;gap:6px}
+.legend-dot{width:13px;height:13px;border-radius:4px;border:1px solid rgba(255,255,255,.25)}
+.legend-einsatzbereit{background:#22c55e}
+.legend-unterwegs{background:#facc15}
+.legend-abgestellt{background:#ef4444}
+.legend-vermietet{background:#3b82f6}
+.legend-werkstatt{background:#f97316}
+
+
+/* =========================================================
+   EETG ORIGINALSEITEN-OPTIK
+========================================================= */
+body{
+    background:#f4f6f7;
+    color:#20252a;
+}
+
 header{
-  height:64px;background:#fff;border-bottom:1px solid var(--line);
-  display:flex;align-items:center;justify-content:space-between;padding:0 18px;
+    background:#ffffff;
+    color:#20252a;
 }
-h1{font-size:18px;margin:0}
-small{color:var(--muted)}
-.controls{
-  display:flex;gap:8px;align-items:center;padding:10px 14px;background:#fff;border-bottom:1px solid var(--line);
-  flex-wrap:wrap
+
+.logo{
+    color:#20252a;
 }
+
+.header-info{
+    color:#69727b;
+}
+
+.sidebar{
+    background:#ffffff!important;
+    border-right:1px solid #dfe3e6!important;
+    box-shadow:4px 0 18px rgba(24,27,31,.04);
+}
+
+.workspace,
+.plan,
+.plan-area,
+.track-container{
+    background:#f4f6f7!important;
+}
+
 button{
-  border:0;border-radius:8px;padding:9px 12px;background:var(--accent);color:#fff;font-weight:800;cursor:pointer
+    background:#b5121b;
+    color:#ffffff;
+    border:0;
+    border-radius:8px;
+    font-weight:700;
 }
-button.secondary{background:#41474e}
-.status{font-size:12px;color:var(--muted);margin-left:auto}
-.wrap{height:calc(100vh - 115px);padding:12px}
-.card{
-  height:100%;background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;
-  box-shadow:0 8px 24px rgba(24,27,31,.06);position:relative
+
+button:hover{
+    filter:brightness(.92);
 }
-svg{width:100%;height:100%;display:block;background:
-linear-gradient(rgba(0,0,0,.035) 1px,transparent 1px),
-linear-gradient(90deg,rgba(0,0,0,.035) 1px,transparent 1px);
-background-size:25px 25px}
-.track{fill:none;stroke:var(--track);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
-.track.yard{stroke:var(--yard);stroke-width:2.4}
-.track.siding{stroke:#737b84;stroke-width:2.2}
-.switch{fill:var(--switch);stroke:#fff;stroke-width:1.2}
-.buffer{fill:#111}
-.label{
-  font-size:11px;font-weight:800;paint-order:stroke;stroke:#fff;stroke-width:4px;stroke-linejoin:round
+
+button.secondary,
+.secondary-btn,
+.track-edit-btn{
+    background:#343a40!important;
+    color:#ffffff!important;
 }
-.legend{
-  position:absolute;left:12px;bottom:12px;background:rgba(255,255,255,.94);border:1px solid var(--line);
-  border-radius:9px;padding:8px 10px;font-size:11px;display:flex;gap:12px;align-items:center
+
+input,
+select{
+    background:#ffffff!important;
+    color:#20252a!important;
+    border:1px solid #dfe3e6!important;
 }
-.dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:4px}
-.dot.sw{background:var(--switch)} .dot.bs{background:#111}
-.notice{
-  position:absolute;top:12px;left:12px;background:rgba(255,255,255,.94);border:1px solid var(--line);
-  border-radius:9px;padding:8px 10px;font-size:11px;max-width:430px
+
+.track{
+    background:#ffffff!important;
+    border:1px solid #dfe3e6!important;
+    border-radius:12px;
+    box-shadow:0 6px 20px rgba(24,27,31,.06);
+}
+
+.track::before,
+.track-line{
+    border-color:#747b82!important;
+}
+
+.track-title{
+    color:#20252a;
+}
+
+.track-length-label,
+.vehicle-info{
+    color:#69727b;
+}
+
+.vehicle{
+    box-shadow:0 3px 8px rgba(24,27,31,.18);
+}
+
+.status-legend{
+    background:#ffffff;
+    border:1px solid #dfe3e6;
+    color:#20252a;
+    box-shadow:0 5px 18px rgba(24,27,31,.05);
+}
+
+.status-legend strong{
+    color:#b5121b;
+}
+
+.modal{
+    background:rgba(17,24,32,.55);
+}
+
+.modal-content{
+    background:#ffffff!important;
+    color:#20252a!important;
+    border:1px solid #dfe3e6!important;
+    box-shadow:0 24px 60px rgba(0,0,0,.22);
+}
+
+.context-menu{
+    background:#ffffff!important;
+    color:#20252a!important;
+    border:1px solid #dfe3e6!important;
+    box-shadow:0 12px 30px rgba(0,0,0,.16);
+}
+
+.context-menu div:hover{
+    background:#f2f3f4!important;
+}
+
+/* Statusfarben bleiben bewusst eindeutig */
+.vehicle-status-old.status-einsatzbereit{
+    border-color:#22c55e!important;
+    background:#dcfce7!important;
+    color:#166534!important;
+}
+.vehicle-status-old.status-unterwegs{
+    border-color:#eab308!important;
+    background:#fef9c3!important;
+    color:#854d0e!important;
+}
+.vehicle-status-old.status-abgestellt{
+    border-color:#ef4444!important;
+    background:#fee2e2!important;
+    color:#991b1b!important;
+}
+.vehicle-status-old.status-vermietet{
+    border-color:#3b82f6!important;
+    background:#dbeafe!important;
+    color:#1e40af!important;
+}
+.vehicle-status-old.status-werkstatt{
+    border-color:#f97316!important;
+    background:#ffedd5!important;
+    color:#9a3412!important;
+}
+
+
+/* =========================================================
+   WHITE / DARK MODE
+========================================================= */
+.theme-toggle{
+    min-width:94px;
+}
+
+body.dark{
+    --bg:#111417;
+    --panel:#1b2025;
+    --panel2:#20262c;
+    --border:#343a40;
+    --text:#f5f6f7;
+    --muted:#aeb6bd;
+    --track:#8d959c;
+    background:#111417!important;
+    color:#f5f6f7!important;
+}
+
+body.dark header{
+    background:#15191d!important;
+    color:#f5f6f7!important;
+    border-bottom-color:#343a40!important;
+    box-shadow:0 2px 12px rgba(0,0,0,.28)!important;
+}
+
+body.dark .logo,
+body.dark .track-title{
+    color:#f5f6f7!important;
+}
+
+body.dark .sidebar{
+    background:#15191d!important;
+    border-right-color:#343a40!important;
+    box-shadow:4px 0 18px rgba(0,0,0,.22)!important;
+}
+
+body.dark .workspace,
+body.dark .plan,
+body.dark .plan-area,
+body.dark .track-container{
+    background:#111417!important;
+}
+
+body.dark .track{
+    background:#1b2025!important;
+    border-color:#343a40!important;
+    box-shadow:0 6px 20px rgba(0,0,0,.25)!important;
+}
+
+body.dark .status-legend{
+    background:#1b2025!important;
+    border-color:#343a40!important;
+    color:#f5f6f7!important;
+    box-shadow:0 5px 18px rgba(0,0,0,.22)!important;
+}
+
+body.dark .modal-content,
+body.dark .modal-box{
+    background:#1b2025!important;
+    color:#f5f6f7!important;
+    border-color:#343a40!important;
+}
+
+body.dark .context-menu{
+    background:#1b2025!important;
+    color:#f5f6f7!important;
+    border-color:#343a40!important;
+}
+
+body.dark .context-menu button{
+    color:#f5f6f7!important;
+}
+
+body.dark .context-menu button:hover,
+body.dark .context-menu div:hover{
+    background:#2a3036!important;
+}
+
+body.dark input,
+body.dark select{
+    background:#15191d!important;
+    color:#f5f6f7!important;
+    border-color:#434a51!important;
+}
+
+body.dark .vehicle-item{
+    background:#20262c!important;
+    border-color:#343a40!important;
+}
+
+body.dark .readonly-note{
+    color:#d5dade!important;
+}
+
+body.dark .role-badge{
+    background:#343a40!important;
+}
+
+/* Statusfarben bleiben in beiden Modi eindeutig */
+body.dark .vehicle-status-old.status-einsatzbereit{
+    background:#123a20!important;
+    color:#d7ffe2!important;
+}
+body.dark .vehicle-status-old.status-unterwegs{
+    background:#3a3210!important;
+    color:#fff4ad!important;
+}
+body.dark .vehicle-status-old.status-abgestellt{
+    background:#451515!important;
+    color:#ffd2d2!important;
+}
+body.dark .vehicle-status-old.status-vermietet{
+    background:#10264a!important;
+    color:#d7e8ff!important;
+}
+body.dark .vehicle-status-old.status-werkstatt{
+    background:#3b2110!important;
+    color:#ffe1c7!important;
+}
+
+.track-admin-actions{
+    position:absolute;
+    left:14px;
+    right:14px;
+    bottom:12px;
+    z-index:120;
+    display:flex;
+    flex-direction:row;
+    gap:14px;
+    align-items:center;
+    flex-wrap:wrap;
+}
+
+.track-admin-actions button{
+    margin:0!important;
+    padding:10px 18px!important;
+    min-height:38px;
+    border-radius:7px;
+    font-size:13px!important;
+    line-height:1;
+    white-space:nowrap;
+    width:auto;
+}
+
+.track-edit-btn,
+.track-length-btn{
+    background:#343a40!important;
+    color:#fff!important;
+}
+
+.track-delete-btn{
+    background:#b5121b!important;
+    color:#fff!important;
+}
+
+
+body.dark .scale-mark {
+    border-left-color:#596168;
+    color:#8f989f;
+}
+
+body.dark .scale-mark.scale-major {
+    border-left-color:#f5f6f7;
+    color:#f5f6f7;
+}
+
+
+/* =========================================================
+   FREIE GLEISPOSITIONIERUNG
+========================================================= */
+.track-drag-handle{
+    display:none;
+    margin:0!important;
+    padding:10px 18px!important;
+    min-height:38px;
+    border-radius:7px;
+    background:#343a40!important;
+    color:#fff!important;
+    font-size:13px;
+    cursor:grab;
+    user-select:none;
+    touch-action:none;
+    white-space:nowrap;
+}
+
+body.is-admin .track-drag-handle{
+    display:block;
+}
+
+.track-drag-handle:active{
+    cursor:grabbing;
+}
+
+.track.dragging-track{
+    z-index:100;
+    box-shadow:0 14px 36px rgba(24,27,31,.22)!important;
+    opacity:.96;
+}
+
+.plan-empty-space-note{
+    position:absolute;
+    left:20px;
+    top:20px;
+    color:var(--muted);
+    font-size:12px;
+    pointer-events:none;
+}
+
+
+/* =========================================================
+   ADMIN-BEARBEITUNGSMODUS
+========================================================= */
+.admin-edit-toggle{
+    display:none;
+    align-items:center;
+    gap:8px;
+    padding:7px 10px;
+    border:1px solid var(--border);
+    border-radius:9px;
+    background:var(--panel2);
+    color:var(--text);
+    font-size:12px;
+    font-weight:800;
+    cursor:pointer;
+    user-select:none;
+}
+body.is-admin .admin-edit-toggle{display:flex}
+
+.admin-edit-toggle input{
+    appearance:none;
+    width:34px;
+    height:19px;
+    border-radius:999px;
+    background:#6b7280;
+    position:relative;
+    cursor:pointer;
+    transition:.18s ease;
+}
+.admin-edit-toggle input::after{
+    content:"";
+    position:absolute;
+    width:15px;
+    height:15px;
+    left:2px;
+    top:2px;
+    border-radius:50%;
+    background:#fff;
+    transition:.18s ease;
+}
+.admin-edit-toggle input:checked{
+    background:#b5121b;
+}
+.admin-edit-toggle input:checked::after{
+    transform:translateX(15px);
+}
+
+.admin-edit-state{
+    font-size:11px;
+    color:var(--muted);
+    font-weight:700;
+}
+body.admin-edit-enabled .admin-edit-state{
+    color:#22c55e;
+}
+
+/* Änderungsfunktionen sind für Admins erst nach Aktivierung sichtbar. */
+body.is-admin:not(.admin-edit-enabled) .track-admin-actions,
+body.is-admin:not(.admin-edit-enabled) #addTrackButton,
+body.is-admin:not(.admin-edit-enabled) #addVehicleButton,
+body.is-admin:not(.admin-edit-enabled) .admin-only-edit{
+    display:none!important;
+}
+
+
+/* =========================================================
+   GLEIS-NOTIZFELD
+========================================================= */
+.track-note-wrap{
+    position:absolute;
+    left:80px;
+    right:20px;
+    top:135px;
+    z-index:20;
+}
+
+.track-note-label{
+    display:block;
+    margin-bottom:5px;
+    color:var(--muted);
+    font-size:10px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+}
+
+.track-note{
+    width:100%;
+    min-height:44px;
+    max-height:72px;
+    resize:vertical;
+    padding:8px 10px;
+    border:1px solid var(--border);
+    border-radius:7px;
+    background:var(--panel2);
+    color:var(--text);
+    font:inherit;
+    font-size:12px;
+    line-height:1.35;
+    outline:none;
+}
+
+.track-note:focus{
+    border-color:var(--accent);
+    box-shadow:0 0 0 3px rgba(181,18,27,.10);
+}
+
+.track-note:disabled{
+    opacity:1;
+    cursor:default;
+    background:var(--panel2);
+    color:var(--text);
+}
+
+.track-note-status{
+    margin-top:4px;
+    min-height:14px;
+    color:var(--muted);
+    font-size:10px;
+}
+
+.track-note-status.saved{
+    color:#16a34a;
+}
+
+.track-note-status.error{
+    color:#dc2626;
+}
+
+body.dark .track-note{
+    background:#15191d;
+    color:#f5f6f7;
+    border-color:#434a51;
+}
+
+body.dark .track-note:disabled{
+    background:#15191d;
+    color:#d5dade;
+}
+
+
+/* =========================================================
+   SUPABASE FEHLERANZEIGE
+========================================================= */
+.db-error-overlay{
+    position:fixed;
+    inset:0;
+    z-index:5000;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    background:rgba(0,0,0,.58);
+}
+.db-error-overlay.active{display:flex}
+
+.db-error-box{
+    width:min(620px,100%);
+    background:var(--panel);
+    color:var(--text);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:22px;
+    box-shadow:0 26px 70px rgba(0,0,0,.35);
+}
+
+.db-error-box h3{
+    margin:0 0 12px;
+    color:#dc2626;
+    font-size:20px;
+}
+
+.db-error-summary{
+    margin-bottom:12px;
+    font-weight:800;
+}
+
+.db-error-details{
+    display:grid;
+    grid-template-columns:110px 1fr;
+    gap:7px 12px;
+    padding:12px;
+    border-radius:9px;
+    background:var(--panel2);
+    border:1px solid var(--border);
+    font-size:12px;
+    word-break:break-word;
+}
+
+.db-error-details b{color:var(--muted)}
+
+.db-error-actions{
+    display:flex;
+    justify-content:flex-end;
+    gap:8px;
+    margin-top:16px;
+}
+
+body.dark .db-error-box{
+    background:#1b2025;
+}
+
+
+/* =========================================================
+   AUFKLAPPBARER ADMIN-BEARBEITUNGSBEREICH
+========================================================= */
+.track{
+    overflow:visible;
+    transition:
+        height .25s ease,
+        min-height .25s ease,
+        box-shadow .25s ease,
+        transform .25s ease;
+    z-index:5;
+}
+
+/* Normalzustand: kompakt, kein reservierter Leerraum für Admin-Buttons. */
+body:not(.admin-edit-enabled) .track{
+    height:215px!important;
+    min-height:215px!important;
+}
+
+/* Admin aktiviert Bearbeiten:
+   Der Gleiskasten klappt nur nach unten auf. */
+body.is-admin.admin-edit-enabled .track{
+    height:285px!important;
+    min-height:285px!important;
+    z-index:100;
+    box-shadow:0 18px 45px rgba(0,0,0,.28)!important;
+}
+
+/* Notiz bleibt an ihrer Position; der neue Platz entsteht darunter. */
+.track-note-wrap{
+    transition:top .25s ease;
+}
+
+/* Die Bearbeitungsleiste liegt im aufgeklappten unteren Bereich. */
+body.is-admin.admin-edit-enabled .track-admin-actions{
+    display:flex!important;
+}
+
+/* Während Bearbeiten aktiv ist, liegt der Plan sichtbar über normalen UI-Flächen. */
+body.admin-edit-enabled .plan-container{
+    position:relative;
+    z-index:20;
+}
+
+body.admin-edit-enabled .track:hover{
+    z-index:130;
+}
+
+/* Kleine optische Trennlinie zwischen Notiz und aufgeklapptem Bereich. */
+body.is-admin.admin-edit-enabled .track::after{
+    content:"";
+    position:absolute;
+    left:14px;
+    right:14px;
+    bottom:62px;
+    height:1px;
+    background:var(--border);
+    opacity:.8;
+    pointer-events:none;
+}
+
+
+/* =========================================================
+   EINHEITLICHE STATUSFARBEN
+========================================================= */
+:root{
+    --status-einsatzbereit:#22c55e;
+    --status-unterwegs:#facc15;
+    --status-abgestellt:#ef4444;
+    --status-vermietet:#3b82f6;
+    --status-werkstatt:#f97316;
+}
+
+/* Legende */
+.legend-einsatzbereit{background:var(--status-einsatzbereit)!important}
+.legend-unterwegs{background:var(--status-unterwegs)!important}
+.legend-abgestellt{background:var(--status-abgestellt)!important}
+.legend-vermietet{background:var(--status-vermietet)!important}
+.legend-werkstatt{background:var(--status-werkstatt)!important}
+
+/* Neuer Status-Button unter dem Fahrzeug */
+.vehicle-status-control{
+    position:relative;
+    margin-top:4px;
+    z-index:80;
+}
+
+.vehicle-status-current{
+    width:100%;
+    min-height:28px;
+    padding:5px 8px;
+    border:0;
+    border-radius:6px;
+    font-size:10px;
+    font-weight:800;
+    color:#fff;
+    cursor:pointer;
+    box-shadow:0 2px 7px rgba(0,0,0,.16);
+}
+
+.vehicle-status-current:disabled{
+    cursor:default;
+    opacity:1;
+}
+
+.vehicle-status-current.status-einsatzbereit{
+    background:var(--status-einsatzbereit)!important;
+    color:#073b18!important;
+}
+.vehicle-status-current.status-unterwegs{
+    background:var(--status-unterwegs)!important;
+    color:#4a3900!important;
+}
+.vehicle-status-current.status-abgestellt{
+    background:var(--status-abgestellt)!important;
+    color:#fff!important;
+}
+.vehicle-status-current.status-vermietet{
+    background:var(--status-vermietet)!important;
+    color:#fff!important;
+}
+.vehicle-status-current.status-werkstatt{
+    background:var(--status-werkstatt)!important;
+    color:#fff!important;
+}
+
+/* Aufklappbare Statuspalette */
+.vehicle-status-palette{
+    position:absolute;
+    left:0;
+    top:33px;
+    display:none;
+    width:max-content;
+    min-width:178px;
+    padding:7px;
+    border:1px solid var(--border);
+    border-radius:9px;
+    background:var(--panel);
+    box-shadow:0 14px 30px rgba(0,0,0,.25);
+    z-index:500;
+}
+
+.vehicle-status-palette.open{
+    display:flex;
+    flex-direction:column;
+    gap:5px;
+}
+
+.vehicle-status-option{
+    border:0!important;
+    border-radius:6px!important;
+    padding:7px 10px!important;
+    min-height:30px;
+    text-align:left;
+    font-size:11px!important;
+    font-weight:800!important;
+    white-space:nowrap;
+}
+
+.vehicle-status-option[data-status="Einsatzbereit"]{
+    background:var(--status-einsatzbereit)!important;
+    color:#073b18!important;
+}
+.vehicle-status-option[data-status="Unterwegs"]{
+    background:var(--status-unterwegs)!important;
+    color:#4a3900!important;
+}
+.vehicle-status-option[data-status="Abgestellt"]{
+    background:var(--status-abgestellt)!important;
+    color:#fff!important;
+}
+.vehicle-status-option[data-status="Vermietet"]{
+    background:var(--status-vermietet)!important;
+    color:#fff!important;
+}
+.vehicle-status-option[data-status="In der Werkstatt"]{
+    background:var(--status-werkstatt)!important;
+    color:#fff!important;
+}
+
+body.dark .vehicle-status-palette{
+    background:#1b2025!important;
+    border-color:#434a51!important;
+}
+
+
+/* =========================================================
+   FAHRZEUGBILDER IN DER BIBLIOTHEK – RECHTS
+========================================================= */
+.library-item{
+    position:relative;
+    min-height:92px;
+    padding-right:150px!important;
+}
+
+.vehicle-thumb{
+    position:absolute;
+    top:8px;
+    right:8px;
+    width:136px;
+    height:74px;
+    margin:0;
+    border-radius:7px;
+    overflow:hidden;
+    border:1px solid var(--border);
+    background:var(--panel);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.vehicle-thumb img{
+    width:100%;
+    height:100%;
+    object-fit:contain;
+    object-position:center;
+    display:block;
+}
+
+.vehicle-thumb-placeholder{
+    color:var(--muted);
+    font-size:9px;
+    line-height:1.2;
+    text-align:center;
+    padding:6px;
+}
+
+body.dark .vehicle-thumb{
+    background:#15191d;
+}
+
+
+/* =========================================================
+   STATUSFARBE IM VORHANDENEN LOKNUMMER-KÄSTCHEN
+========================================================= */
+.vehicle.status-einsatzbereit{
+    background:var(--status-einsatzbereit)!important;
+    border-color:var(--status-einsatzbereit)!important;
+    color:#073b18!important;
+}
+.vehicle.status-unterwegs{
+    background:var(--status-unterwegs)!important;
+    border-color:var(--status-unterwegs)!important;
+    color:#4a3900!important;
+}
+.vehicle.status-abgestellt{
+    background:var(--status-abgestellt)!important;
+    border-color:var(--status-abgestellt)!important;
+    color:#fff!important;
+}
+.vehicle.status-vermietet{
+    background:var(--status-vermietet)!important;
+    border-color:var(--status-vermietet)!important;
+    color:#fff!important;
+}
+.vehicle.status-werkstatt{
+    background:var(--status-werkstatt)!important;
+    border-color:var(--status-werkstatt)!important;
+    color:#fff!important;
+}
+
+.vehicle{
+    border-width:2px!important;
+    border-style:solid!important;
+    transition:background-color .18s ease,border-color .18s ease,color .18s ease;
+}
+
+
+/* =========================================================
+   FAHRZEUGLÄNGE EXAKT IM GLEIS-MASSSTAB
+========================================================= */
+.vehicle-wrap{
+    min-width:0!important;
+}
+
+.vehicle{
+    min-width:0!important;
+    overflow:hidden;
+    white-space:nowrap;
+    text-overflow:clip;
+    padding-left:2px!important;
+    padding-right:2px!important;
+    font-size:clamp(7px, .72vw, 11px);
+}
+
+/* Wichtig: Keine CSS-Mindestbreite darf den Metermaßstab verfälschen. */
+.vehicle-wrap,
+.vehicle{
+    box-sizing:border-box;
+}
+
+
+/* =========================================================
+   STATUSAUSWAHL IN DER FAHRZEUGBIBLIOTHEK
+========================================================= */
+.library-status-control{
+    margin-top:8px;
+    width:100%;
+}
+
+.library-status-current{
+    width:100%;
+    min-height:30px;
+    padding:6px 9px;
+    border:0;
+    border-radius:7px;
+    font-size:11px;
+    font-weight:800;
+    cursor:pointer;
+    text-align:left;
+}
+
+.library-status-current:disabled{
+    cursor:default;
+    opacity:1;
+}
+
+.library-status-current.status-einsatzbereit{
+    background:var(--status-einsatzbereit)!important;
+    color:#073b18!important;
+}
+.library-status-current.status-unterwegs{
+    background:var(--status-unterwegs)!important;
+    color:#4a3900!important;
+}
+.library-status-current.status-abgestellt{
+    background:var(--status-abgestellt)!important;
+    color:#fff!important;
+}
+.library-status-current.status-vermietet{
+    background:var(--status-vermietet)!important;
+    color:#fff!important;
+}
+.library-status-current.status-werkstatt{
+    background:var(--status-werkstatt)!important;
+    color:#fff!important;
+}
+
+.library-status-palette{
+    display:none;
+    margin-top:5px;
+    padding:6px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    background:var(--panel);
+    box-shadow:0 10px 24px rgba(0,0,0,.2);
+}
+
+.library-status-palette.open{
+    display:flex;
+    flex-direction:column;
+    gap:5px;
+}
+
+.library-status-option{
+    border:0!important;
+    border-radius:6px!important;
+    padding:7px 9px!important;
+    min-height:29px;
+    text-align:left;
+    font-size:10px!important;
+    font-weight:800!important;
+}
+
+.library-status-option[data-status="Einsatzbereit"]{
+    background:var(--status-einsatzbereit)!important;
+    color:#073b18!important;
+}
+.library-status-option[data-status="Unterwegs"]{
+    background:var(--status-unterwegs)!important;
+    color:#4a3900!important;
+}
+.library-status-option[data-status="Abgestellt"]{
+    background:var(--status-abgestellt)!important;
+    color:#fff!important;
+}
+.library-status-option[data-status="Vermietet"]{
+    background:var(--status-vermietet)!important;
+    color:#fff!important;
+}
+.library-status-option[data-status="In der Werkstatt"]{
+    background:var(--status-werkstatt)!important;
+    color:#fff!important;
+}
+
+body.dark .library-status-palette{
+    background:#1b2025!important;
+    border-color:#434a51!important;
+}
+
+
+/* =========================================================
+   FAHRZEUGKATEGORIEN + SUCHE
+========================================================= */
+.library-head-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:10px;
+}
+
+.library-head-row .sidebar-title{
+    margin:0;
+    white-space:nowrap;
+}
+
+.library-search{
+    flex:1;
+    min-width:0;
+    position:relative;
+}
+
+.library-search input{
+    width:100%;
+    height:34px;
+    padding:7px 34px 7px 10px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    background:var(--panel2);
+    color:var(--text);
+    font-size:12px;
+}
+
+.library-search button{
+    position:absolute;
+    right:4px;
+    top:4px;
+    width:26px;
+    height:26px;
+    padding:0!important;
+    border-radius:6px;
+    background:transparent!important;
+    color:var(--muted)!important;
+    font-size:14px!important;
+}
+
+.search-result-info{
+    min-height:16px;
+    margin:4px 0 0;
+    color:var(--muted);
+    font-size:10px;
+}
+
+.vehicle-category{
+    margin-bottom:10px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    overflow:hidden;
+    background:var(--panel);
+}
+
+.vehicle-category-header{
+    width:100%;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    padding:9px 10px!important;
+    border-radius:0!important;
+    background:var(--panel2)!important;
+    color:var(--text)!important;
+    text-align:left;
+    font-size:12px!important;
+}
+
+.vehicle-category-header:hover{
+    background:rgba(181,18,27,.08)!important;
+}
+
+.vehicle-category-chevron{
+    transition:transform .18s ease;
+}
+
+.vehicle-category.collapsed .vehicle-category-chevron{
+    transform:rotate(-90deg);
+}
+
+.vehicle-category-body{
+    padding:7px;
+}
+
+.vehicle-category.collapsed .vehicle-category-body{
+    display:none;
+}
+
+.vehicle-category-count{
+    margin-left:auto;
+    color:var(--muted);
+    font-size:10px;
+    font-weight:700;
+}
+
+.search-highlight{
+    outline:3px solid #facc15!important;
+    box-shadow:0 0 0 3px rgba(250,204,21,.22),0 0 22px rgba(250,204,21,.55)!important;
+    animation:eetgSearchPulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes eetgSearchPulse{
+    from{filter:brightness(1)}
+    to{filter:brightness(1.15)}
+}
+
+.track.search-highlight{
+    z-index:160!important;
+}
+
+.library-item.search-highlight{
+    position:relative;
+    z-index:5;
+}
+
+body.dark .vehicle-category{
+    background:#15191d;
+    border-color:#343a40;
+}
+
+body.dark .vehicle-category-header{
+    background:#20262c!important;
+    color:#f5f6f7!important;
+}
+
+
+/* =========================================================
+   UNTERNEHMENSGRUPPEN IN DER FAHRZEUGBIBLIOTHEK
+========================================================= */
+.vehicle-company-group{
+    margin:5px 0 10px;
+}
+
+.vehicle-company-heading{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin:3px 2px 7px;
+    padding:5px 7px;
+    border-radius:6px;
+    background:rgba(127,127,127,.09);
+    color:var(--text);
+    font-size:11px;
+    font-weight:900;
+    letter-spacing:.04em;
+}
+
+.vehicle-company-heading::after{
+    content:"";
+    flex:1;
+    height:1px;
+    background:var(--border);
+}
+
+.vehicle-company-count{
+    color:var(--muted);
+    font-size:9px;
+    font-weight:800;
+}
+
+.vehicle-name-line{
+    display:flex;
+    align-items:baseline;
+    gap:6px;
+    min-width:0;
+}
+
+.vehicle-company-inline{
+    color:var(--muted);
+    font-size:10px;
+    font-weight:800;
+    white-space:nowrap;
+}
+
+body.dark .vehicle-company-heading{
+    background:rgba(255,255,255,.055);
+}
+
+
+/* Zentrale Datenbank / Aktualisieren eine Raster-Kachel (25 px) nach oben */
+.database-section{
+    transform:translateY(-25px);
+    margin-bottom:-25px;
+}
+
+/* Horizontalen Slider am unteren Rand der Planfläche klar sichtbar halten */
+.plan-container::-webkit-scrollbar:horizontal{
+    height:16px;
+}
+.plan-container::-webkit-scrollbar:vertical{
+    width:16px;
+}
+.plan-container::-webkit-scrollbar-corner{
+    background:var(--panel2);
+}
+
+
+/* =========================================================
+   VIEWPORT / SCROLLBAR FIX
+========================================================= */
+.status-legend{
+    flex:0 0 auto;
+    margin:0 20px 0!important;
+}
+
+.app{
+    flex:1 1 auto!important;
+    height:auto!important;
+    min-height:0!important;
+    overflow:hidden;
+}
+
+.sidebar{
+    height:100%;
+    min-height:0;
+    overflow:hidden;
+}
+
+.vehicle-list{
+    flex:1 1 auto;
+    min-height:0;
+    overflow-y:auto;
+}
+
+.database-section{
+    flex:0 0 auto;
+    position:relative;
+    z-index:20;
+    transform:translateY(-25px);
+    margin-top:25px;
+    margin-bottom:-25px;
+    background:var(--panel);
+}
+
+/* Workspace always ends above browser bottom edge. */
+.workspace{
+    height:100%;
+    min-height:0!important;
+}
+
+.workspace-toolbar{
+    flex:0 0 48px;
+}
+
+.plan-container{
+    flex:1 1 0!important;
+    height:auto!important;
+    min-height:0!important;
+    overflow-x:scroll!important;
+    overflow-y:scroll!important;
+}
+
+/* Force a visible horizontal scroll range wider than viewport. */
+.plan-container::before{
+    min-height:calc(100vh + 1000px);
+}
+
+/* Strong, visible bottom/right slider. */
+.plan-container::-webkit-scrollbar{
+    width:16px!important;
+    height:16px!important;
+}
+.plan-container::-webkit-scrollbar-track{
+    background:var(--panel2)!important;
+}
+.plan-container::-webkit-scrollbar-thumb{
+    background:#6b737c!important;
+    border:3px solid var(--panel2)!important;
+    border-radius:999px!important;
+}
+.plan-container::-webkit-scrollbar-corner{
+    background:var(--panel2)!important;
+}
+
+
+/* =========================================================
+   FINALER VIEWPORT-/SCROLL-FIX
+   Header + Legende + App passen exakt ins Browserfenster.
+========================================================= */
+html{
+    width:100%;
+    height:100%;
+}
+
+body{
+    width:100%;
+    height:100vh!important;
+    min-height:100vh!important;
+    display:grid!important;
+    grid-template-rows:64px auto minmax(0,1fr)!important;
+    overflow:hidden!important;
+}
+
+header{
+    grid-row:1;
+    height:64px!important;
+    min-height:64px!important;
+}
+
+.status-legend{
+    grid-row:2;
+    margin:0 20px!important;
+}
+
+.app{
+    grid-row:3;
+    display:flex!important;
+    width:100%;
+    height:100%!important;
+    min-height:0!important;
+    overflow:hidden!important;
+}
+
+.sidebar{
+    height:100%!important;
+    min-height:0!important;
+    display:flex!important;
+    flex-direction:column!important;
+    overflow:hidden!important;
+}
+
+.vehicle-list{
+    flex:1 1 0!important;
+    min-height:0!important;
+    overflow-y:auto!important;
+}
+
+/* Datenbankleiste bleibt sichtbar und sitzt eine Rasterkachel über dem unteren Rand. */
+.database-section{
+    flex:0 0 auto!important;
+    transform:none!important;
+    margin-top:0!important;
+    margin-bottom:25px!important;
+    position:relative!important;
+    z-index:30!important;
+    background:var(--panel)!important;
+}
+
+.workspace{
+    flex:1 1 0!important;
+    width:auto!important;
+    height:100%!important;
+    min-width:0!important;
+    min-height:0!important;
+    display:flex!important;
+    flex-direction:column!important;
+    overflow:hidden!important;
+}
+
+.workspace-toolbar{
+    flex:0 0 48px!important;
+    height:48px!important;
+}
+
+.plan-container{
+    flex:1 1 0!important;
+    width:100%!important;
+    height:auto!important;
+    min-width:0!important;
+    min-height:0!important;
+    position:relative!important;
+
+    overflow-x:scroll!important;
+    overflow-y:scroll!important;
+    scrollbar-gutter:stable!important;
+}
+
+/* Die Scrollfläche wird größer als der sichtbare Plan.
+   So ist unten garantiert eine horizontale Scrollbar vorhanden. */
+.plan-container::before{
+    content:"";
+    display:block;
+    width:var(--canvas-width)!important;
+    height:var(--canvas-height)!important;
+    min-height:1500px!important;
+    pointer-events:none;
+}
+
+/* Gleise liegen sichtbar über dem unsichtbaren Scroll-Spacer. */
+.plan-container > .track{
+    z-index:5;
+}
+
+.plan-container::-webkit-scrollbar{
+    width:16px!important;
+    height:16px!important;
+}
+
+.plan-container::-webkit-scrollbar-track{
+    background:var(--panel2)!important;
+    border:1px solid var(--border)!important;
+}
+
+.plan-container::-webkit-scrollbar-thumb{
+    background:#6b737c!important;
+    border:3px solid var(--panel2)!important;
+    border-radius:999px!important;
+}
+
+.plan-container::-webkit-scrollbar-thumb:hover{
+    background:#858e98!important;
+}
+
+.plan-container::-webkit-scrollbar-corner{
+    background:var(--panel2)!important;
+}
+
+
+/* =========================================================
+   SIDEBAR FOOTER FIX
+   Zentrale Datenbank bündig an die Unterkante.
+========================================================= */
+.database-section{
+    transform:none!important;
+    margin:0!important;
+    padding:10px 12px 12px!important;
+    flex:0 0 auto!important;
+    background:var(--panel)!important;
+    border-top:1px solid var(--border)!important;
+    border-bottom:0!important;
+    position:relative!important;
+    bottom:0!important;
+}
+
+/* Keine zusätzliche dunkle/ schwarze Kachel unter den Buttons. */
+.sidebar{
+    padding-bottom:0!important;
+}
+
+.database-section .sidebar-title{
+    margin-top:0!important;
+}
+
+.database-section .sidebar-actions,
+.database-section .button-row{
+    margin-bottom:0!important;
+    padding-bottom:0!important;
+}
+
+
+/* =========================================================
+   FAHRZEUGDATEN DIREKT IN DER BIBLIOTHEK BEARBEITEN
+========================================================= */
+.library-edit-row{
+    display:flex;
+    gap:6px;
+    margin-top:7px;
+}
+
+.library-edit-button{
+    flex:1;
+    min-height:28px;
+    padding:6px 8px!important;
+    border-radius:6px!important;
+    background:#343a40!important;
+    color:#fff!important;
+    font-size:10px!important;
+    font-weight:800!important;
+}
+
+body:not(.is-admin) .library-edit-button{
+    display:none!important;
+}
+
+body.is-admin:not(.admin-edit-enabled) .library-edit-button{
+    display:none!important;
+}
+
+
+/* =========================================================
+   FAHRZEUGE ZURÜCK IN DIE BIBLIOTHEK ZIEHEN
+========================================================= */
+.vehicle-list{
+    position:relative;
+}
+
+.vehicle-list.library-drop-active{
+    outline:2px dashed var(--accent);
+    outline-offset:-6px;
+    background:rgba(181,18,27,.06);
+}
+
+.vehicle-list.library-drop-active::before{
+    content:"Fahrzeug hier ablegen";
+    position:sticky;
+    top:8px;
+    z-index:120;
+    display:block;
+    width:max-content;
+    margin:8px auto;
+    padding:8px 12px;
+    border-radius:8px;
+    background:var(--accent);
+    color:#fff;
+    font-size:11px;
+    font-weight:900;
+    box-shadow:0 8px 22px rgba(0,0,0,.25);
+    pointer-events:none;
+}
+
+.library-item.vehicle-in-library{
+    border-left:3px solid var(--accent);
+}
+
+
+/* =========================================================
+   STANDORTE + BEREICHE
+========================================================= */
+.location-toolbar{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    min-width:0;
+}
+
+.location-toolbar label{
+    color:var(--muted);
+    font-size:11px;
+    font-weight:800;
+}
+
+.location-select{
+    min-width:180px;
+    max-width:280px;
+    height:32px;
+    padding:5px 9px;
+    border:1px solid var(--border);
+    border-radius:7px;
+    background:var(--panel2);
+    color:var(--text);
+    font-weight:800;
+}
+
+.location-admin-btn{
+    padding:7px 9px!important;
+    font-size:11px!important;
+}
+
+.area{
+    position:absolute;
+    z-index:1;
+    border:2px dashed rgba(181,18,27,.55);
+    border-radius:12px;
+    background:rgba(181,18,27,.055);
+    min-width:120px;
+    min-height:80px;
+    box-sizing:border-box;
+    overflow:visible;
+}
+
+.area[data-area-type="werkstatt"]{
+    border-color:rgba(249,115,22,.75);
+    background:rgba(249,115,22,.07);
+}
+.area[data-area-type="abstellung"]{
+    border-color:rgba(59,130,246,.65);
+    background:rgba(59,130,246,.055);
+}
+.area[data-area-type="service"]{
+    border-color:rgba(34,197,94,.65);
+    background:rgba(34,197,94,.055);
+}
+.area[data-area-type="sonstiges"]{
+    border-color:rgba(168,85,247,.65);
+    background:rgba(168,85,247,.055);
+}
+
+.area-titlebar{
+    position:absolute;
+    left:8px;
+    top:7px;
+    right:8px;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    pointer-events:none;
+}
+
+.area-title{
+    padding:4px 7px;
+    border-radius:6px;
+    background:var(--panel);
+    border:1px solid var(--border);
+    color:var(--text);
+    font-size:11px;
+    font-weight:900;
+    box-shadow:0 3px 10px rgba(0,0,0,.08);
+}
+
+.area-admin-actions{
+    position:absolute;
+    right:8px;
+    top:8px;
+    z-index:45;
+    display:flex;
+    gap:5px;
+}
+
+.area-admin-actions button{
+    padding:5px 7px!important;
+    font-size:10px!important;
+    border-radius:6px!important;
+}
+
+.area-resize-handle{
+    position:absolute;
+    right:-6px;
+    bottom:-6px;
+    width:16px;
+    height:16px;
+    z-index:50;
+    border-radius:4px;
+    background:var(--accent);
+    border:2px solid var(--panel);
+    cursor:nwse-resize;
+    display:none;
+}
+
+body.is-admin.admin-edit-enabled .area-resize-handle{
+    display:block;
+}
+
+body.is-admin.admin-edit-enabled .area{
+    cursor:move;
+}
+
+.area.dragging-area,
+.area.resizing-area{
+    z-index:90;
+    box-shadow:0 14px 34px rgba(0,0,0,.18);
+}
+
+body.dark .area-title{
+    background:#1b2025;
+}
+
+.location-empty{
+    padding:28px;
+    color:var(--muted);
+    font-size:13px;
+}
+
+
+/* AUSBAUSTUFE 2 */
+.track-capacity{margin-top:4px;font-size:10px;font-weight:900;color:var(--muted)}
+.track-capacity.warning{color:#d97706}.track-capacity.full{color:#b91c1c}
+.track.capacity-warning{border-color:#d97706!important}
+.track.capacity-full{border-color:#b91c1c!important;box-shadow:0 0 0 2px rgba(185,28,28,.14)!important}
+.consist-badge{position:absolute;top:-19px;left:0;z-index:12;padding:2px 5px;border-radius:5px;background:#20262c;color:#fff;font-size:8px;font-weight:900;white-space:nowrap;pointer-events:none}
+.stats-panel{position:sticky;left:calc(100% - 380px);top:10px;z-index:180;width:350px;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--panel);box-shadow:0 14px 36px rgba(0,0,0,.18);display:none}
+.stats-panel.open{display:block}.stats-panel h3{margin:0 0 10px}.stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}
+.stat-card{padding:9px;border:1px solid var(--border);border-radius:8px;background:var(--panel2)}.stat-value{font-size:18px;font-weight:900}.stat-label{font-size:9px;color:var(--muted);font-weight:800}
+.realtime-state{display:inline-flex;align-items:center;gap:5px;padding:5px 7px;border-radius:999px;background:var(--panel2);font-size:9px;font-weight:900}.realtime-dot{width:7px;height:7px;border-radius:50%;background:#d97706}.realtime-state.live .realtime-dot{background:#16a34a}.realtime-state.error .realtime-dot{background:#b91c1c}
+
+
+/* =========================================================
+   STATISTIK ALS DROPDOWN IN DER OBEREN LEISTE
+========================================================= */
+.statistics-dropdown{
+    position:relative;
+    display:inline-flex;
+    align-items:center;
+}
+
+.statistics-dropdown-menu{
+    position:absolute;
+    top:calc(100% + 7px);
+    right:0;
+    z-index:1000;
+    width:360px;
+    max-width:min(360px, calc(100vw - 24px));
+    padding:14px;
+    border:1px solid var(--border);
+    border-radius:12px;
+    background:var(--panel);
+    box-shadow:0 16px 40px rgba(0,0,0,.24);
+    display:none;
+}
+
+.statistics-dropdown.open .statistics-dropdown-menu{
+    display:block;
+}
+
+.statistics-dropdown-menu h3{
+    margin:0 0 10px;
+}
+
+.statistics-dropdown .stats-grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:7px;
+}
+
+.statistics-dropdown .stat-card{
+    padding:9px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    background:var(--panel2);
+}
+
+.statistics-dropdown .stat-value{
+    font-size:18px;
+    font-weight:900;
+}
+
+.statistics-dropdown .stat-label{
+    font-size:9px;
+    color:var(--muted);
+    font-weight:800;
+}
+
+/* Das alte Statistikfenster im Abstellplan wird nicht mehr verwendet. */
+#plan > .stats-panel{
+    display:none!important;
+}
+
+
+/* =========================================================
+   AUSBAUSTUFE 3 – HISTORIE
+========================================================= */
+.history-dropdown{position:relative;display:inline-flex;align-items:center}
+.history-dropdown-menu{
+    position:absolute;top:calc(100% + 7px);right:0;z-index:1200;
+    width:480px;max-width:min(480px,calc(100vw - 24px));max-height:520px;overflow:auto;
+    padding:12px;border:1px solid var(--border);border-radius:12px;
+    background:var(--panel);box-shadow:0 16px 40px rgba(0,0,0,.24);display:none
+}
+.history-dropdown.open .history-dropdown-menu{display:block}
+.history-dropdown-menu h3{margin:0 0 10px}
+.history-entry{padding:9px 10px;margin-bottom:7px;border:1px solid var(--border);border-radius:8px;background:var(--panel2)}
+.history-entry-main{font-size:11px;font-weight:800}.history-entry-meta{margin-top:4px;font-size:9px;color:var(--muted)}
+.history-empty{padding:14px;text-align:center;color:var(--muted);font-size:11px}
+
+/* =========================================================
+   UI CLEANUP – LEGENDE / DATENBANK / HISTORIE
+========================================================= */
+
+/* Legende über die komplette horizontale Breite */
+.status-legend{
+    width:100%!important;
+    max-width:none!important;
+    margin:0!important;
+    padding:10px 20px!important;
+    border-left:0!important;
+    border-right:0!important;
+    border-radius:0!important;
+    box-shadow:none!important;
+}
+
+/* Zentrale Datenbank: nur noch Live-Anzeige */
+.database-section{
+    padding:10px 12px 12px!important;
+}
+
+.database-live-row{
+    display:flex;
+    align-items:center;
+    min-height:32px;
+}
+
+.database-live-row .realtime-state{
+    display:inline-flex!important;
+    margin:0!important;
+}
+
+/* Kein fahrzeugbezogener Historie-Button mehr */
+.library-history-button{
+    display:none!important;
+}
+
+
+/* Standortverwaltung für Admins */
+.location-toolbar .danger{
+    background:#c91420!important;
+    color:#fff!important;
 }
 </style>
 </head>
+
+
 <body>
+
 <header>
-  <div>
-    <h1>Frankfurt-Griesheim (FGM) – OSM-Gleisbild-Prototyp</h1>
-    <small>Zentrum: 50.0934188 / 8.6144614</small>
-  </div>
+
+    <div class="logo">
+        🚆 Digitaler Abstellplan
+    </div>
+
+    <div class="user-box">
+        <span id="userName">–</span>
+        <span class="role-badge" id="userRole">–</span>
+        <label class="admin-edit-toggle" title="Änderungen am Abstellplan freigeben">
+            <input id="adminEditToggle" type="checkbox" onchange="setAdminEditMode(this.checked)">
+            <span>Bearbeiten</span>
+            <span class="admin-edit-state" id="adminEditState">Gesperrt</span>
+        </label>
+        <button class="secondary theme-toggle" id="themeToggle" type="button" onclick="toggleTheme()" aria-label="White/Darkmode wechseln">🌙 Dark</button>
+        <button class="secondary" onclick="logout()">Abmelden</button>
+    </div>
+
 </header>
-
-<div class="controls">
-  <button onclick="loadOSM()">OSM-Gleise laden</button>
-  <button class="secondary" onclick="fitView()">Ansicht einpassen</button>
-  <button class="secondary" onclick="downloadSvg()">SVG speichern</button>
-  <span class="status" id="status">Bereit</span>
+<div class="status-legend" aria-label="Legende Fahrzeugstatus">
+    <strong>Legende:</strong>
+    <span class="legend-item"><span class="legend-dot legend-einsatzbereit"></span>Einsatzbereit</span>
+    <span class="legend-item"><span class="legend-dot legend-unterwegs"></span>Unterwegs</span>
+    <span class="legend-item"><span class="legend-dot legend-abgestellt"></span>Abgestellt</span>
+    <span class="legend-item"><span class="legend-dot legend-vermietet"></span>Vermietet</span>
+    <span class="legend-item"><span class="legend-dot legend-werkstatt"></span>In der Werkstatt</span>
 </div>
 
-<div class="wrap">
-  <div class="card">
-    <svg id="svg" viewBox="0 0 1400 760" preserveAspectRatio="xMidYMid meet">
-      <g id="viewport"></g>
-    </svg>
-    <div class="notice">
-      Reale OSM-Geometrie als Kontrollansicht. Im nächsten Schritt können wir daraus
-      ein vereinfachtes Stellwerks-/Gleisbild mit geraden Segmenten und 45°-Weichen erzeugen.
+
+
+<div class="app">
+
+
+<!-- =====================================================
+     SIDEBAR
+===================================================== -->
+
+<aside class="sidebar">
+
+    <div class="sidebar-section">
+
+        <div class="library-head-row">
+            <div class="sidebar-title">Fahrzeugbibliothek</div>
+            <div class="library-search">
+                <input
+                    id="globalSearch"
+                    type="search"
+                    placeholder="Lok oder Gleis suchen …"
+                    autocomplete="off"
+                    oninput="handleGlobalSearch(this.value)">
+                <button type="button" onclick="clearGlobalSearch()" title="Suche löschen">×</button>
+            </div>
+        </div>
+        <div class="search-result-info" id="searchResultInfo"></div>
+
+        <div class="button-row write-only">
+
+            <button class="admin-only" onclick="openVehicleModal()">
+                + Fahrzeug
+            </button>
+
+            <button
+                class="secondary admin-only"
+                onclick="openTrackModal()">
+
+                + Gleis
+
+            </button>
+
+        </div>
+
     </div>
-    <div class="legend">
-      <span><span class="dot sw"></span>Weiche</span>
-      <span><span class="dot bs"></span>Prellbock</span>
+
+
+    <div class="vehicle-list" id="vehicleLibrary"></div>
+
+
+    <div class="readonly-note">
+        Du bist als Betrachter angemeldet. Änderungen sind deaktiviert.
     </div>
-  </div>
+
+    <div class="sidebar-section database-section">
+
+        <div class="sidebar-title">
+            Zentrale Datenbank
+        </div>
+
+        <div class="database-live-row">
+            <span class="realtime-state" id="realtimeState">
+                <span class="realtime-dot"></span>
+                <span id="realtimeText">Synchronisiere …</span>
+            </span>
+        </div>
+
+    </div>
+
+</aside>
+
+
+<!-- =====================================================
+     WORKSPACE
+===================================================== -->
+
+<main class="workspace">
+
+    <div class="workspace-toolbar">
+
+        <div class="location-toolbar">
+            <label for="locationSelect">Standort</label>
+            <select id="locationSelect" class="location-select" onchange="changeLocation(this.value)">
+                <option value="">Lade Standorte …</option>
+            </select>
+
+            <button
+                class="secondary admin-only location-admin-btn"
+                type="button"
+                onclick="openLocationModal()">
+                + Standort
+            </button>
+
+            <button
+                class="secondary admin-only location-admin-btn"
+                type="button"
+                onclick="openLocationEditModal()">
+                ✏ Standort
+            </button>
+
+            <button
+                class="danger admin-only location-admin-btn"
+                type="button"
+                onclick="deleteCurrentLocation()">
+                🗑 Standort
+            </button>
+
+            <button
+                class="secondary admin-only location-admin-btn"
+                type="button"
+                onclick="openAreaModal()">
+                + Bereich
+            </button>
+        </div>
+
+        <button class="write-only" onclick="createConsist()">
+            🔗 Zugverband bilden
+        </button>
+        <button class="write-only" onclick="dissolveSelectedConsist()">⛓ Verband auflösen</button>
+        <div class="history-dropdown" id="historyDropdown">
+            <button class="secondary" type="button" id="historyButton"
+                onclick="toggleHistoryDropdown(event)" aria-expanded="false">
+                📜 Historie ▾
+            </button>
+            <div class="history-dropdown-menu" id="historyDropdownMenu"
+                onclick="event.stopPropagation()">
+                <div class="history-empty">Lade Historie …</div>
+            </div>
+        </div>
+
+        <div class="statistics-dropdown" id="statisticsDropdown">
+            <button
+                class="secondary"
+                type="button"
+                id="statisticsButton"
+                onclick="toggleStatistics(event)"
+                aria-expanded="false">
+                📊 Statistik ▾
+            </button>
+            <div
+                class="statistics-dropdown-menu"
+                id="statisticsDropdownMenu"
+                onclick="event.stopPropagation()">
+            </div>
+        </div>
+        
+
+        <button
+            class="secondary"
+            onclick="clearSelection()">
+
+            Auswahl aufheben
+
+        </button>
+
+        <div class="scale-info">
+
+            1 px = 0,125 m
+
+        </div>
+
+    </div>
+
+
+    <div
+        class="plan-container"
+        id="plan">
+
+    </div>
+
+</main>
+
 </div>
 
+
+<!-- =====================================================
+     VEHICLE MODAL
+===================================================== -->
+
+<div
+    class="modal"
+    id="vehicleModal">
+
+    <div class="modal-box">
+
+        <h2>Fahrzeug hinzufügen</h2>
+
+
+        <div class="form-row">
+
+            <label>
+                Fahrzeugnummer
+            </label>
+
+            <input
+                id="vehicleNumber"
+                placeholder="z.B. 143 245-7">
+
+        </div>
+
+
+        <div class="form-row">
+
+            <label>
+                Baureihe / Modell
+            </label>
+
+            <input
+                id="vehicleModel"
+                placeholder="z.B. BR 143">
+
+        </div>
+
+
+        <div class="form-row">
+            <label>Fahrzeugkategorie</label>
+            <select id="vehicleCategory">
+                <option value="elektrolok">Elektroloks</option>
+                <option value="diesellok">Dieselloks</option>
+                <option value="triebwagen">Triebwagen</option>
+                <option value="personenwagen">Personenwagen</option>
+                <option value="gueterwagen">Güterwagen</option>
+            </select>
+        </div>
+
+        <div class="form-row">
+            <label>Unternehmen / Eigentümer</label>
+            <select id="vehicleCompany">
+                <option value="EETG">EETG</option>
+                <option value="RMB">RMB</option>
+            </select>
+        </div>
+
+
+        <div class="form-row">
+            <label>
+                Bildpfad / Bild-URL
+            </label>
+
+            <input
+                id="vehicleImage"
+                placeholder="z.B. ./assets/img/fahrzeuge/143-555-1.png">
+        </div>
+
+
+        <div class="form-row">
+
+            <label>
+                Länge in Metern
+            </label>
+
+            <input
+                id="vehicleLength"
+                type="number"
+                step="0.01"
+                value="16.64">
+
+        </div>
+
+
+        <div class="modal-buttons">
+
+            <button
+                class="secondary"
+                onclick="closeModals()">
+
+                Abbrechen
+
+            </button>
+
+            <button
+                onclick="addVehicle()">
+
+                Hinzufügen
+
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+<!-- =====================================================
+     VEHICLE EDIT MODAL
+===================================================== -->
+
+<div class="modal" id="vehicleEditModal">
+    <div class="modal-box">
+        <h2>Fahrzeug bearbeiten</h2>
+
+        <div class="form-row">
+            <label>Fahrzeugnummer</label>
+            <input id="editVehicleNumber">
+        </div>
+
+        <div class="form-row">
+            <label>Baureihe / Modell</label>
+            <input id="editVehicleModel">
+        </div>
+
+        <div class="form-row">
+            <label>Fahrzeugkategorie</label>
+            <select id="editVehicleCategory">
+                <option value="elektrolok">Elektroloks</option>
+                <option value="diesellok">Dieselloks</option>
+                <option value="triebwagen">Triebwagen</option>
+                <option value="personenwagen">Personenwagen</option>
+                <option value="gueterwagen">Güterwagen</option>
+            </select>
+        </div>
+
+        <div class="form-row">
+            <label>Unternehmen / Eigentümer</label>
+            <select id="editVehicleCompany">
+                <option value="EETG">EETG</option>
+                <option value="RMB">RMB</option>
+            </select>
+        </div>
+
+        <div class="form-row">
+            <label>Bildpfad / Bild-URL</label>
+            <input id="editVehicleImage">
+        </div>
+
+        <div class="form-row">
+            <label>Länge in Metern</label>
+            <input id="editVehicleLength" type="number" step="0.01">
+        </div>
+
+        <div class="form-row">
+            <label>Status</label>
+            <select id="editVehicleStatus">
+                <option value="Einsatzbereit">Einsatzbereit</option>
+                <option value="Unterwegs">Unterwegs</option>
+                <option value="Abgestellt">Abgestellt</option>
+                <option value="Vermietet">Vermietet</option>
+                <option value="In der Werkstatt">In der Werkstatt</option>
+            </select>
+        </div>
+
+        <div class="modal-buttons">
+            <button class="secondary" type="button" onclick="closeVehicleEditModal()">Abbrechen</button>
+            <button type="button" onclick="saveVehicleEdit()">Speichern</button>
+        </div>
+    </div>
+</div>
+
+
+<!-- =====================================================
+     LOCATION MODAL
+===================================================== -->
+<div class="modal" id="locationModal">
+    <div class="modal-box">
+        <h2>Standort hinzufügen</h2>
+
+        <div class="form-row">
+            <label>Standortname</label>
+            <input id="locationName" placeholder="z.B. Frankfurt-Griesheim">
+        </div>
+
+        <div class="modal-buttons">
+            <button class="secondary" type="button" onclick="closeModals()">Abbrechen</button>
+            <button type="button" onclick="addLocation()">Hinzufügen</button>
+        </div>
+    </div>
+</div>
+
+<!-- =====================================================
+     LOCATION EDIT MODAL
+===================================================== -->
+<div class="modal" id="locationEditModal">
+    <div class="modal-box">
+        <h2>Standort bearbeiten</h2>
+
+        <div class="form-row">
+            <label>Standortname</label>
+            <input id="locationEditName" placeholder="Standortname">
+        </div>
+
+        <div class="modal-buttons">
+            <button class="secondary" type="button" onclick="closeModals()">Abbrechen</button>
+            <button type="button" onclick="saveLocationEdit()">Speichern</button>
+        </div>
+    </div>
+</div>
+
+<!-- =====================================================
+     AREA MODAL
+===================================================== -->
+<div class="modal" id="areaModal">
+    <div class="modal-box">
+        <h2>Bereich hinzufügen</h2>
+
+        <div class="form-row">
+            <label>Bezeichnung</label>
+            <input id="areaName" placeholder="z.B. Werkstatt">
+        </div>
+
+        <div class="form-row">
+            <label>Bereichstyp</label>
+            <select id="areaType">
+                <option value="abstellung">Abstellung</option>
+                <option value="werkstatt">Werkstatt</option>
+                <option value="service">Service / Tankstelle / Waschanlage</option>
+                <option value="sonstiges">Sonstiges</option>
+            </select>
+        </div>
+
+        <div class="form-row">
+            <label>Breite in Raster-Kästchen</label>
+            <input id="areaWidth" type="number" min="4" value="20">
+        </div>
+
+        <div class="form-row">
+            <label>Höhe in Raster-Kästchen</label>
+            <input id="areaHeight" type="number" min="3" value="8">
+        </div>
+
+        <div class="modal-buttons">
+            <button class="secondary" type="button" onclick="closeModals()">Abbrechen</button>
+            <button type="button" onclick="addArea()">Hinzufügen</button>
+        </div>
+    </div>
+</div>
+
+<!-- =====================================================
+     TRACK MODAL
+===================================================== -->
+
+<div
+    class="modal"
+    id="trackModal">
+
+    <div class="modal-box">
+
+        <h2>Gleis hinzufügen</h2>
+
+
+        <div class="form-row">
+
+            <label>
+                Gleisname
+            </label>
+
+            <input
+                id="trackNumber"
+                placeholder="z.B. Abstellung Nord 1">
+
+        </div>
+
+
+        <div class="form-row">
+
+            <label>
+                Gleislänge in Metern
+            </label>
+
+            <input
+                id="trackLength"
+                type="number"
+                value="250">
+
+        </div>
+
+
+        <div class="modal-buttons">
+
+            <button
+                class="secondary"
+                onclick="closeModals()">
+
+                Abbrechen
+
+            </button>
+
+            <button
+                onclick="addTrack()">
+
+                Hinzufügen
+
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =====================================================
+     CONTEXT MENU
+===================================================== -->
+
+<div
+    class="context-menu"
+    id="contextMenu">
+
+    <button onclick="editSelected()">
+        ✏ Fahrzeug bearbeiten
+    </button>
+
+    <button class="admin-only" onclick="removeSelected()">
+        🗑 Fahrzeug löschen
+    </button>
+
+    <button onclick="clearSelection()">
+        Auswahl aufheben
+    </button>
+
+</div>
+
+
+
+
+<div class="db-error-overlay" id="dbErrorOverlay" role="dialog" aria-modal="true" aria-labelledby="dbErrorTitle">
+    <div class="db-error-box">
+        <h3 id="dbErrorTitle">Datenbankfehler</h3>
+        <div class="db-error-summary" id="dbErrorSummary">Die Änderung konnte nicht gespeichert werden.</div>
+
+        <div class="db-error-details">
+            <b>Meldung</b><span id="dbErrorMessage">–</span>
+            <b>Code</b><span id="dbErrorCode">–</span>
+            <b>Details</b><span id="dbErrorDetails">–</span>
+            <b>Hinweis</b><span id="dbErrorHint">–</span>
+        </div>
+
+        <div class="db-error-actions">
+            <button class="secondary" type="button" onclick="copyDbError()">Fehler kopieren</button>
+            <button type="button" onclick="closeDbError()">Schließen</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./assets/js/supabase.js"></script>
 <script>
-const CENTER={lat:50.0934187819572,lon:8.614461421966553};
 
-// Ausschnitt um Bahnhof + angrenzende Betriebs-/Abstellflächen.
-// Kann später im Code oder über UI enger/weiter gesetzt werden.
-const BBOX={
-  south:50.0870,
-  west:8.6000,
-  north:50.1000,
-  east:8.6280
+let lastDbErrorText = "";
+
+function showSupabaseError(context, error) {
+    const message = error?.message || "Unbekannter Supabase-Fehler";
+    const code = error?.code || "-";
+    const details = error?.details || "-";
+    const hint = error?.hint || "-";
+
+    console.error(`[Supabase] ${context}`, error);
+
+    document.getElementById("dbErrorSummary").textContent = context;
+    document.getElementById("dbErrorMessage").textContent = message;
+    document.getElementById("dbErrorCode").textContent = code;
+    document.getElementById("dbErrorDetails").textContent = details;
+    document.getElementById("dbErrorHint").textContent = hint;
+
+    lastDbErrorText =
+`${context}
+Meldung: ${message}
+Code: ${code}
+Details: ${details}
+Hinweis: ${hint}`;
+
+    document.getElementById("dbErrorOverlay").classList.add("active");
+}
+
+function closeDbError() {
+    document.getElementById("dbErrorOverlay").classList.remove("active");
+}
+
+async function copyDbError() {
+    try {
+        await navigator.clipboard.writeText(lastDbErrorText);
+    } catch {
+        // Fallback für Browser ohne Clipboard-Berechtigung.
+        const area = document.createElement("textarea");
+        area.value = lastDbErrorText;
+        document.body.appendChild(area);
+        area.select();
+        document.execCommand("copy");
+        area.remove();
+    }
+}
+
+const PIXELS_PER_METER = 8; // Darstellung x4: 1 m = 8 px
+const VEHICLE_VISUAL_SCALE = 1; // Maßstab: 1 m Fahrzeug = 1 m Gleis.
+
+let tracks = [];
+let vehicles = [];
+let selectedVehicle = null;
+let currentUser = null;
+let currentRole = "viewer";
+let realtimeChannel = null;
+let historyRealtimeChannel = null;
+let realtimeFallbackTimer = null;
+let locations = [];
+let areas = [];
+let currentLocationId = null;
+let activeAreaDrag = null;
+let activeAreaResize = null;
+let consists = [];
+let statisticsOpen = false;
+let realtimeReloadTimer = null;
+let historyDropdownOpen = false;
+
+let globalSearchQuery = "";
+const collapsedCategories = new Set();
+
+const VEHICLE_CATEGORY_LABELS = {
+    elektrolok: "Elektroloks",
+    diesellok: "Dieselloks",
+    triebwagen: "Triebwagen",
+    personenwagen: "Personenwagen",
+    gueterwagen: "Güterwagen"
 };
 
-const svg=document.getElementById("svg");
-const viewport=document.getElementById("viewport");
-const statusEl=document.getElementById("status");
+const VEHICLE_CATEGORY_ORDER = [
+    "elektrolok",
+    "diesellok",
+    "triebwagen",
+    "personenwagen",
+    "gueterwagen"
+];
 
-let bounds=null;
 
-function status(t){statusEl.textContent=t}
-
-function project(lat,lon){
-  const W=1400,H=760,P=55;
-  const x=P+(lon-BBOX.west)/(BBOX.east-BBOX.west)*(W-2*P);
-  const y=H-P-(lat-BBOX.south)/(BBOX.north-BBOX.south)*(H-2*P);
-  return [x,y];
+function canWrite() {
+    return currentRole === "dispatcher" || currentRole === "admin";
 }
 
-function esc(s){
-  return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function isAdmin() {
+    return currentRole === "admin";
 }
 
-function lineClass(tags={}){
-  const service=tags.service||"";
-  if(service==="yard") return "track yard";
-  if(service==="siding"||service==="spur") return "track siding";
-  return "track";
-}
 
-function bestLabel(tags={}){
-  return tags["railway:track_ref"] || tags.ref || tags.name || "";
-}
+let adminEditMode = false;
 
-function render(data){
-  viewport.innerHTML="";
-  const ways=data.elements.filter(e=>e.type==="way" && e.tags?.railway==="rail" && Array.isArray(e.geometry));
-  const switches=data.elements.filter(e=>e.type==="node" && e.tags?.railway==="switch");
-  const buffers=data.elements.filter(e=>e.type==="node" && e.tags?.railway==="buffer_stop");
+function setAdminEditMode(enabled) {
+    // Nur echte Admins dürfen den Bearbeitungsmodus aktivieren.
+    adminEditMode = Boolean(enabled && isAdmin());
 
-  ways.forEach(w=>{
-    const pts=w.geometry.map(n=>project(n.lat,n.lon));
-    if(pts.length<2)return;
-    const d=pts.map((p,i)=>(i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" ");
-    const path=document.createElementNS("http://www.w3.org/2000/svg","path");
-    path.setAttribute("d",d);
-    path.setAttribute("class",lineClass(w.tags));
-    path.dataset.osmId=w.id;
-    path.dataset.label=bestLabel(w.tags);
-    viewport.appendChild(path);
+    document.body.classList.toggle("admin-edit-enabled", adminEditMode);
 
-    const label=bestLabel(w.tags);
-    if(label){
-      const mid=pts[Math.floor(pts.length/2)];
-      const t=document.createElementNS("http://www.w3.org/2000/svg","text");
-      t.setAttribute("x",mid[0]+5);
-      t.setAttribute("y",mid[1]-6);
-      t.setAttribute("class","label");
-      t.textContent=label;
-      viewport.appendChild(t);
+    const toggle = document.getElementById("adminEditToggle");
+    const state = document.getElementById("adminEditState");
+
+    if (toggle) toggle.checked = adminEditMode;
+    if (state) state.textContent = adminEditMode ? "Aktiv" : "Gesperrt";
+
+    // Plan neu zeichnen und Arbeitsfläche an den auf-/zugeklappten Zustand anpassen.
+    if (Array.isArray(tracks)) {
+        renderPlan();
+        requestAnimationFrame(updatePlanCanvasSize);
     }
-  });
-
-  switches.forEach(n=>{
-    const [x,y]=project(n.lat,n.lon);
-    const c=document.createElementNS("http://www.w3.org/2000/svg","circle");
-    c.setAttribute("cx",x);c.setAttribute("cy",y);c.setAttribute("r",4.2);c.setAttribute("class","switch");
-    c.dataset.osmId=n.id;
-    viewport.appendChild(c);
-  });
-
-  buffers.forEach(n=>{
-    const [x,y]=project(n.lat,n.lon);
-    const r=document.createElementNS("http://www.w3.org/2000/svg","rect");
-    r.setAttribute("x",x-4);r.setAttribute("y",y-4);r.setAttribute("width",8);r.setAttribute("height",8);r.setAttribute("class","buffer");
-    viewport.appendChild(r);
-  });
-
-  status(`${ways.length} Gleiswege · ${switches.length} Weichen · ${buffers.length} Prellböcke`);
 }
 
-async function loadOSM(){
-  status("Lade echte OSM-Daten …");
+function enforceEditMode() {
+    if (!enforceAdminPermission()) return false;
 
-  const q=`[out:json][timeout:30];
-  (
-    way["railway"="rail"](${BBOX.south},${BBOX.west},${BBOX.north},${BBOX.east});
-    node["railway"="switch"](${BBOX.south},${BBOX.west},${BBOX.north},${BBOX.east});
-    node["railway"="buffer_stop"](${BBOX.south},${BBOX.west},${BBOX.north},${BBOX.east});
-  );
-  out geom;`;
-
-  const endpoints=[
-    "https://overpass-api.de/api/interpreter",
-    "https://overpass.kumi.systems/api/interpreter"
-  ];
-
-  let lastError=null;
-
-  for(const endpoint of endpoints){
-    try{
-      const response=await fetch(endpoint,{
-        method:"POST",
-        headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},
-        body:"data="+encodeURIComponent(q)
-      });
-
-      if(!response.ok) throw new Error(`HTTP ${response.status}`);
-
-      const data=await response.json();
-      render(data);
-      return;
-    }catch(error){
-      console.warn(endpoint,error);
-      lastError=error;
+    if (!adminEditMode) {
+        alert("Bitte zuerst oben den Schalter „Bearbeiten“ aktivieren.");
+        return false;
     }
-  }
 
-  status("OSM konnte nicht geladen werden");
-  alert("Die Overpass-Abfrage konnte nicht geladen werden.\\n\\n"+(lastError?.message||"Unbekannter Fehler"));
+    return true;
 }
 
-function fitView(){
-  svg.setAttribute("viewBox","0 0 1400 760");
+function enforceAdminPermission() {
+    if (isAdmin()) return true;
+    alert("Nur Administratoren dürfen Gleise oder Fahrzeuge administrativ ändern/löschen.");
+    return false;
 }
 
-function downloadSvg(){
-  const clone=svg.cloneNode(true);
-  clone.setAttribute("xmlns","http://www.w3.org/2000/svg");
-  const blob=new Blob([new XMLSerializer().serializeToString(clone)],{type:"image/svg+xml"});
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(blob);
-  a.download="FGM-OSM-Gleisbild.svg";
-  a.click();
-  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+function enforceWritePermission() {
+    if (canWrite()) return true;
+    alert("Du hast nur Leserechte.");
+    return false;
 }
 
-// Automatisch laden.
-loadOSM();
+async function requireLogin() {
+    const { data: { session }, error } = await window.eetgSupabase.auth.getSession();
+
+    if (error || !session) {
+        window.location.replace("login.html?next=abstellplan.html");
+        return false;
+    }
+
+    currentUser = session.user;
+
+    const { data: profile, error: profileError } = await window.eetgSupabase
+        .from("profiles")
+        .select("role, display_name")
+        .eq("id", currentUser.id)
+        .single();
+
+    if (profileError) {
+        console.error("Profil konnte nicht geladen werden:", profileError);
+        currentRole = "viewer";
+    } else {
+        currentRole = profile?.role || "viewer";
+    }
+
+    const fallbackUsername = (currentUser.email || "Angemeldet").split("@")[0];
+    document.getElementById("userName").textContent =
+        profile?.display_name || fallbackUsername;
+
+    document.getElementById("userRole").textContent = currentRole;
+    document.body.classList.toggle("readonly", !canWrite());
+    document.body.classList.toggle("is-admin", currentRole === "admin");
+    return true;
+}
+
+function applyTheme(theme) {
+    const dark = theme === "dark";
+    document.body.classList.toggle("dark", dark);
+
+    const button = document.getElementById("themeToggle");
+    if (button) {
+        button.textContent = dark ? "☀️ White" : "🌙 Dark";
+    }
+}
+
+function toggleTheme() {
+    const nextTheme = document.body.classList.contains("dark") ? "light" : "dark";
+    localStorage.setItem("eetg_abstellplan_theme", nextTheme);
+    applyTheme(nextTheme);
+}
+
+function loadTheme() {
+    const saved = localStorage.getItem("eetg_abstellplan_theme");
+    const preferred = saved ||
+        (window.matchMedia &&
+         window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? "dark"
+            : "light");
+
+    applyTheme(preferred);
+}
+
+async function logout() {
+    await window.eetgSupabase.auth.signOut();
+    window.location.replace("login.html");
+}
+
+function mapTrack(row, index = 0) {
+    return {
+        id: row.id,
+        number: row.number,
+        length: Number(row.length),
+        x: row.x_position == null ? 20 : Number(row.x_position),
+        y: row.y_position == null ? (20 + index * 250) : Number(row.y_position),
+        note: row.note || "",
+        location: row.location_id == null ? null : String(row.location_id)
+    };
+}
+
+function mapVehicle(row) {
+    return {
+        id: String(row.id),
+        number: row.number,
+        model: row.model || "",
+        image: row.image_url || "",
+        category: row.category || (row.type === "wagen" ? "personenwagen" : "elektrolok"),
+        company: row.company || "EETG",
+        type: row.type,
+        length: Number(row.length),
+        track: row.track_id,
+        position: Number(row.position || 0),
+        consist: row.consist,
+        status: row.status || "Abgestellt",
+        location: row.location_id == null ? null : String(row.location_id)
+    };
+}
+
+function mapLocation(row) {
+    return {
+        id: String(row.id),
+        name: row.name
+    };
+}
+
+function mapConsist(row) {
+    return {id:String(row.id),location:String(row.location_id),number:row.train_number||"",name:row.name||""};
+}
+
+function mapArea(row) {
+    return {
+        id: String(row.id),
+        location: String(row.location_id),
+        name: row.name,
+        type: row.area_type || "sonstiges",
+        x: Number(row.x_position || 0),
+        y: Number(row.y_position || 0),
+        width: Number(row.width_px || 500),
+        height: Number(row.height_px || 200)
+    };
+}
+
+async function loadLocations() {
+    const { data, error } = await window.eetgSupabase
+        .from("locations")
+        .select("*")
+        .order("name");
+
+    if (error) {
+        showSupabaseError("Standorte konnten nicht geladen werden.", error);
+        return false;
+    }
+
+    locations = (data || []).map(mapLocation);
+
+    if (!locations.length) {
+        currentLocationId = null;
+        renderLocationSelect();
+        return true;
+    }
+
+    const saved = localStorage.getItem("eetg_location_id");
+    const validSaved = locations.some(location => location.id === String(saved));
+
+    if (!currentLocationId || !locations.some(location => location.id === String(currentLocationId))) {
+        currentLocationId = validSaved ? String(saved) : locations[0].id;
+    }
+
+    renderLocationSelect();
+    return true;
+}
+
+function renderLocationSelect() {
+    const select = document.getElementById("locationSelect");
+    if (!select) return;
+
+    select.innerHTML = "";
+
+    if (!locations.length) {
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = "Kein Standort";
+        select.appendChild(option);
+        return;
+    }
+
+    locations.forEach(location => {
+        const option = document.createElement("option");
+        option.value = location.id;
+        option.textContent = location.name;
+        option.selected = location.id === String(currentLocationId);
+        select.appendChild(option);
+    });
+}
+
+async function changeLocation(locationId) {
+    if (!locationId) return;
+
+    currentLocationId = String(locationId);
+    localStorage.setItem("eetg_location_id", currentLocationId);
+
+    selectedVehicle = null;
+
+    const plan = document.getElementById("plan");
+    if (plan) {
+        plan.scrollLeft = 0;
+        plan.scrollTop = 0;
+    }
+
+    await loadPlan();
+}
+
+async function loadPlan() {
+    if (!locations.length) {
+        const ok = await loadLocations();
+        if (!ok) return;
+    }
+
+    if (!currentLocationId) {
+        tracks = [];
+        vehicles = [];
+        areas = [];
+        renderPlan();
+        renderLibrary();
+        return;
+    }
+
+    const [
+        { data: trackRows, error: trackError },
+        { data: vehicleRows, error: vehicleError },
+        { data: areaRows, error: areaError },
+        { data: consistRows, error: consistError }
+    ] = await Promise.all([
+        window.eetgSupabase
+            .from("tracks")
+            .select("*")
+            .eq("location_id", Number(currentLocationId))
+            .order("sort_order", { ascending: true })
+            .order("id"),
+
+        window.eetgSupabase
+            .from("vehicles")
+            .select("*")
+            .eq("location_id", Number(currentLocationId))
+            .order("track_id")
+            .order("position"),
+
+        window.eetgSupabase
+            .from("areas").select("*").eq("location_id", Number(currentLocationId)).order("id"),
+        window.eetgSupabase
+            .from("consists").select("*").eq("location_id", Number(currentLocationId)).order("id")
+    ]);
+
+    const error = trackError || vehicleError || areaError || consistError;
+
+    if (error) {
+        showSupabaseError("Der Standort konnte nicht aus Supabase geladen werden.", error);
+        return;
+    }
+
+    tracks = (trackRows || []).map((row, index) => mapTrack(row, index));
+    vehicles = (vehicleRows || []).map(mapVehicle);
+    areas = (areaRows || []).map(mapArea);
+    consists = (consistRows || []).map(mapConsist);
+
+    renderPlan();
+    renderLibrary();
+}
+
+
+function formatMeters(v){return Number(v||0).toLocaleString("de-DE",{maximumFractionDigits:1})}
+function getTrackVehicles(trackId,exclude=[]){const x=new Set(exclude.map(String));return vehicles.filter(v=>String(v.track)===String(trackId)&&!x.has(String(v.id)))}
+function getTrackUsedLength(trackId,exclude=[]){return getTrackVehicles(trackId,exclude).reduce((s,v)=>s+Number(v.length||0),0)}
+function canFitOnTrack(trackId,moving){const t=tracks.find(x=>String(x.id)===String(trackId));if(!t)return false;const ids=moving.map(v=>String(v.id));return getTrackUsedLength(trackId,ids)+moving.reduce((s,v)=>s+Number(v.length||0),0)<=Number(t.length)+.001}
+function toggleStatistics(event){
+    if(event) event.stopPropagation();
+
+    statisticsOpen = !statisticsOpen;
+
+    const dropdown = document.getElementById("statisticsDropdown");
+    const button = document.getElementById("statisticsButton");
+
+    if(dropdown) dropdown.classList.toggle("open", statisticsOpen);
+    if(button) button.setAttribute("aria-expanded", statisticsOpen ? "true" : "false");
+
+    renderStatistics();
+}
+
+function closeStatisticsDropdown(){
+    statisticsOpen = false;
+
+    const dropdown = document.getElementById("statisticsDropdown");
+    const button = document.getElementById("statisticsButton");
+
+    if(dropdown) dropdown.classList.remove("open");
+    if(button) button.setAttribute("aria-expanded", "false");
+}
+
+function renderStatistics(){
+    const p = document.getElementById("statisticsDropdownMenu");
+    if(!p) return;
+
+    const total = tracks.reduce((s,t)=>s+Number(t.length||0),0);
+    const used = vehicles
+        .filter(v=>v.track!=null)
+        .reduce((s,v)=>s+Number(v.length||0),0);
+
+    const counts = {};
+    ["Einsatzbereit","Unterwegs","Abgestellt","Vermietet","In der Werkstatt"]
+        .forEach(s=>counts[s]=0);
+
+    vehicles.forEach(v=>{
+        const status = v.status || "Abgestellt";
+        counts[status] = (counts[status] || 0) + 1;
+    });
+
+    const location = locations.find(
+        location => location.id === String(currentLocationId)
+    );
+
+    p.innerHTML = `
+        <h3>📊 ${escapeHtml(location?.name || "Standort")}</h3>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">${vehicles.length}</div>
+                <div class="stat-label">Fahrzeuge</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-value">${tracks.length}</div>
+                <div class="stat-label">Gleise</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-value">${consists.length}</div>
+                <div class="stat-label">Zugverbände</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-value">${vehicles.filter(v=>v.track==null).length}</div>
+                <div class="stat-label">Bibliothek</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-value">${formatMeters(used)} m</div>
+                <div class="stat-label">belegt</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-value">${formatMeters(total)} m</div>
+                <div class="stat-label">Gleislänge</div>
+            </div>
+        </div>
+
+        <div style="margin-top:10px;font-size:10px;display:grid;gap:4px">
+            ${Object.entries(counts)
+                .map(([s,c])=>`<div><b>${escapeHtml(s)}:</b> ${c}</div>`)
+                .join("")}
+        </div>
+    `;
+}
+
+document.addEventListener("click", event => {
+    const dropdown = document.getElementById("statisticsDropdown");
+
+    if(
+        statisticsOpen &&
+        dropdown &&
+        !dropdown.contains(event.target)
+    ){
+        closeStatisticsDropdown();
+    }
+});
+
+function scheduleRealtimeReload(){clearTimeout(realtimeReloadTimer);realtimeReloadTimer=setTimeout(()=>loadPlan(),120)}
+function getCurrentUsername(){
+    const shown=document.getElementById("userName")?.textContent?.trim();
+    if(shown && shown!=="–") return shown;
+    return currentUser?.user_metadata?.username ||
+           currentUser?.user_metadata?.display_name ||
+           currentUser?.email || "Unbekannt";
+}
+function getTrackName(trackId){
+    if(trackId==null) return "Fahrzeugbibliothek";
+    return tracks.find(t=>String(t.id)===String(trackId))?.number || `Gleis ${trackId}`;
+}
+async function logVehicleHistory(vehicle,action,description,details={}){
+    if(!vehicle?.id || !currentLocationId) return;
+    const {error}=await window.eetgSupabase.from("vehicle_history").insert({
+        vehicle_id:Number(vehicle.id),
+        location_id:Number(currentLocationId),
+        username:getCurrentUsername(),
+        action,description,details
+    });
+    if(error) console.error("Historie konnte nicht gespeichert werden:",error);
+}
+function formatHistoryDate(value){return value?new Date(value).toLocaleString("de-DE"):"–"}
+function historyRowHtml(row){
+    const vehicle=row.vehicle_number?`<strong>${escapeHtml(row.vehicle_number)}</strong> · `:"";
+    return `<div class="history-entry">
+        <div class="history-entry-main">${vehicle}${escapeHtml(row.description||row.action||"Änderung")}</div>
+        <div class="history-entry-meta">${formatHistoryDate(row.created_at)} · ${escapeHtml(row.username||"Unbekannt")}</div>
+    </div>`;
+}
+async function toggleHistoryDropdown(event){
+    if(event) event.stopPropagation();
+    historyDropdownOpen=!historyDropdownOpen;
+    document.getElementById("historyDropdown")?.classList.toggle("open",historyDropdownOpen);
+    document.getElementById("historyButton")?.setAttribute("aria-expanded",historyDropdownOpen?"true":"false");
+    if(historyDropdownOpen) await loadHistoryDropdown();
+}
+function closeHistoryDropdown(){
+    historyDropdownOpen=false;
+    document.getElementById("historyDropdown")?.classList.remove("open");
+    document.getElementById("historyButton")?.setAttribute("aria-expanded","false");
+}
+async function loadHistoryDropdown(){
+    const menu=document.getElementById("historyDropdownMenu");
+    if(!menu||!currentLocationId)return;
+    menu.innerHTML='<div class="history-empty">Lade Historie …</div>';
+    const {data,error}=await window.eetgSupabase.from("vehicle_history")
+        .select("id,vehicle_id,vehicle_number,username,action,description,created_at")
+        .eq("location_id",Number(currentLocationId)).order("created_at",{ascending:false}).limit(30);
+    if(error){menu.innerHTML='<div class="history-empty">Historie konnte nicht geladen werden.</div>';console.error(error);return}
+    const rows=data||[];
+    menu.innerHTML=`<h3>📜 Standort-Historie</h3>${
+        rows.length?rows.map(historyRowHtml).join(""):'<div class="history-empty">Noch keine Änderungen protokolliert.</div>'
+    }`;
+}
+document.addEventListener("click",event=>{
+    const d=document.getElementById("historyDropdown");
+    if(historyDropdownOpen&&d&&!d.contains(event.target))closeHistoryDropdown();
+});
+
+
+function renderPlan() {
+    const plan = document.getElementById("plan");
+    plan.innerHTML = "";
+
+
+    if (!currentLocationId) {
+        plan.innerHTML = '<div class="location-empty">Bitte zuerst einen Standort anlegen oder auswählen.</div>';
+        return;
+    }
+
+    areas.forEach(area => {
+        plan.appendChild(createAreaElement(area));
+    });
+
+    tracks.forEach(track => {
+        const trackElement = document.createElement("div");
+        trackElement.className = "track";
+        trackElement.dataset.track = track.id;
+        trackElement.dataset.searchText = `${track.number} ${track.length}m`.toLowerCase();
+
+        const width = track.length * PIXELS_PER_METER;
+        // Die Umrandung endet passend zur tatsächlichen Gleislänge.
+        // 80 px links für Gleisname + 30 px rechter Innenabstand.
+        // Ein zusätzliches Raster-Kästchen (25 px) rechts hinter der Gleislänge.
+        const extraGridBox = 25;
+        trackElement.style.width = (width + 110 + extraGridBox) + "px";
+        trackElement.style.minWidth = (width + 110 + extraGridBox) + "px";
+
+        // Freie Position des Gleises auf der Planfläche.
+        trackElement.style.left = track.x + "px";
+        trackElement.style.top = track.y + "px";
+
+        const titleBox = document.createElement("div");
+        titleBox.className = "track-title-box";
+
+        const title = document.createElement("div");
+        title.className = "track-title";
+        title.textContent = track.number;
+        titleBox.appendChild(title);
+
+        const lengthLabel = document.createElement("div");
+        lengthLabel.className = "track-length-label";
+        lengthLabel.textContent = track.length + " m";
+        titleBox.appendChild(lengthLabel);
+        const usedLength=getTrackUsedLength(track.id), freeLength=Math.max(0,track.length-usedLength);
+        const capacityLabel=document.createElement("div");capacityLabel.className="track-capacity";
+        capacityLabel.textContent=`${formatMeters(usedLength)} / ${formatMeters(track.length)} m · ${formatMeters(freeLength)} m frei`;
+        const ratio=track.length?usedLength/track.length:0;
+        if(ratio>=1){capacityLabel.classList.add("full");trackElement.classList.add("capacity-full")}
+        else if(ratio>=.85){capacityLabel.classList.add("warning");trackElement.classList.add("capacity-warning")}
+        titleBox.appendChild(capacityLabel);
+
+        if (isAdmin() && adminEditMode) {
+            const actions = document.createElement("div");
+            actions.className = "track-admin-actions";
+
+            const editButton = document.createElement("button");
+            editButton.className = "track-edit-btn";
+            editButton.textContent = "✎ Name ändern";
+            editButton.addEventListener("click", event => {
+                event.stopPropagation();
+                renameTrack(track.id);
+            });
+
+            const lengthButton = document.createElement("button");
+            lengthButton.className = "track-length-btn";
+            lengthButton.textContent = "📏 Länge ändern";
+            lengthButton.addEventListener("click", event => {
+                event.stopPropagation();
+                editTrackLength(track.id);
+            });
+
+            const deleteButton = document.createElement("button");
+            deleteButton.className = "track-delete-btn";
+            deleteButton.textContent = "🗑 Löschen";
+            deleteButton.addEventListener("click", event => {
+                event.stopPropagation();
+                deleteTrack(track.id);
+            });
+
+            const dragHandle = document.createElement("button");
+            dragHandle.className = "track-drag-handle";
+            dragHandle.type = "button";
+            dragHandle.textContent = "↔ Verschieben";
+            dragHandle.title = "Gleis frei auf der Fläche verschieben";
+            dragHandle.addEventListener("pointerdown", event => {
+                event.preventDefault();
+                event.stopPropagation();
+                startTrackDrag(event, track, trackElement);
+            });
+
+            actions.appendChild(editButton);
+            actions.appendChild(lengthButton);
+            actions.appendChild(deleteButton);
+            actions.appendChild(dragHandle);
+
+            // Wichtig: Die Admin-Leiste gehört direkt in den Gleiskasten,
+            // nicht in den kleinen Titelblock.
+            trackElement.appendChild(actions);
+        }
+
+        trackElement.appendChild(titleBox);
+
+        const line = document.createElement("div");
+        line.className = "track-line";
+        trackElement.appendChild(line);
+
+        const scale = document.createElement("div");
+        scale.className = "scale";
+        createScale(scale, track.length);
+        trackElement.appendChild(scale);
+
+        vehicles
+            .filter(v => v.track === track.id)
+            .forEach(vehicle => trackElement.appendChild(createVehicleElement(vehicle)));
+
+        // Notizfeld: sichtbar für alle, bearbeitbar für Dispatcher und Admins.
+        const noteWrap = document.createElement("div");
+        noteWrap.className = "track-note-wrap";
+
+        const noteLabel = document.createElement("label");
+        noteLabel.className = "track-note-label";
+        noteLabel.textContent = "Notiz";
+        noteWrap.appendChild(noteLabel);
+
+        const noteField = document.createElement("textarea");
+        noteField.className = "track-note";
+        noteField.value = track.note || "";
+        noteField.placeholder = canWrite()
+            ? "Notiz zu diesem Gleis eingeben …"
+            : "Keine Notiz vorhanden.";
+        noteField.disabled = !canWrite();
+
+        const noteStatus = document.createElement("div");
+        noteStatus.className = "track-note-status";
+
+        let noteSaveTimer = null;
+
+        noteField.addEventListener("click", event => event.stopPropagation());
+        noteField.addEventListener("pointerdown", event => event.stopPropagation());
+
+        noteField.addEventListener("input", () => {
+            if (!canWrite()) return;
+
+            noteStatus.className = "track-note-status";
+            noteStatus.textContent = "Wird gespeichert …";
+
+            clearTimeout(noteSaveTimer);
+            noteSaveTimer = setTimeout(async () => {
+                const oldNote = track.note || "";
+                track.note = noteField.value;
+
+                const ok = await saveTrackNote(track.id, track.note);
+
+                if (ok) {
+                    noteStatus.className = "track-note-status saved";
+                    noteStatus.textContent = "Gespeichert";
+                    setTimeout(() => {
+                        if (noteStatus.textContent === "Gespeichert") {
+                            noteStatus.textContent = "";
+                            noteStatus.className = "track-note-status";
+                        }
+                    }, 1200);
+                } else {
+                    track.note = oldNote;
+                    noteStatus.className = "track-note-status error";
+                    noteStatus.textContent = "Speichern fehlgeschlagen";
+                }
+            }, 500);
+        });
+
+        noteWrap.appendChild(noteField);
+        noteWrap.appendChild(noteStatus);
+        trackElement.appendChild(noteWrap);
+
+        if (canWrite()) {
+            trackElement.addEventListener("dragover", event => event.preventDefault());
+
+            trackElement.addEventListener("drop", async event => {
+                event.preventDefault();
+
+                const id = event.dataTransfer.getData("vehicle");
+                const vehicle = vehicles.find(v => v.id === id);
+                if (!vehicle) return;
+
+                const rect = trackElement.getBoundingClientRect();
+                let x = event.clientX - rect.left - 80;
+                let position = Math.max(0, x / PIXELS_PER_METER);
+
+                if (vehicle.consist) {
+                    await moveConsist(vehicle.consist, track.id, position);
+                } else {
+                    const movingVehicles=vehicle.consist?vehicles.filter(v=>String(v.consist)===String(vehicle.consist)):[vehicle];
+                    if(!canFitOnTrack(track.id,movingVehicles)){alert(`Nicht genügend Platz auf ${track.number}.`);return;}
+                    const previousTrackName=getTrackName(vehicle.track);
+                    vehicle.track = track.id;
+                    vehicle.location = String(currentLocationId);
+                    vehicle.position = position;
+                    const saved=await updateVehicle(vehicle);
+                    if(saved!==false){
+                        await logVehicleHistory(vehicle,"track_move",`${previousTrackName} → ${track.number}`,{
+                            from_track:previousTrackName,to_track:track.number,position_m:position
+                        });
+                    }
+                }
+
+                renderPlan();
+            });
+        }
+
+        plan.appendChild(trackElement);
+    });
+
+    updatePlanCanvasSize();
+    applySearchHighlights(false);
+}
+
+function createAreaElement(area) {
+    const element = document.createElement("div");
+    element.className = "area";
+    element.dataset.areaId = area.id;
+    element.dataset.areaType = area.type;
+    element.style.left = area.x + "px";
+    element.style.top = area.y + "px";
+    element.style.width = area.width + "px";
+    element.style.height = area.height + "px";
+
+    const titlebar = document.createElement("div");
+    titlebar.className = "area-titlebar";
+
+    const title = document.createElement("div");
+    title.className = "area-title";
+    title.textContent = area.name;
+    titlebar.appendChild(title);
+    element.appendChild(titlebar);
+
+    if (isAdmin() && adminEditMode) {
+        const actions = document.createElement("div");
+        actions.className = "area-admin-actions";
+
+        const renameButton = document.createElement("button");
+        renameButton.className = "secondary";
+        renameButton.type = "button";
+        renameButton.textContent = "✏";
+        renameButton.title = "Bereich umbenennen";
+        renameButton.addEventListener("click", event => {
+            event.stopPropagation();
+            renameArea(area.id);
+        });
+
+        const deleteButton = document.createElement("button");
+        deleteButton.className = "danger";
+        deleteButton.type = "button";
+        deleteButton.textContent = "🗑";
+        deleteButton.title = "Bereich löschen";
+        deleteButton.addEventListener("click", event => {
+            event.stopPropagation();
+            deleteArea(area.id);
+        });
+
+        actions.appendChild(renameButton);
+        actions.appendChild(deleteButton);
+        element.appendChild(actions);
+
+        const resizeHandle = document.createElement("div");
+        resizeHandle.className = "area-resize-handle";
+        resizeHandle.title = "Bereich vergrößern / verkleinern";
+        resizeHandle.addEventListener("pointerdown", event => {
+            event.preventDefault();
+            event.stopPropagation();
+            startAreaResize(event, area, element);
+        });
+        element.appendChild(resizeHandle);
+
+        element.addEventListener("pointerdown", event => {
+            if (event.target.closest("button, .area-resize-handle")) return;
+            startAreaDrag(event, area, element);
+        });
+    }
+
+    return element;
+}
+
+function startAreaDrag(event, area, element) {
+    if (!enforceEditMode()) return;
+
+    const plan = document.getElementById("plan");
+    const rect = plan.getBoundingClientRect();
+
+    activeAreaDrag = {
+        area,
+        element,
+        pointerId: event.pointerId,
+        offsetX: event.clientX - rect.left + plan.scrollLeft - area.x,
+        offsetY: event.clientY - rect.top + plan.scrollTop - area.y
+    };
+
+    element.classList.add("dragging-area");
+    element.setPointerCapture?.(event.pointerId);
+
+    window.addEventListener("pointermove", onAreaDragMove);
+    window.addEventListener("pointerup", endAreaDrag, { once: true });
+    window.addEventListener("pointercancel", endAreaDrag, { once: true });
+}
+
+function onAreaDragMove(event) {
+    if (!activeAreaDrag) return;
+
+    const plan = document.getElementById("plan");
+    const rect = plan.getBoundingClientRect();
+    const grid = 25;
+
+    let x = event.clientX - rect.left + plan.scrollLeft - activeAreaDrag.offsetX;
+    let y = event.clientY - rect.top + plan.scrollTop - activeAreaDrag.offsetY;
+
+    x = Math.max(0, Math.round(x / grid) * grid);
+    y = Math.max(0, Math.round(y / grid) * grid);
+
+    activeAreaDrag.area.x = x;
+    activeAreaDrag.area.y = y;
+    activeAreaDrag.element.style.left = x + "px";
+    activeAreaDrag.element.style.top = y + "px";
+
+    updatePlanCanvasSize();
+}
+
+async function endAreaDrag() {
+    if (!activeAreaDrag) return;
+
+    const { area, element } = activeAreaDrag;
+    activeAreaDrag = null;
+
+    element.classList.remove("dragging-area");
+    window.removeEventListener("pointermove", onAreaDragMove);
+
+    const { error } = await window.eetgSupabase
+        .from("areas")
+        .update({
+            x_position: area.x,
+            y_position: area.y,
+            updated_at: new Date().toISOString()
+        })
+        .eq("id", Number(area.id));
+
+    if (error) {
+        showSupabaseError("Bereichsposition konnte nicht gespeichert werden.", error);
+        await loadPlan();
+    }
+}
+
+function startAreaResize(event, area, element) {
+    if (!enforceEditMode()) return;
+
+    activeAreaResize = {
+        area,
+        element,
+        startX: event.clientX,
+        startY: event.clientY,
+        startWidth: area.width,
+        startHeight: area.height
+    };
+
+    element.classList.add("resizing-area");
+
+    window.addEventListener("pointermove", onAreaResizeMove);
+    window.addEventListener("pointerup", endAreaResize, { once: true });
+    window.addEventListener("pointercancel", endAreaResize, { once: true });
+}
+
+function onAreaResizeMove(event) {
+    if (!activeAreaResize) return;
+
+    const grid = 25;
+
+    let width =
+        activeAreaResize.startWidth +
+        (event.clientX - activeAreaResize.startX);
+
+    let height =
+        activeAreaResize.startHeight +
+        (event.clientY - activeAreaResize.startY);
+
+    width = Math.max(125, Math.round(width / grid) * grid);
+    height = Math.max(75, Math.round(height / grid) * grid);
+
+    activeAreaResize.area.width = width;
+    activeAreaResize.area.height = height;
+
+    activeAreaResize.element.style.width = width + "px";
+    activeAreaResize.element.style.height = height + "px";
+
+    updatePlanCanvasSize();
+}
+
+async function endAreaResize() {
+    if (!activeAreaResize) return;
+
+    const { area, element } = activeAreaResize;
+    activeAreaResize = null;
+
+    element.classList.remove("resizing-area");
+    window.removeEventListener("pointermove", onAreaResizeMove);
+
+    const { error } = await window.eetgSupabase
+        .from("areas")
+        .update({
+            width_px: area.width,
+            height_px: area.height,
+            updated_at: new Date().toISOString()
+        })
+        .eq("id", Number(area.id));
+
+    if (error) {
+        showSupabaseError("Bereichsgröße konnte nicht gespeichert werden.", error);
+        await loadPlan();
+    }
+}
+
+function openLocationModal() {
+    if (!enforceEditMode()) return;
+    document.getElementById("locationModal").classList.add("active");
+}
+
+async function addLocation() {
+    if (!enforceEditMode()) return;
+
+    const name = document.getElementById("locationName").value.trim();
+
+    if (!name) {
+        alert("Bitte einen Standortnamen eingeben.");
+        return;
+    }
+
+    const { data, error } = await window.eetgSupabase
+        .from("locations")
+        .insert({ name })
+        .select()
+        .single();
+
+    if (error) {
+        showSupabaseError("Standort konnte nicht angelegt werden.", error);
+        return;
+    }
+
+    closeModals();
+    document.getElementById("locationName").value = "";
+
+    await loadLocations();
+    currentLocationId = String(data.id);
+    localStorage.setItem("eetg_location_id", currentLocationId);
+    renderLocationSelect();
+    await loadPlan();
+}
+
+function openLocationEditModal() {
+    if (!enforceEditMode()) return;
+
+    if (!currentLocationId) {
+        alert("Bitte zuerst einen Standort auswählen.");
+        return;
+    }
+
+    const location = locations.find(item => item.id === String(currentLocationId));
+    if (!location) {
+        alert("Der ausgewählte Standort wurde nicht gefunden.");
+        return;
+    }
+
+    document.getElementById("locationEditName").value = location.name || "";
+    document.getElementById("locationEditModal").classList.add("active");
+}
+
+async function saveLocationEdit() {
+    if (!enforceEditMode()) return;
+    if (!currentLocationId) return;
+
+    const name = document.getElementById("locationEditName").value.trim();
+
+    if (!name) {
+        alert("Bitte einen Standortnamen eingeben.");
+        return;
+    }
+
+    const { error } = await window.eetgSupabase
+        .from("locations")
+        .update({ name })
+        .eq("id", Number(currentLocationId));
+
+    if (error) {
+        showSupabaseError("Standort konnte nicht geändert werden.", error);
+        return;
+    }
+
+    closeModals();
+    await loadLocations();
+    renderLocationSelect();
+    await loadPlan();
+}
+
+async function deleteCurrentLocation() {
+    if (!enforceEditMode()) return;
+
+    if (!currentLocationId) {
+        alert("Bitte zuerst einen Standort auswählen.");
+        return;
+    }
+
+    const location = locations.find(item => item.id === String(currentLocationId));
+    if (!location) return;
+
+    const confirmed = confirm(
+        `Standort „${location.name}“ wirklich löschen?\n\n` +
+        "Der Standort kann danach nicht wiederhergestellt werden. " +
+        "Das Löschen funktioniert nur, wenn die Datenbankrichtlinien bzw. " +
+        "Fremdschlüssel das Löschen der zugehörigen Daten erlauben."
+    );
+
+    if (!confirmed) return;
+
+    const deletingId = String(currentLocationId);
+
+    const { error } = await window.eetgSupabase
+        .from("locations")
+        .delete()
+        .eq("id", Number(deletingId));
+
+    if (error) {
+        showSupabaseError("Standort konnte nicht gelöscht werden.", error);
+        return;
+    }
+
+    localStorage.removeItem("eetg_location_id");
+    currentLocationId = null;
+    selectedVehicle = null;
+
+    await loadLocations();
+
+    if (locations.length) {
+        currentLocationId = locations[0].id;
+        localStorage.setItem("eetg_location_id", currentLocationId);
+        renderLocationSelect();
+        await loadPlan();
+    } else {
+        renderLocationSelect();
+        tracks = [];
+        vehicles = [];
+        areas = [];
+        consists = [];
+        renderLibrary();
+        renderPlan();
+    }
+}
+
+function openAreaModal() {
+    if (!enforceEditMode()) return;
+
+    if (!currentLocationId) {
+        alert("Bitte zuerst einen Standort auswählen.");
+        return;
+    }
+
+    document.getElementById("areaModal").classList.add("active");
+}
+
+async function addArea() {
+    if (!enforceEditMode()) return;
+
+    if (!currentLocationId) return;
+
+    const name = document.getElementById("areaName").value.trim();
+    const type = document.getElementById("areaType").value;
+    const widthBoxes = Number(document.getElementById("areaWidth").value);
+    const heightBoxes = Number(document.getElementById("areaHeight").value);
+
+    if (!name) {
+        alert("Bitte eine Bezeichnung für den Bereich eingeben.");
+        return;
+    }
+
+    if (!Number.isFinite(widthBoxes) || widthBoxes < 4 ||
+        !Number.isFinite(heightBoxes) || heightBoxes < 3) {
+        alert("Bitte eine gültige Bereichsgröße eingeben.");
+        return;
+    }
+
+    const { error } = await window.eetgSupabase
+        .from("areas")
+        .insert({
+            location_id: Number(currentLocationId),
+            name,
+            area_type: type,
+            x_position: 25,
+            y_position: 25,
+            width_px: widthBoxes * 25,
+            height_px: heightBoxes * 25
+        });
+
+    if (error) {
+        showSupabaseError("Bereich konnte nicht angelegt werden.", error);
+        return;
+    }
+
+    closeModals();
+    document.getElementById("areaName").value = "";
+    await loadPlan();
+}
+
+async function renameArea(areaId) {
+    if (!enforceEditMode()) return;
+
+    const area = areas.find(a => a.id === String(areaId));
+    if (!area) return;
+
+    const name = prompt("Bereichsname:", area.name);
+    if (name === null) return;
+
+    const clean = name.trim();
+    if (!clean) return;
+
+    const { error } = await window.eetgSupabase
+        .from("areas")
+        .update({
+            name: clean,
+            updated_at: new Date().toISOString()
+        })
+        .eq("id", Number(area.id));
+
+    if (error) {
+        showSupabaseError("Bereich konnte nicht umbenannt werden.", error);
+        return;
+    }
+
+    await loadPlan();
+}
+
+async function deleteArea(areaId) {
+    if (!enforceEditMode()) return;
+
+    const area = areas.find(a => a.id === String(areaId));
+    if (!area) return;
+
+    if (!confirm(`Bereich "${area.name}" wirklich löschen?`)) return;
+
+    const { error } = await window.eetgSupabase
+        .from("areas")
+        .delete()
+        .eq("id", Number(area.id));
+
+    if (error) {
+        showSupabaseError("Bereich konnte nicht gelöscht werden.", error);
+        return;
+    }
+
+    await loadPlan();
+}
+
+
+function updatePlanCanvasSize() {
+    const plan = document.getElementById("plan");
+    if (!plan) return;
+
+    /*
+     * Horizontale Fläche:
+     * endet direkt hinter dem längsten / am weitesten rechts liegenden Gleis.
+     * Es gibt nur noch einen kleinen rechten Sicherheitsabstand.
+     */
+    const RIGHT_PADDING = 60;
+
+    /*
+     * Vertikal bleibt zusätzliche Arbeitsfläche erhalten,
+     * damit Gleise weiterhin nach unten verschoben werden können.
+     */
+    const EXTRA_BOTTOM = 900;
+
+    let contentRight = 0;
+    let contentBottom = 0;
+
+    areas.forEach(area => {
+        contentRight = Math.max(
+            contentRight,
+            Number(area.x || 0) + Number(area.width || 0)
+        );
+
+        contentBottom = Math.max(
+            contentBottom,
+            Number(area.y || 0) + Number(area.height || 0)
+        );
+    });
+
+    tracks.forEach(track => {
+        const trackWidth =
+            track.length * PIXELS_PER_METER + 110 + 25;
+
+        const visibleTrackHeight =
+            (isAdmin() && adminEditMode) ? 285 : 215;
+
+        contentRight = Math.max(
+            contentRight,
+            Number(track.x || 0) + trackWidth
+        );
+
+        contentBottom = Math.max(
+            contentBottom,
+            Number(track.y || 0) + visibleTrackHeight
+        );
+    });
+
+    /*
+     * Ist das längste Gleis kürzer als der sichtbare Bereich,
+     * gibt es keine unnötige horizontale Scrollstrecke.
+     */
+    const canvasWidth = Math.max(
+        plan.clientWidth,
+        contentRight + RIGHT_PADDING
+    );
+
+    const canvasHeight = Math.max(
+        1500,
+        plan.clientHeight + 700,
+        contentBottom + EXTRA_BOTTOM
+    );
+
+    plan.style.setProperty("--canvas-width", canvasWidth + "px");
+    plan.style.setProperty("--canvas-height", canvasHeight + "px");
+}
+
+let activeTrackDrag = null;
+
+function startTrackDrag(event, track, element) {
+    if (!enforceEditMode()) return;
+
+    const plan = document.getElementById("plan");
+    const planRect = plan.getBoundingClientRect();
+
+    activeTrackDrag = {
+        track,
+        element,
+        pointerId: event.pointerId,
+        offsetX: event.clientX - planRect.left + plan.scrollLeft - track.x,
+        offsetY: event.clientY - planRect.top + plan.scrollTop - track.y
+    };
+
+    element.classList.add("dragging-track");
+    element.setPointerCapture?.(event.pointerId);
+
+    window.addEventListener("pointermove", onTrackDragMove);
+    window.addEventListener("pointerup", endTrackDrag, { once: true });
+    window.addEventListener("pointercancel", endTrackDrag, { once: true });
+}
+
+function onTrackDragMove(event) {
+    if (!activeTrackDrag) return;
+
+    const plan = document.getElementById("plan");
+    const planRect = plan.getBoundingClientRect();
+
+    let x = event.clientX - planRect.left + plan.scrollLeft - activeTrackDrag.offsetX;
+    let y = event.clientY - planRect.top + plan.scrollTop - activeTrackDrag.offsetY;
+
+    // Kleine Rasterung für sauberes Ausrichten.
+    const grid = 10;
+    x = Math.max(0, Math.round(x / grid) * grid);
+    y = Math.max(0, Math.round(y / grid) * grid);
+
+    activeTrackDrag.track.x = x;
+    activeTrackDrag.track.y = y;
+    activeTrackDrag.element.style.left = x + "px";
+    activeTrackDrag.element.style.top = y + "px";
+
+    updatePlanCanvasSize();
+}
+
+async function endTrackDrag() {
+    if (!activeTrackDrag) return;
+
+    const { track, element } = activeTrackDrag;
+    activeTrackDrag = null;
+
+    element.classList.remove("dragging-track");
+    window.removeEventListener("pointermove", onTrackDragMove);
+
+    const { error } = await window.eetgSupabase
+        .from("tracks")
+        .update({
+            x_position: track.x,
+            y_position: track.y,
+            updated_at: new Date().toISOString()
+        })
+        .eq("id", track.id);
+
+    if (error) {
+        console.error(error);
+        showSupabaseError("Die neue Gleisposition konnte nicht gespeichert werden.", error);
+        await loadPlan();
+    }
+}
+
+
+async function saveTrackNote(trackId, note) {
+    if (!canWrite()) return false;
+
+    const { error } = await window.eetgSupabase
+        .from("tracks")
+        .update({
+            note,
+            updated_at: new Date().toISOString()
+        })
+        .eq("id", trackId);
+
+    if (error) {
+        showSupabaseError("Notiz konnte nicht gespeichert werden.", error);
+        return false;
+    }
+
+    return true;
+}
+
+
+function createScale(container, length) {
+    for (let meter = 0; meter <= length; meter += 10) {
+        const mark = document.createElement("div");
+        mark.className = "scale-mark";
+        mark.style.left = (meter * PIXELS_PER_METER) + "px";
+
+        // Beschriftung nur alle 50 m für bessere Lesbarkeit.
+        if (meter % 50 === 0) {
+            mark.textContent = meter + " m";
+            mark.classList.add("scale-major");
+        }
+
+        container.appendChild(mark);
+    }
+}
+
+function statusClass(status) {
+    if (status === "Unterwegs") return "status-unterwegs";
+    if (status === "In der Werkstatt") return "status-werkstatt";
+    if (status === "Vermietet") return "status-vermietet";
+    if (status === "Einsatzbereit") return "status-einsatzbereit";
+    return "status-abgestellt";
+}
+
+function createVehicleElement(vehicle) {
+    // Exakter gemeinsamer Maßstab:
+    // Gleis und Fahrzeug verwenden beide PIXELS_PER_METER.
+    // Beispiel: 16,64 m Fahrzeug = 133,12 px bei 8 px pro Meter.
+    const width = vehicle.length * PIXELS_PER_METER * VEHICLE_VISUAL_SCALE;
+
+    const wrap = document.createElement("div");
+    wrap.className = "vehicle-wrap";
+    wrap.style.left = (80 + vehicle.position * PIXELS_PER_METER) + "px";
+    wrap.style.width = width + "px";
+    if(vehicle.consist){const c=consists.find(x=>x.id===String(vehicle.consist));if(c){const b=document.createElement("div");b.className="consist-badge";b.textContent=[c.number,c.name].filter(Boolean).join(" · ");wrap.appendChild(b)}}
+    const element = document.createElement("div");
+    element.className = "vehicle " + vehicle.type + " " + statusClass(vehicle.status);
+    element.dataset.vehicleId = vehicle.id;
+    element.style.width = "100%";
+    element.textContent = vehicle.number;
+    element.draggable = canWrite();
+
+    if (selectedVehicle === vehicle.id) {
+        element.classList.add("selected");
+    }
+
+    element.addEventListener("click", event => {
+        event.stopPropagation();
+        selectedVehicle = vehicle.id;
+        renderPlan();
+    });
+
+    if (canWrite()) {
+        element.addEventListener("dragstart", event => {
+            event.dataTransfer.setData("vehicle", vehicle.id);
+            event.dataTransfer.setData("text/plain", vehicle.id);
+            event.dataTransfer.effectAllowed = "move";
+        });
+
+        element.addEventListener("contextmenu", event => {
+            event.preventDefault();
+            selectedVehicle = vehicle.id;
+            showContextMenu(event.clientX, event.clientY);
+        });
+
+        element.addEventListener("dblclick", event => {
+            event.stopPropagation();
+            selectedVehicle = vehicle.id;
+            editSelected();
+        });
+    }
+
+    // Das Lok-/Fahrzeugkästchen muss weiterhin in den Wrapper eingefügt werden.
+    wrap.appendChild(element);
+
+    return wrap;
+}
+
+async function updateVehicle(vehicle) {
+    const { error } = await window.eetgSupabase
+        .from("vehicles")
+        .update({
+            number: vehicle.number,
+            model: vehicle.model,
+            image_url: vehicle.image || null,
+            category: vehicle.category || (vehicle.type === "wagen" ? "personenwagen" : "elektrolok"),
+            company: vehicle.company || "EETG",
+            type: vehicle.type,
+            length: vehicle.length,
+            track_id: vehicle.track,
+            location_id: vehicle.location == null
+                ? (currentLocationId ? Number(currentLocationId) : null)
+                : Number(vehicle.location),
+            position: vehicle.position,
+            consist: vehicle.consist,
+            status: vehicle.status || "Abgestellt",
+            updated_at: new Date().toISOString()
+        })
+        .eq("id", Number(vehicle.id));
+
+    if (error) {
+        console.error(error);
+        showSupabaseError("Fahrzeugänderung konnte nicht gespeichert werden.", error);
+        return false;
+    }
+
+    return true;
+}
+
+
+async function returnVehicleToLibrary(vehicleId) {
+    if (!enforceWritePermission()) return false;
+
+    const vehicle = vehicles.find(v => v.id === String(vehicleId));
+    if (!vehicle) return false;
+
+    /*
+     * Zurück in die Bibliothek bedeutet:
+     * - keinem Gleis zugeordnet
+     * - Position auf 0
+     * - ggf. aus einem Zugverband lösen
+     */
+    const oldTrack = vehicle.track;
+    const oldPosition = vehicle.position;
+    const oldConsist = vehicle.consist;
+    const oldTrackName = getTrackName(oldTrack);
+
+    vehicle.track = null;
+    vehicle.location = String(currentLocationId);
+    vehicle.position = 0;
+    vehicle.consist = null;
+
+    const ok = await updateVehicle(vehicle);
+
+    if (ok === false) {
+        vehicle.track = oldTrack;
+        vehicle.position = oldPosition;
+        vehicle.consist = oldConsist;
+        return false;
+    }
+
+    await logVehicleHistory(vehicle,"library_return",`${oldTrackName} → Fahrzeugbibliothek`,{
+        from_track:oldTrackName,to:"Fahrzeugbibliothek"
+    });
+
+    selectedVehicle = null;
+    renderPlan();
+    renderLibrary();
+    return true;
+}
+
+function setupLibraryDropZone() {
+    const library = document.getElementById("vehicleLibrary");
+    if (!library || library.dataset.dropReady === "1") return;
+
+    library.dataset.dropReady = "1";
+
+    library.addEventListener("dragenter", event => {
+        if (!canWrite()) return;
+
+        const hasVehicle =
+            event.dataTransfer?.types?.includes("vehicle") ||
+            event.dataTransfer?.types?.includes("text/plain");
+
+        if (hasVehicle) {
+            event.preventDefault();
+            library.classList.add("library-drop-active");
+        }
+    });
+
+    library.addEventListener("dragover", event => {
+        if (!canWrite()) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+        library.classList.add("library-drop-active");
+    });
+
+    library.addEventListener("dragleave", event => {
+        if (!library.contains(event.relatedTarget)) {
+            library.classList.remove("library-drop-active");
+        }
+    });
+
+    library.addEventListener("drop", async event => {
+        if (!canWrite()) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+        library.classList.remove("library-drop-active");
+
+        const id =
+            event.dataTransfer.getData("vehicle") ||
+            event.dataTransfer.getData("text/plain");
+
+        if (!id) return;
+
+        await returnVehicleToLibrary(id);
+    });
+}
+
+async function moveConsist(consistId, targetTrack, newStart) {
+    if (!enforceWritePermission()) return;
+
+    const consistVehicles = vehicles
+        .filter(v => v.consist === consistId)
+        .sort((a, b) => a.position - b.position);
+
+    if (!consistVehicles.length) return;
+
+    const offset = newStart - consistVehicles[0].position;
+
+    consistVehicles.forEach(vehicle => {
+        vehicle.track = targetTrack;
+        vehicle.location = String(currentLocationId);
+        vehicle.position = Math.max(0, vehicle.position + offset);
+    });
+
+    const results = await Promise.all(consistVehicles.map(updateVehicle));
+    return results;
+}
+
+async function createConsist() {
+    if (!enforceWritePermission()) return;
+    const selected=vehicles.find(v=>v.id===selectedVehicle);
+    if(!selected||selected.track==null){alert("Bitte zuerst ein Fahrzeug auf einem Gleis auswählen.");return}
+    const nearby=vehicles.filter(v=>String(v.track)===String(selected.track)).filter(v=>Math.abs(Number(v.position)-Number(selected.position))<40).sort((a,b)=>a.position-b.position);
+    if(nearby.length<2){alert("Mindestens zwei nahe Fahrzeuge werden benötigt.");return}
+    const trainNumber=prompt("Zugnummer (optional):","");if(trainNumber===null)return;
+    const name=prompt("Bezeichnung:","Zugverband");if(name===null)return;
+    const {data,error}=await window.eetgSupabase.from("consists").insert({location_id:Number(currentLocationId),train_number:trainNumber.trim()||null,name:name.trim()||"Zugverband"}).select().single();
+    if(error){showSupabaseError("Zugverband konnte nicht angelegt werden.",error);return}
+    nearby.forEach(v=>v.consist=String(data.id));
+    await Promise.all(nearby.map(updateVehicle));
+    await Promise.all(nearby.map(v=>logVehicleHistory(
+        v,"consist_join",
+        `Zugverband ${[trainNumber.trim(),name.trim()].filter(Boolean).join(" · ")||"Zugverband"} gebildet`,
+        {consist_id:String(data.id),train_number:trainNumber.trim()||null,name:name.trim()||"Zugverband"}
+    )));
+    await loadPlan();
+}
+async function dissolveSelectedConsist(){
+    if(!enforceWritePermission())return;
+    const selected=vehicles.find(v=>v.id===selectedVehicle);if(!selected?.consist){alert("Kein Zugverband ausgewählt.");return}
+    const id=String(selected.consist);if(!confirm("Zugverband wirklich auflösen?"))return;
+    const members=vehicles.filter(v=>String(v.consist)===id);
+    const consistInfo=consists.find(c=>String(c.id)===id);
+    members.forEach(v=>v.consist=null);
+    await Promise.all(members.map(updateVehicle));
+    await Promise.all(members.map(v=>logVehicleHistory(
+        v,"consist_leave",
+        `Zugverband ${[consistInfo?.number,consistInfo?.name].filter(Boolean).join(" · ")||id} aufgelöst`,
+        {consist_id:id}
+    )));
+    const {error}=await window.eetgSupabase.from("consists").delete().eq("id",Number(id));if(error){showSupabaseError("Zugverband konnte nicht gelöscht werden.",error);return}await loadPlan();
+}
+
+function clearSelection() {
+    selectedVehicle = null;
+    hideContextMenu();
+    renderPlan();
+}
+
+async function editSelected() {
+    if (!enforceWritePermission()) return;
+
+    const vehicle = vehicles.find(v => v.id === selectedVehicle);
+    if (!vehicle) return;
+
+    const number = prompt("Fahrzeugnummer:", vehicle.number);
+    if (number !== null && number.trim()) vehicle.number = number.trim();
+
+    const length = prompt("Reale Länge in Metern:", vehicle.length);
+    if (length !== null && !isNaN(length) && Number(length) > 0) {
+        vehicle.length = Number(length);
+    }
+
+    const category = prompt(
+        "Kategorie: elektrolok, diesellok, triebwagen, personenwagen oder gueterwagen",
+        vehicle.category || "elektrolok"
+    );
+
+    if (category !== null) {
+        const normalizedCategory = category.trim().toLowerCase();
+        if (VEHICLE_CATEGORY_ORDER.includes(normalizedCategory)) {
+            vehicle.category = normalizedCategory;
+            vehicle.type = ["personenwagen", "gueterwagen"].includes(normalizedCategory) ? "wagen" : "lok";
+        } else if (normalizedCategory) {
+            alert("Ungültige Kategorie. Erlaubt: elektrolok, diesellok, triebwagen, personenwagen, gueterwagen.");
+            return;
+        }
+    }
+
+    const company = prompt("Unternehmen: EETG oder RMB", vehicle.company || "EETG");
+    if (company !== null) {
+        const normalizedCompany = company.trim().toUpperCase();
+        if (["EETG", "RMB"].includes(normalizedCompany)) {
+            vehicle.company = normalizedCompany;
+        } else if (normalizedCompany) {
+            alert("Ungültiges Unternehmen. Erlaubt: EETG oder RMB.");
+            return;
+        }
+    }
+
+    await updateVehicle(vehicle);
+    renderPlan();
+    renderLibrary();
+    hideContextMenu();
+}
+
+async function removeSelected() {
+    if (!enforceAdminPermission()) return;
+
+    const vehicle = vehicles.find(v => v.id === selectedVehicle);
+    if (!vehicle) return;
+
+    if (!confirm(vehicle.number + " wirklich entfernen?")) return;
+
+    const { error } = await window.eetgSupabase
+        .from("vehicles")
+        .delete()
+        .eq("id", Number(vehicle.id));
+
+    if (error) {
+        console.error(error);
+        showSupabaseError("Fahrzeug konnte nicht gelöscht werden.", error);
+        return;
+    }
+
+    selectedVehicle = null;
+    await loadPlan();
+    hideContextMenu();
+}
+
+function openVehicleModal() {
+    if (!enforceAdminPermission()) return;
+    document.getElementById("vehicleModal").classList.add("active");
+}
+
+async function addVehicle() {
+    if (!enforceEditMode()) return;
+
+    const number = document.getElementById("vehicleNumber").value.trim();
+    const model = document.getElementById("vehicleModel").value.trim();
+    const image = document.getElementById("vehicleImage").value.trim();
+    const category = document.getElementById("vehicleCategory").value;
+    const company = document.getElementById("vehicleCompany").value;
+
+    // Der technische Typ wird automatisch aus der Kategorie abgeleitet.
+    // Personen- und Güterwagen sind "wagen", alle übrigen Kategorien "lok".
+    const type = ["personenwagen", "gueterwagen"].includes(category)
+        ? "wagen"
+        : "lok";
+
+    const length = Number(document.getElementById("vehicleLength").value);
+
+    if (!number) {
+        alert("Bitte Fahrzeugnummer eingeben.");
+        return;
+    }
+
+    if (!length || length <= 0) {
+        alert("Bitte eine gültige Länge eingeben.");
+        return;
+    }
+
+    if (!tracks.length) {
+        alert("Bitte zuerst ein Gleis anlegen.");
+        return;
+    }
+
+    const { data: insertedVehicle, error } = await window.eetgSupabase
+        .from("vehicles")
+        .insert({
+            number,
+            model,
+            image_url: image || null,
+            category,
+            company,
+            type,
+            length,
+            track_id: tracks[0].id,
+            location_id: Number(currentLocationId),
+            position: 10,
+            consist: null,
+            status: "Abgestellt"
+        })
+        .select()
+        .single();
+
+    if (error) {
+        console.error(error);
+        showSupabaseError("Fahrzeug konnte nicht angelegt werden.", error);
+        return;
+    }
+
+    if(insertedVehicle){
+        const createdVehicle=mapVehicle(insertedVehicle);
+        await logVehicleHistory(createdVehicle,"vehicle_created",`Fahrzeug ${createdVehicle.number} angelegt`,{
+            model:createdVehicle.model,category:createdVehicle.category,company:createdVehicle.company,length:createdVehicle.length
+        });
+    }
+
+    closeModals();
+    document.getElementById("vehicleNumber").value = "";
+    document.getElementById("vehicleModel").value = "";
+    document.getElementById("vehicleImage").value = "";
+    document.getElementById("vehicleCompany").value = "EETG";
+    await loadPlan();
+}
+
+function openTrackModal() {
+    if (!enforceAdminPermission()) return;
+    document.getElementById("trackModal").classList.add("active");
+}
+
+async function addTrack() {
+    if (!enforceEditMode()) return;
+
+    const number = document.getElementById("trackNumber").value.trim();
+    const length = Number(document.getElementById("trackLength").value);
+
+    if (!number) {
+        alert("Bitte Gleisname eingeben.");
+        return;
+    }
+
+    if (!length || length <= 0) {
+        alert("Bitte eine gültige Gleislänge eingeben.");
+        return;
+    }
+
+    const sortOrder = tracks.length
+        ? Math.max(...tracks.map((_, index) => index + 1)) + 1
+        : 1;
+
+    const { error } = await window.eetgSupabase
+        .from("tracks")
+        .insert({
+            number,
+            length,
+            sort_order: sortOrder,
+            location_id: Number(currentLocationId),
+            x_position: 20,
+            y_position: 20 + tracks.length * 250,
+            note: ""
+        });
+
+    if (error) {
+        console.error(error);
+        showSupabaseError("Gleis konnte nicht angelegt werden.", error);
+        return;
+    }
+
+    closeModals();
+    await loadPlan();
+}
+
+async function renameTrack(trackId) {
+    if (!enforceEditMode()) return;
+
+    const track = tracks.find(t => t.id === trackId);
+    if (!track) return;
+
+    const name = prompt("Gleisname:", track.number);
+    if (name === null) return;
+
+    const cleanName = name.trim();
+    if (!cleanName) {
+        alert("Der Gleisname darf nicht leer sein.");
+        return;
+    }
+
+    const { error } = await window.eetgSupabase
+        .from("tracks")
+        .update({
+            number: cleanName,
+            updated_at: new Date().toISOString()
+        })
+        .eq("id", trackId);
+
+    if (error) {
+        console.error(error);
+        showSupabaseError("Gleisname konnte nicht geändert werden.", error);
+        return;
+    }
+
+    await loadPlan();
+}
+
+async function editTrackLength(trackId) {
+    if (!enforceEditMode()) return;
+
+    const track = tracks.find(t => t.id === trackId);
+    if (!track) return;
+
+    const lengthInput = prompt("Neue Gleislänge in Metern:", track.length);
+    if (lengthInput === null) return;
+
+    const length = Number(String(lengthInput).replace(",", "."));
+    if (!Number.isFinite(length) || length <= 0) {
+        alert("Bitte eine gültige Gleislänge eingeben.");
+        return;
+    }
+
+    // Warnen, wenn Fahrzeuge über das neue Gleisende hinausragen würden.
+    const overhanging = vehicles.filter(v =>
+        v.track === trackId &&
+        (Number(v.position) + Number(v.length)) > length
+    );
+
+    if (overhanging.length > 0) {
+        const names = overhanging.slice(0, 4).map(v => v.number).join(", ");
+        const extra = overhanging.length > 4 ? ` und ${overhanging.length - 4} weitere` : "";
+
+        if (!confirm(
+            `Achtung: ${overhanging.length} Fahrzeug(e) würden über das neue Gleisende hinausragen:
+` +
+            `${names}${extra}.
+
+Gleislänge trotzdem auf ${length} m ändern?`
+        )) return;
+    }
+
+    const { error } = await window.eetgSupabase
+        .from("tracks")
+        .update({
+            length,
+            updated_at: new Date().toISOString()
+        })
+        .eq("id", trackId);
+
+    if (error) {
+        console.error(error);
+        showSupabaseError("Gleislänge konnte nicht geändert werden.", error);
+        return;
+    }
+
+    await loadPlan();
+}
+
+
+async function deleteTrack(trackId) {
+    if (!enforceEditMode()) return;
+
+    const track = tracks.find(t => t.id === trackId);
+    if (!track) return;
+
+    const vehiclesOnTrack = vehicles.filter(v => v.track === trackId);
+
+    if (vehiclesOnTrack.length > 0) {
+        alert(
+            `Gleis "${track.number}" kann nicht gelöscht werden, solange noch ` +
+            `${vehiclesOnTrack.length} Fahrzeug(e) darauf stehen. ` +
+            `Verschiebe oder lösche diese Fahrzeuge zuerst.`
+        );
+        return;
+    }
+
+    if (!confirm(
+        `Gleis "${track.number}" (${track.length} m) wirklich dauerhaft löschen?`
+    )) return;
+
+    const { error } = await window.eetgSupabase
+        .from("tracks")
+        .delete()
+        .eq("id", trackId);
+
+    if (error) {
+        console.error(error);
+        showSupabaseError("Gleis konnte nicht gelöscht werden.", error);
+        return;
+    }
+
+    await loadPlan();
+}
+
+
+
+function updateRenderedVehicleStatus(vehicleId, status) {
+    const trackVehicle = document.querySelector(
+        `.vehicle[data-vehicle-id="${CSS.escape(String(vehicleId))}"]`
+    );
+
+    if (trackVehicle) {
+        const vehicle = vehicles.find(v => v.id === String(vehicleId));
+        if (vehicle) {
+            trackVehicle.className =
+                "vehicle " + vehicle.type + " " + statusClass(status);
+        }
+    }
+}
+
+function createLibraryVehicleCard(vehicle) {
+    const item = document.createElement("div");
+    item.className = "vehicle-item library-item" +
+        (vehicle.track == null ? " vehicle-in-library" : "");
+    item.dataset.vehicleId = vehicle.id;
+    item.dataset.searchText =
+        `${vehicle.number} ${vehicle.model || ""} ${vehicle.company || ""} ${VEHICLE_CATEGORY_LABELS[vehicle.category] || vehicle.category || ""}`.toLowerCase();
+    item.draggable = canWrite();
+
+    const imageHtml = vehicle.image
+        ? `<div class="vehicle-thumb">
+               <img
+                   src="${escapeHtml(vehicle.image)}"
+                   alt="${escapeHtml(vehicle.number)}"
+                   loading="lazy"
+                   onerror="this.parentElement.innerHTML='<div class=&quot;vehicle-thumb-placeholder&quot;>Bild konnte nicht geladen werden</div>'">
+           </div>`
+        : `<div class="vehicle-thumb">
+               <div class="vehicle-thumb-placeholder">Kein Fahrzeugbild hinterlegt</div>
+           </div>`;
+
+    item.innerHTML = `
+        <div class="vehicle-name-line">
+            <div class="vehicle-name">${escapeHtml(vehicle.number)}</div>
+            <span class="vehicle-company-inline">${escapeHtml(vehicle.company || "EETG")}</span>
+        </div>
+        <div class="vehicle-info">
+            ${escapeHtml(vehicle.model || vehicle.type)} · ${vehicle.length} m
+        </div>
+        ${imageHtml}
+    `;
+
+    const statusControl = document.createElement("div");
+    statusControl.className = "library-status-control";
+
+    const currentButton = document.createElement("button");
+    currentButton.type = "button";
+    currentButton.className =
+        "library-status-current " + statusClass(vehicle.status);
+    currentButton.textContent = vehicle.status || "Abgestellt";
+    currentButton.disabled = !canWrite();
+
+    const palette = document.createElement("div");
+    palette.className = "library-status-palette";
+
+    [
+        "Einsatzbereit",
+        "Unterwegs",
+        "Abgestellt",
+        "Vermietet",
+        "In der Werkstatt"
+    ].forEach(status => {
+        const option = document.createElement("button");
+        option.type = "button";
+        option.className = "library-status-option";
+        option.dataset.status = status;
+        option.textContent = status;
+
+        option.addEventListener("click", async event => {
+            event.stopPropagation();
+            if (!canWrite()) return;
+
+            const previousStatus = vehicle.status;
+            vehicle.status = status;
+
+            currentButton.textContent = status;
+            currentButton.className =
+                "library-status-current " + statusClass(status);
+            palette.classList.remove("open");
+
+            updateRenderedVehicleStatus(vehicle.id, status);
+
+            const ok = await updateVehicle(vehicle);
+
+            if (ok === false) {
+                vehicle.status = previousStatus;
+                currentButton.textContent = previousStatus;
+                currentButton.className =
+                    "library-status-current " + statusClass(previousStatus);
+                updateRenderedVehicleStatus(vehicle.id, previousStatus);
+            } else {
+                await logVehicleHistory(vehicle,"status_change",`${previousStatus} → ${status}`,{
+                    from_status:previousStatus,to_status:status
+                });
+            }
+        });
+
+        palette.appendChild(option);
+    });
+
+    currentButton.addEventListener("click", event => {
+        event.stopPropagation();
+        if (!canWrite()) return;
+
+        document
+            .querySelectorAll(".library-status-palette.open")
+            .forEach(other => {
+                if (other !== palette) other.classList.remove("open");
+            });
+
+        palette.classList.toggle("open");
+    });
+
+    statusControl.addEventListener("click", event => event.stopPropagation());
+    statusControl.appendChild(currentButton);
+    statusControl.appendChild(palette);
+    item.appendChild(statusControl);
+
+    const editRow = document.createElement("div");
+    editRow.className = "library-edit-row";
+
+    const editButton = document.createElement("button");
+    editButton.type = "button";
+    editButton.className = "library-edit-button";
+    editButton.textContent = "✏ Fahrzeugdaten bearbeiten";
+    editButton.addEventListener("click", event => {
+        event.stopPropagation();
+        openVehicleEditModal(vehicle.id);
+    });
+
+    editRow.appendChild(editButton);
+
+    const historyButton=document.createElement("button");
+    historyButton.type="button";
+    historyButton.className="library-history-button";
+    historyButton.textContent="📜 Historie";
+    historyButton.addEventListener("click",event=>{
+        event.stopPropagation();
+        openVehicleHistoryModal(vehicle.id);
+    });
+    editRow.appendChild(historyButton);
+
+    item.appendChild(editRow);
+
+    if (canWrite()) {
+        item.addEventListener("dragstart", event => {
+            event.dataTransfer.setData("vehicle", vehicle.id);
+            event.dataTransfer.setData("text/plain", vehicle.id);
+            event.dataTransfer.effectAllowed = "move";
+        });
+    }
+
+    item.addEventListener("click", () => {
+        selectedVehicle = vehicle.id;
+        renderPlan();
+        applySearchHighlights(false);
+    });
+
+    return item;
+}
+
+function toggleVehicleCategory(category) {
+    if (collapsedCategories.has(category)) {
+        collapsedCategories.delete(category);
+    } else {
+        collapsedCategories.add(category);
+    }
+    renderLibrary();
+}
+
+function renderLibrary() {
+    const library = document.getElementById("vehicleLibrary");
+    library.innerHTML = "";
+
+    if (!vehicles.length) {
+        library.innerHTML = '<div class="empty">Keine Fahrzeuge vorhanden.</div>';
+        return;
+    }
+
+    VEHICLE_CATEGORY_ORDER.forEach(category => {
+        const categoryVehicles = vehicles.filter(v => v.category === category);
+        const section = document.createElement("section");
+        section.className =
+            "vehicle-category" + (collapsedCategories.has(category) ? " collapsed" : "");
+        section.dataset.category = category;
+
+        const header = document.createElement("button");
+        header.type = "button";
+        header.className = "vehicle-category-header";
+        header.innerHTML = `
+            <span>${escapeHtml(VEHICLE_CATEGORY_LABELS[category])}</span>
+            <span class="vehicle-category-count">${categoryVehicles.length}</span>
+            <span class="vehicle-category-chevron">▼</span>
+        `;
+        header.addEventListener("click", () => toggleVehicleCategory(category));
+
+        const body = document.createElement("div");
+        body.className = "vehicle-category-body";
+
+        if (!categoryVehicles.length) {
+            body.innerHTML = '<div class="empty">Keine Fahrzeuge</div>';
+        } else {
+            ["EETG", "RMB"].forEach(company => {
+                const companyVehicles = categoryVehicles
+                    .filter(vehicle => (vehicle.company || "EETG") === company)
+                    .sort((a, b) =>
+                        String(a.number).localeCompare(String(b.number), "de", {
+                            numeric: true,
+                            sensitivity: "base"
+                        })
+                    );
+
+                if (!companyVehicles.length) return;
+
+                const companyGroup = document.createElement("div");
+                companyGroup.className = "vehicle-company-group";
+
+                const heading = document.createElement("div");
+                heading.className = "vehicle-company-heading";
+                heading.innerHTML = `
+                    <span>${company}</span>
+                    <span class="vehicle-company-count">${companyVehicles.length}</span>
+                `;
+
+                companyGroup.appendChild(heading);
+
+                companyVehicles.forEach(vehicle => {
+                    companyGroup.appendChild(createLibraryVehicleCard(vehicle));
+                });
+
+                body.appendChild(companyGroup);
+            });
+        }
+
+        section.appendChild(header);
+        section.appendChild(body);
+        library.appendChild(section);
+    });
+
+    setupLibraryDropZone();
+    applySearchHighlights(false);
+}
+
+function handleGlobalSearch(value) {
+    globalSearchQuery = String(value || "").trim().toLowerCase();
+
+    if (globalSearchQuery) {
+        // Kategorien mit passenden Fahrzeugen automatisch öffnen.
+        VEHICLE_CATEGORY_ORDER.forEach(category => {
+            const hasMatch = vehicles
+                .filter(v => v.category === category)
+                .some(vehicle =>
+                    `${vehicle.number} ${vehicle.model || ""} ${vehicle.company || ""} ${VEHICLE_CATEGORY_LABELS[vehicle.category] || ""}`
+                        .toLowerCase()
+                        .includes(globalSearchQuery)
+                );
+
+            if (hasMatch) collapsedCategories.delete(category);
+        });
+
+        renderLibrary();
+        applySearchHighlights(true);
+    } else {
+        renderLibrary();
+        applySearchHighlights(false);
+    }
+}
+
+function clearGlobalSearch() {
+    const input = document.getElementById("globalSearch");
+    if (input) input.value = "";
+    globalSearchQuery = "";
+    renderLibrary();
+    applySearchHighlights(false);
+}
+
+function applySearchHighlights(scrollToFirst = false) {
+    document
+        .querySelectorAll(".search-highlight")
+        .forEach(element => element.classList.remove("search-highlight"));
+
+    const info = document.getElementById("searchResultInfo");
+
+    if (!globalSearchQuery) {
+        if (info) info.textContent = "";
+        return;
+    }
+
+    const matchingVehicles = vehicles.filter(vehicle =>
+        `${vehicle.number} ${vehicle.model || ""} ${vehicle.company || ""} ${VEHICLE_CATEGORY_LABELS[vehicle.category] || vehicle.category || ""}`
+            .toLowerCase()
+            .includes(globalSearchQuery)
+    );
+
+    const matchingTracks = tracks.filter(track =>
+        `${track.number} ${track.length}m`
+            .toLowerCase()
+            .includes(globalSearchQuery)
+    );
+
+    matchingVehicles.forEach(vehicle => {
+        const libraryCard = document.querySelector(
+            `.library-item[data-vehicle-id="${CSS.escape(String(vehicle.id))}"]`
+        );
+        if (libraryCard) libraryCard.classList.add("search-highlight");
+
+        const trackVehicle = document.querySelector(
+            `.vehicle[data-vehicle-id="${CSS.escape(String(vehicle.id))}"]`
+        );
+        if (trackVehicle) trackVehicle.classList.add("search-highlight");
+        if(vehicle.track!=null){const t=document.querySelector(`.track[data-track="${CSS.escape(String(vehicle.track))}"]`);if(t)t.classList.add("search-highlight")}
+    });
+
+    matchingTracks.forEach(track => {
+        const trackElement = document.querySelector(
+            `.track[data-track="${CSS.escape(String(track.id))}"]`
+        );
+        if (trackElement) trackElement.classList.add("search-highlight");
+    });
+
+    const total = matchingVehicles.length + matchingTracks.length;
+
+    if (info) {
+        if (!total) {
+            info.textContent = "Kein Ergebnis gefunden";
+        } else {
+            const parts = [];
+            if (matchingVehicles.length) {
+                parts.push(`${matchingVehicles.length} Fahrzeug${matchingVehicles.length === 1 ? "" : "e"}`);
+            }
+            if (matchingTracks.length) {
+                parts.push(`${matchingTracks.length} Gleis${matchingTracks.length === 1 ? "" : "e"}`);
+            }
+            info.textContent = parts.join(" · ");
+        }
+    }
+
+    if (scrollToFirst && total) {
+        const first =
+            document.querySelector(".track.search-highlight") ||
+            document.querySelector(".vehicle.search-highlight") ||
+            document.querySelector(".library-item.search-highlight");
+
+        first?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+            inline: "center"
+        });
+    }
+}
+
+
+let editingVehicleId = null;
+
+function openVehicleEditModal(vehicleId) {
+    if (!enforceEditMode()) return;
+
+    const vehicle = vehicles.find(v => v.id === String(vehicleId));
+    if (!vehicle) return;
+
+    editingVehicleId = vehicle.id;
+
+    document.getElementById("editVehicleNumber").value = vehicle.number || "";
+    document.getElementById("editVehicleModel").value = vehicle.model || "";
+    document.getElementById("editVehicleCategory").value = vehicle.category || "elektrolok";
+    document.getElementById("editVehicleCompany").value = vehicle.company || "EETG";
+    document.getElementById("editVehicleImage").value = vehicle.image || "";
+    document.getElementById("editVehicleLength").value = vehicle.length || "";
+    document.getElementById("editVehicleStatus").value = vehicle.status || "Abgestellt";
+
+    document.getElementById("vehicleEditModal").classList.add("active");
+}
+
+function closeVehicleEditModal() {
+    editingVehicleId = null;
+    document.getElementById("vehicleEditModal").classList.remove("active");
+}
+
+async function saveVehicleEdit() {
+    if (!enforceEditMode()) return;
+
+    const vehicle = vehicles.find(v => v.id === String(editingVehicleId));
+    if (!vehicle) return;
+
+    const number = document.getElementById("editVehicleNumber").value.trim();
+    const model = document.getElementById("editVehicleModel").value.trim();
+    const category = document.getElementById("editVehicleCategory").value;
+    const company = document.getElementById("editVehicleCompany").value;
+    const image = document.getElementById("editVehicleImage").value.trim();
+    const length = Number(document.getElementById("editVehicleLength").value);
+    const status = document.getElementById("editVehicleStatus").value;
+
+    if (!number) {
+        alert("Bitte eine Fahrzeugnummer eingeben.");
+        return;
+    }
+
+    if (!Number.isFinite(length) || length <= 0) {
+        alert("Bitte eine gültige Fahrzeuglänge eingeben.");
+        return;
+    }
+
+    const beforeEdit={
+        number:vehicle.number,model:vehicle.model,category:vehicle.category,
+        company:vehicle.company,image:vehicle.image,length:vehicle.length,status:vehicle.status
+    };
+
+    vehicle.number = number;
+    vehicle.model = model;
+    vehicle.category = category;
+    vehicle.company = company;
+    vehicle.image = image;
+    vehicle.length = length;
+    vehicle.status = status;
+
+    // Technischen Typ automatisch aus Kategorie ableiten.
+    vehicle.type = ["personenwagen", "gueterwagen"].includes(category)
+        ? "wagen"
+        : "lok";
+
+    const ok = await updateVehicle(vehicle);
+
+    if (ok === false) return;
+
+    const changes=[];
+    if(beforeEdit.number!==vehicle.number)changes.push(`Nummer: ${beforeEdit.number} → ${vehicle.number}`);
+    if(beforeEdit.model!==vehicle.model)changes.push(`Modell: ${beforeEdit.model||"–"} → ${vehicle.model||"–"}`);
+    if(beforeEdit.category!==vehicle.category)changes.push(`Kategorie: ${beforeEdit.category} → ${vehicle.category}`);
+    if(beforeEdit.company!==vehicle.company)changes.push(`Unternehmen: ${beforeEdit.company} → ${vehicle.company}`);
+    if(Number(beforeEdit.length)!==Number(vehicle.length))changes.push(`Länge: ${beforeEdit.length} m → ${vehicle.length} m`);
+    if(beforeEdit.status!==vehicle.status)changes.push(`Status: ${beforeEdit.status} → ${vehicle.status}`);
+    if(beforeEdit.image!==vehicle.image)changes.push("Fahrzeugbild geändert");
+
+    if(changes.length) await logVehicleHistory(vehicle,"vehicle_edit",changes.join(" · "),{before:beforeEdit});
+
+    closeVehicleEditModal();
+    await loadPlan();
+}
+
+function closeModals() {
+    document.querySelectorAll(".modal").forEach(modal => modal.classList.remove("active"));
+}
+
+function showContextMenu(x, y) {
+    const menu = document.getElementById("contextMenu");
+    menu.style.left = x + "px";
+    menu.style.top = y + "px";
+    menu.style.display = "block";
+}
+
+function hideContextMenu() {
+    document.getElementById("contextMenu").style.display = "none";
+}
+
+document.addEventListener("click", hideContextMenu);
+
+document.addEventListener("click", () => {
+    document
+        .querySelectorAll(".vehicle-status-palette.open, .library-status-palette.open")
+        .forEach(palette => palette.classList.remove("open"));
+});
+
+async function savePlan() {
+    if (!enforceWritePermission()) return;
+    await Promise.all(vehicles.map(updateVehicle));
+    alert("Abstellplan wurde zentral gespeichert.");
+}
+
+function escapeHtml(text) {
+    return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+function setRealtimeStatus(mode, textValue){
+    const state=document.getElementById("realtimeState");
+    const text=document.getElementById("realtimeText");
+    if(!state||!text)return;
+    state.classList.remove("live","error");
+    if(mode==="live")state.classList.add("live");
+    else if(mode==="error")state.classList.add("error");
+    text.textContent=textValue;
+}
+function startRealtimeFallback(){
+    if(realtimeFallbackTimer)return;
+    realtimeFallbackTimer=setInterval(async()=>{
+        if(document.hidden)return;
+        if(activeTrackDrag||activeAreaDrag||activeAreaResize)return;
+        try{await loadPlan()}catch(error){console.warn("Fallback-Synchronisierung fehlgeschlagen:",error)}
+    },15000);
+}
+function stopRealtimeFallback(){
+    if(!realtimeFallbackTimer)return;
+    clearInterval(realtimeFallbackTimer);
+    realtimeFallbackTimer=null;
+}
+async function manualRefresh(){
+    await loadLocations();
+    await loadPlan();
+    subscribeRealtime();
+}
+function subscribeRealtime(){
+    if(realtimeChannel){
+        window.eetgSupabase.removeChannel(realtimeChannel);
+        realtimeChannel=null;
+    }
+    if(historyRealtimeChannel){
+        window.eetgSupabase.removeChannel(historyRealtimeChannel);
+        historyRealtimeChannel=null;
+    }
+
+    setRealtimeStatus("pending","Synchronisiere …");
+
+    realtimeChannel=window.eetgSupabase
+        .channel("eetg-abstellplan-live-main")
+        .on("postgres_changes",{event:"*",schema:"public",table:"locations"},async()=>{
+            await loadLocations();scheduleRealtimeReload();
+        })
+        .on("postgres_changes",{event:"*",schema:"public",table:"areas"},()=>{
+            if(!activeAreaDrag&&!activeAreaResize)scheduleRealtimeReload();
+        })
+        .on("postgres_changes",{event:"*",schema:"public",table:"tracks"},()=>{
+            if(!activeTrackDrag)scheduleRealtimeReload();
+        })
+        .on("postgres_changes",{event:"*",schema:"public",table:"vehicles"},scheduleRealtimeReload)
+        .on("postgres_changes",{event:"*",schema:"public",table:"consists"},scheduleRealtimeReload)
+        .subscribe(status=>{
+            if(status==="SUBSCRIBED"){
+                stopRealtimeFallback();
+                setRealtimeStatus("live","Live");
+                return;
+            }
+            if(status==="CHANNEL_ERROR"||status==="TIMED_OUT"||status==="CLOSED"){
+                setRealtimeStatus("error","Fallback aktiv");
+                startRealtimeFallback();
+                console.warn("Supabase Realtime Hauptkanal:",status);
+                return;
+            }
+            setRealtimeStatus("pending","Synchronisiere …");
+        });
+
+    historyRealtimeChannel=window.eetgSupabase
+        .channel("eetg-abstellplan-live-history")
+        .on("postgres_changes",{event:"*",schema:"public",table:"vehicle_history"},async()=>{
+            if(historyDropdownOpen)await loadHistoryDropdown();
+        })
+        .subscribe(status=>{
+            if(status==="CHANNEL_ERROR"||status==="TIMED_OUT"){
+                console.warn("Historien-Realtime ist nicht verfügbar. Hauptsynchronisierung läuft weiter.");
+            }
+        });
+}
+
+window.addEventListener("beforeunload",()=>{
+    stopRealtimeFallback();
+    if(realtimeChannel)window.eetgSupabase.removeChannel(realtimeChannel);
+    if(historyRealtimeChannel)window.eetgSupabase.removeChannel(historyRealtimeChannel);
+});
+
+(async function init() {
+    loadTheme();
+
+    const ok = await requireLogin();
+    if (!ok) return;
+
+    await loadLocations();
+    await loadPlan();
+    subscribeRealtime();
+})();
+</script>
+<script>
+window.addEventListener("resize", () => {
+    updatePlanCanvasSize();
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+    adminEditMode = false;
+    document.body.classList.remove("admin-edit-enabled");
+    const toggle = document.getElementById("adminEditToggle");
+    const state = document.getElementById("adminEditState");
+    if (toggle) toggle.checked = false;
+    if (state) state.textContent = "Gesperrt";
+});
 </script>
 </body>
 </html>
