@@ -2100,6 +2100,35 @@ header{
     padding-bottom:0!important;
 }
 
+
+/* =========================================================
+   FAHRZEUGDATEN DIREKT IN DER BIBLIOTHEK BEARBEITEN
+========================================================= */
+.library-edit-row{
+    display:flex;
+    gap:6px;
+    margin-top:7px;
+}
+
+.library-edit-button{
+    flex:1;
+    min-height:28px;
+    padding:6px 8px!important;
+    border-radius:6px!important;
+    background:#343a40!important;
+    color:#fff!important;
+    font-size:10px!important;
+    font-weight:800!important;
+}
+
+body:not(.is-admin) .library-edit-button{
+    display:none!important;
+}
+
+body.is-admin:not(.admin-edit-enabled) .library-edit-button{
+    display:none!important;
+}
+
 </style>
 </head>
 
@@ -2358,6 +2387,72 @@ header{
 
 </div>
 
+
+
+<!-- =====================================================
+     VEHICLE EDIT MODAL
+===================================================== -->
+
+<div class="modal" id="vehicleEditModal">
+    <div class="modal-box">
+        <h2>Fahrzeug bearbeiten</h2>
+
+        <div class="form-row">
+            <label>Fahrzeugnummer</label>
+            <input id="editVehicleNumber">
+        </div>
+
+        <div class="form-row">
+            <label>Baureihe / Modell</label>
+            <input id="editVehicleModel">
+        </div>
+
+        <div class="form-row">
+            <label>Fahrzeugkategorie</label>
+            <select id="editVehicleCategory">
+                <option value="elektrolok">Elektroloks</option>
+                <option value="diesellok">Dieselloks</option>
+                <option value="triebwagen">Triebwagen</option>
+                <option value="personenwagen">Personenwagen</option>
+                <option value="gueterwagen">Güterwagen</option>
+            </select>
+        </div>
+
+        <div class="form-row">
+            <label>Unternehmen / Eigentümer</label>
+            <select id="editVehicleCompany">
+                <option value="EETG">EETG</option>
+                <option value="RMB">RMB</option>
+            </select>
+        </div>
+
+        <div class="form-row">
+            <label>Bildpfad / Bild-URL</label>
+            <input id="editVehicleImage">
+        </div>
+
+        <div class="form-row">
+            <label>Länge in Metern</label>
+            <input id="editVehicleLength" type="number" step="0.01">
+        </div>
+
+        <div class="form-row">
+            <label>Status</label>
+            <select id="editVehicleStatus">
+                <option value="Einsatzbereit">Einsatzbereit</option>
+                <option value="Unterwegs">Unterwegs</option>
+                <option value="Abgestellt">Abgestellt</option>
+                <option value="Vermietet">Vermietet</option>
+                <option value="In der Werkstatt">In der Werkstatt</option>
+            </select>
+        </div>
+
+        <div class="modal-buttons">
+            <button class="secondary" type="button" onclick="closeVehicleEditModal()">Abbrechen</button>
+            <button type="button" onclick="saveVehicleEdit()">Speichern</button>
+        </div>
+    </div>
+</div>
 
 <!-- =====================================================
      TRACK MODAL
@@ -3629,6 +3724,21 @@ function createLibraryVehicleCard(vehicle) {
     statusControl.appendChild(palette);
     item.appendChild(statusControl);
 
+    const editRow = document.createElement("div");
+    editRow.className = "library-edit-row";
+
+    const editButton = document.createElement("button");
+    editButton.type = "button";
+    editButton.className = "library-edit-button";
+    editButton.textContent = "✏ Fahrzeugdaten bearbeiten";
+    editButton.addEventListener("click", event => {
+        event.stopPropagation();
+        openVehicleEditModal(vehicle.id);
+    });
+
+    editRow.appendChild(editButton);
+    item.appendChild(editRow);
+
     if (canWrite()) {
         item.addEventListener("dragstart", event => {
             event.dataTransfer.setData("vehicle", vehicle.id);
@@ -3830,6 +3940,78 @@ function applySearchHighlights(scrollToFirst = false) {
             inline: "center"
         });
     }
+}
+
+
+let editingVehicleId = null;
+
+function openVehicleEditModal(vehicleId) {
+    if (!enforceEditMode()) return;
+
+    const vehicle = vehicles.find(v => v.id === String(vehicleId));
+    if (!vehicle) return;
+
+    editingVehicleId = vehicle.id;
+
+    document.getElementById("editVehicleNumber").value = vehicle.number || "";
+    document.getElementById("editVehicleModel").value = vehicle.model || "";
+    document.getElementById("editVehicleCategory").value = vehicle.category || "elektrolok";
+    document.getElementById("editVehicleCompany").value = vehicle.company || "EETG";
+    document.getElementById("editVehicleImage").value = vehicle.image || "";
+    document.getElementById("editVehicleLength").value = vehicle.length || "";
+    document.getElementById("editVehicleStatus").value = vehicle.status || "Abgestellt";
+
+    document.getElementById("vehicleEditModal").classList.add("active");
+}
+
+function closeVehicleEditModal() {
+    editingVehicleId = null;
+    document.getElementById("vehicleEditModal").classList.remove("active");
+}
+
+async function saveVehicleEdit() {
+    if (!enforceEditMode()) return;
+
+    const vehicle = vehicles.find(v => v.id === String(editingVehicleId));
+    if (!vehicle) return;
+
+    const number = document.getElementById("editVehicleNumber").value.trim();
+    const model = document.getElementById("editVehicleModel").value.trim();
+    const category = document.getElementById("editVehicleCategory").value;
+    const company = document.getElementById("editVehicleCompany").value;
+    const image = document.getElementById("editVehicleImage").value.trim();
+    const length = Number(document.getElementById("editVehicleLength").value);
+    const status = document.getElementById("editVehicleStatus").value;
+
+    if (!number) {
+        alert("Bitte eine Fahrzeugnummer eingeben.");
+        return;
+    }
+
+    if (!Number.isFinite(length) || length <= 0) {
+        alert("Bitte eine gültige Fahrzeuglänge eingeben.");
+        return;
+    }
+
+    vehicle.number = number;
+    vehicle.model = model;
+    vehicle.category = category;
+    vehicle.company = company;
+    vehicle.image = image;
+    vehicle.length = length;
+    vehicle.status = status;
+
+    // Technischen Typ automatisch aus Kategorie ableiten.
+    vehicle.type = ["personenwagen", "gueterwagen"].includes(category)
+        ? "wagen"
+        : "lok";
+
+    const ok = await updateVehicle(vehicle);
+
+    if (ok === false) return;
+
+    closeVehicleEditModal();
+    await loadPlan();
 }
 
 function closeModals() {
