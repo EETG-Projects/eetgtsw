@@ -2437,6 +2437,133 @@ body.dark .area-title{
     background:#c91420!important;
     color:#fff!important;
 }
+
+/* =========================================================
+   GLOBALES INFOFELD
+========================================================= */
+.global-info-bar{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    min-height:42px;
+    padding:7px 14px;
+    background:var(--panel);
+    border-bottom:1px solid var(--border);
+}
+.global-info-label{
+    flex:0 0 auto;
+    padding:4px 7px;
+    border-radius:6px;
+    background:var(--accent);
+    color:#fff;
+    font-size:10px;
+    font-weight:900;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+}
+.global-info-message{
+    flex:1 1 auto;
+    min-width:0;
+    font-size:12px;
+    font-weight:800;
+    line-height:1.25;
+    white-space:normal;
+    overflow-wrap:anywhere;
+}
+.global-info-admin{
+    display:none;
+    align-items:center;
+    gap:6px;
+    flex:0 0 auto;
+}
+body.is-admin .global-info-admin{display:flex}
+body.is-admin:not(.admin-edit-enabled) .global-info-admin{
+    opacity:.55;
+    pointer-events:none;
+}
+.global-info-admin input[type="text"]{
+    width:260px;
+    height:31px;
+    padding:6px 8px;
+    border:1px solid var(--border);
+    border-radius:6px;
+    background:var(--panel2);
+    color:var(--text);
+    font:inherit;
+    font-size:11px;
+}
+.global-info-admin input[type="color"]{
+    width:34px;
+    height:31px;
+    padding:2px;
+    border:1px solid var(--border);
+    border-radius:6px;
+    background:var(--panel2);
+    cursor:pointer;
+}
+.global-info-admin button{
+    padding:7px 9px!important;
+    font-size:10px!important;
+}
+@media(max-width:1000px){
+    .global-info-bar{align-items:flex-start;flex-wrap:wrap}
+    .global-info-admin{width:100%;flex-wrap:wrap}
+    .global-info-admin input[type="text"]{flex:1 1 220px;width:auto}
+}
+
+
+/* =========================================================
+   LEGENDE + INFOFELD IN EINER HORIZONTALEN ZEILE
+========================================================= */
+.legend-info-row{
+    display:flex;
+    align-items:stretch;
+    width:100%;
+    min-width:0;
+    background:var(--panel);
+    border-bottom:1px solid var(--border);
+}
+
+.legend-info-row .status-legend{
+    flex:0 0 auto!important;
+    width:auto!important;
+    margin:0!important;
+    border-bottom:0!important;
+    border-right:1px solid var(--border)!important;
+}
+
+.legend-info-row .global-info-bar{
+    flex:1 1 auto;
+    min-width:0;
+    border-bottom:0!important;
+    padding-top:5px!important;
+    padding-bottom:5px!important;
+}
+
+.legend-info-row .global-info-message{
+    min-width:100px;
+}
+
+/* Admin-Eingabe bleibt rechts im selben Streifen. */
+.legend-info-row .global-info-admin{
+    margin-left:auto;
+}
+
+@media(max-width:1150px){
+    .legend-info-row{
+        overflow-x:auto;
+    }
+
+    .legend-info-row .status-legend{
+        flex:0 0 auto!important;
+    }
+
+    .legend-info-row .global-info-bar{
+        flex:0 0 auto;
+        min-width:620px;
+    }
+}
+
 </style>
 </head>
 
@@ -2462,6 +2589,7 @@ body.dark .area-title{
     </div>
 
 </header>
+<div class="legend-info-row">
 <div class="status-legend" aria-label="Legende Fahrzeugstatus">
     <strong>Legende:</strong>
     <span class="legend-item"><span class="legend-dot legend-einsatzbereit"></span>Einsatzbereit</span>
@@ -2470,6 +2598,19 @@ body.dark .area-title{
     <span class="legend-item"><span class="legend-dot legend-vermietet"></span>Vermietet</span>
     <span class="legend-item"><span class="legend-dot legend-werkstatt"></span>In der Werkstatt</span>
 </div>
+<div class="global-info-bar" id="globalInfoBar">
+    <div class="global-info-label">Info</div>
+    <div class="global-info-message" id="globalInfoMessage">Keine aktuelle Information.</div>
+
+    <div class="global-info-admin admin-only" id="globalInfoAdmin">
+        <input id="globalInfoText" type="text" maxlength="300" placeholder="Information eingeben …">
+        <input id="globalInfoColor" type="color" value="#b5121b" title="Textfarbe auswählen">
+        <button class="secondary" type="button" onclick="saveGlobalInfo()">Speichern</button>
+        <button class="secondary" type="button" onclick="clearGlobalInfo()">Leeren</button>
+    </div>
+</div>
+</div>
+
 
 
 
@@ -3065,6 +3206,7 @@ let currentRole = "viewer";
 let realtimeChannel = null;
 let historyRealtimeChannel = null;
 let realtimeFallbackTimer = null;
+let globalInfo = null;
 let locations = [];
 let areas = [];
 let currentLocationId = null;
@@ -3265,6 +3407,72 @@ function mapArea(row) {
         width: Number(row.width_px || 500),
         height: Number(row.height_px || 200)
     };
+}
+
+
+async function loadGlobalInfo(){
+    const { data, error } = await window.eetgSupabase
+        .from("global_info")
+        .select("*")
+        .eq("id", 1)
+        .maybeSingle();
+
+    if(error){
+        console.warn("Globales Infofeld konnte nicht geladen werden:", error);
+        return;
+    }
+
+    globalInfo = data || { id:1, message:"", color:"#b5121b" };
+    renderGlobalInfo();
+}
+
+function renderGlobalInfo(){
+    const messageEl = document.getElementById("globalInfoMessage");
+    const textInput = document.getElementById("globalInfoText");
+    const colorInput = document.getElementById("globalInfoColor");
+
+    if(!messageEl) return;
+
+    const message = globalInfo?.message?.trim() || "";
+    const color = globalInfo?.color || "#b5121b";
+
+    messageEl.textContent = message || "Keine aktuelle Information.";
+    messageEl.style.color = color;
+
+    if(textInput) textInput.value = message;
+    if(colorInput) colorInput.value = color;
+}
+
+async function saveGlobalInfo(){
+    if(!enforceEditMode()) return;
+
+    const message = document.getElementById("globalInfoText").value.trim();
+    const color = document.getElementById("globalInfoColor").value || "#b5121b";
+
+    const { data, error } = await window.eetgSupabase
+        .from("global_info")
+        .upsert({
+            id:1,
+            message,
+            color,
+            updated_at:new Date().toISOString()
+        }, { onConflict:"id" })
+        .select()
+        .single();
+
+    if(error){
+        showSupabaseError("Information konnte nicht gespeichert werden.", error);
+        return;
+    }
+
+    globalInfo = data;
+    renderGlobalInfo();
+}
+
+async function clearGlobalInfo(){
+    if(!enforceEditMode()) return;
+    document.getElementById("globalInfoText").value = "";
+    await saveGlobalInfo();
 }
 
 async function loadLocations() {
@@ -5461,6 +5669,7 @@ function stopRealtimeFallback(){
     realtimeFallbackTimer=null;
 }
 async function manualRefresh(){
+    await loadGlobalInfo();
     await loadLocations();
     await loadPlan();
     subscribeRealtime();
@@ -5490,6 +5699,9 @@ function subscribeRealtime(){
         })
         .on("postgres_changes",{event:"*",schema:"public",table:"vehicles"},scheduleRealtimeReload)
         .on("postgres_changes",{event:"*",schema:"public",table:"consists"},scheduleRealtimeReload)
+        .on("postgres_changes",{event:"*",schema:"public",table:"global_info"},async()=>{
+            await loadGlobalInfo();
+        })
         .subscribe(status=>{
             if(status==="SUBSCRIBED"){
                 stopRealtimeFallback();
