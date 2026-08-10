@@ -2121,11 +2121,24 @@ header{
     font-weight:800!important;
 }
 
-body:not(.is-admin) .library-edit-button{
+.library-delete-button{
+    flex:0 0 auto;
+    min-height:28px;
+    padding:6px 9px!important;
+    border-radius:6px!important;
+    background:#b91c1c!important;
+    color:#fff!important;
+    font-size:10px!important;
+    font-weight:800!important;
+}
+
+body:not(.is-admin) .library-edit-button,
+body:not(.is-admin) .library-delete-button{
     display:none!important;
 }
 
-body.is-admin:not(.admin-edit-enabled) .library-edit-button{
+body.is-admin:not(.admin-edit-enabled) .library-edit-button,
+body.is-admin:not(.admin-edit-enabled) .library-delete-button{
     display:none!important;
 }
 
@@ -2701,6 +2714,18 @@ body.sidebar-collapsed .collapsed-library-title{
     margin-top:8px;
 }
 .vev-sync-row button{flex:1}
+.toolbar-quick-actions{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    flex:0 0 auto;
+}
+.toolbar-quick-actions .vev-sync-row{
+    margin:0;
+    display:inline-flex;
+    gap:6px;
+}
+.toolbar-quick-actions .vev-sync-row button{flex:0 0 auto}
 .vev-sync-note{
     margin:7px 0 0;
     color:var(--muted,#64748b);
@@ -2724,6 +2749,7 @@ body.sidebar-collapsed .collapsed-library-title{
 }
 .vev-sync-state.connected::before{background:#22c55e}
 .vev-sync-state.error::before{background:#ef4444}
+#vevSyncState[hidden]{display:none!important}
 .vev-sync-summary{
     padding:10px 12px;
     border:1px solid rgba(148,163,184,.35);
@@ -3078,17 +3104,6 @@ body.role-viewer #clearSelectionButton{
 
         </div>
 
-        <div class="vev-sync-row write-only admin-only">
-            <button type="button" onclick="startVevSync()">
-                ↻ Virtuelle EVU
-            </button>
-            <button class="secondary" type="button" onclick="disconnectVev()" title="VEV-Verbindung auf diesem Gerät trennen">
-                Trennen
-            </button>
-        </div>
-        <div id="vevSyncState" class="vev-sync-state">Nicht verbunden</div>
-        <p class="vev-sync-note">Übernimmt EETG und RailMotion Berlin in die Bibliothek Frankfurt-Griesheim. Bereits auf Gleisen platzierte Fahrzeuge bleiben unverändert.</p>
-
     </div>
 
 
@@ -3178,32 +3193,44 @@ body.role-viewer #clearSelectionButton{
             🔗 Zugverband bilden
         </button>
         <button class="write-only" onclick="dissolveSelectedConsist()">⛓ Verband auflösen</button>
-        <div class="history-dropdown" id="historyDropdown">
-            <button class="secondary" type="button" id="historyButton"
-                onclick="toggleHistoryDropdown(event)" aria-expanded="false">
-                📜 Historie ▾
-            </button>
-            <div class="history-dropdown-menu" id="historyDropdownMenu"
-                onclick="event.stopPropagation()">
-                <div class="history-empty">Lade Historie …</div>
+        <div class="toolbar-quick-actions">
+            <div class="statistics-dropdown" id="statisticsDropdown">
+                <button
+                    class="secondary"
+                    type="button"
+                    id="statisticsButton"
+                    onclick="toggleStatistics(event)"
+                    aria-expanded="false">
+                    📊 Statistik ▾
+                </button>
+                <div
+                    class="statistics-dropdown-menu"
+                    id="statisticsDropdownMenu"
+                    onclick="event.stopPropagation()">
+                </div>
             </div>
-        </div>
 
-        <div class="statistics-dropdown" id="statisticsDropdown">
-            <button
-                class="secondary"
-                type="button"
-                id="statisticsButton"
-                onclick="toggleStatistics(event)"
-                aria-expanded="false">
-                📊 Statistik ▾
-            </button>
-            <div
-                class="statistics-dropdown-menu"
-                id="statisticsDropdownMenu"
-                onclick="event.stopPropagation()">
+            <div class="history-dropdown" id="historyDropdown">
+                <button class="secondary" type="button" id="historyButton"
+                    onclick="toggleHistoryDropdown(event)" aria-expanded="false">
+                    📜 Historie ▾
+                </button>
+                <div class="history-dropdown-menu" id="historyDropdownMenu"
+                    onclick="event.stopPropagation()">
+                    <div class="history-empty">Lade Historie …</div>
+                </div>
+            </div>
+
+            <div class="vev-sync-row write-only admin-only">
+                <button type="button" onclick="startVevSync()" title="Fahrzeuge aus Virtuelle EVU synchronisieren">
+                    ↻ Virtuelle EVU
+                </button>
+                <button class="secondary" type="button" onclick="disconnectVev()" title="VEV-Verbindung auf diesem Gerät trennen">
+                    Trennen
+                </button>
             </div>
         </div>
+        <div id="vevSyncState" class="vev-sync-state" hidden>Nicht verbunden</div>
         
 
         <button
@@ -5860,6 +5887,36 @@ async function removeSelected() {
     hideContextMenu();
 }
 
+async function deleteLibraryVehicle(vehicleId) {
+    if (!enforceEditMode()) return;
+
+    const vehicle = vehicles.find(v => v.id === String(vehicleId));
+    if (!vehicle) return;
+
+    if (vehicle.track != null) {
+        alert("Dieses Fahrzeug steht auf einem Gleis. Ziehe es zuerst zurück in die Fahrzeugbibliothek.");
+        return;
+    }
+
+    if (!confirm(`Fahrzeug „${vehicle.number}“ wirklich dauerhaft aus der Fahrzeugbibliothek löschen?`)) {
+        return;
+    }
+
+    const { error } = await window.eetgSupabase
+        .from("vehicles")
+        .delete()
+        .eq("id", Number(vehicle.id));
+
+    if (error) {
+        console.error(error);
+        showSupabaseError("Fahrzeug konnte nicht aus der Fahrzeugbibliothek gelöscht werden.", error);
+        return;
+    }
+
+    if (selectedVehicle === vehicle.id) selectedVehicle = null;
+    await loadPlan();
+}
+
 function openVehicleModal() {
     if (!enforceAdminPermission()) return;
     document.getElementById("vehicleModal").classList.add("active");
@@ -6240,6 +6297,19 @@ function createLibraryVehicleCard(vehicle) {
     });
 
     editRow.appendChild(editButton);
+
+    if (vehicle.track == null) {
+        const deleteButton = document.createElement("button");
+        deleteButton.type = "button";
+        deleteButton.className = "library-delete-button";
+        deleteButton.textContent = "🗑 Löschen";
+        deleteButton.title = "Fahrzeug dauerhaft aus der Fahrzeugbibliothek löschen";
+        deleteButton.addEventListener("click", event => {
+            event.stopPropagation();
+            deleteLibraryVehicle(vehicle.id);
+        });
+        editRow.appendChild(deleteButton);
+    }
 
     const historyButton=document.createElement("button");
     historyButton.type="button";
