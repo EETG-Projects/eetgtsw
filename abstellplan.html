@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Digitaler Abstellplan</title>
+<title>Abstellplan | EETG</title>
+<link rel="stylesheet" href="./assets/css/style.css">
 
 <style>
 * {
@@ -2393,15 +2394,362 @@ body.dark .area-title{
 .history-entry{padding:9px 10px;margin-bottom:7px;border:1px solid var(--border);border-radius:8px;background:var(--panel2)}
 .history-entry-main{font-size:11px;font-weight:800}.history-entry-meta{margin-top:4px;font-size:9px;color:var(--muted)}
 .history-empty{padding:14px;text-align:center;color:var(--muted);font-size:11px}
-.library-history-button{
-    flex:1;min-height:28px;padding:6px 8px!important;border-radius:6px!important;
-    background:#5d646b!important;color:#fff!important;font-size:10px!important;font-weight:800!important
+
+
+/* =========================================================
+   EETG INDEX-LAYOUT
+   Optische Anpassung an die Hauptseite / assets/css/style.css
+========================================================= */
+:root{
+    --eetg-red:#b5121b;
+    --eetg-red-dark:#951017;
+    --eetg-ink:#181b1f;
+    --eetg-text:#20252a;
+    --eetg-muted:#69727b;
+    --eetg-line:#dfe3e6;
+    --eetg-paper:#ffffff;
+    --eetg-soft:#f4f6f7;
 }
-.history-modal-list{max-height:520px;overflow:auto;display:grid;gap:7px;margin-top:12px}
-.history-filter-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
-.history-filter-row input{
-    flex:1;min-width:0;padding:8px 10px;border:1px solid var(--border);border-radius:7px;
-    background:var(--panel2);color:var(--text)
+
+/* Grundtypografie wie Hauptseite */
+body{
+    font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Arial,sans-serif!important;
+    background:#f4f6f7;
+}
+
+/* Hauptnavigation */
+.eetg-plan-header{
+    height:66px!important;
+    min-height:66px!important;
+    flex:0 0 66px!important;
+    padding:0!important;
+    background:#fff!important;
+    border-bottom:1px solid var(--eetg-line)!important;
+    box-shadow:0 2px 14px rgba(24,27,31,.055)!important;
+}
+
+.eetg-plan-header .nav{
+    width:min(1380px,calc(100% - 32px));
+    height:100%;
+    margin:0 auto;
+    display:flex;
+    align-items:center;
+    gap:24px;
+}
+
+.eetg-plan-header .brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex:0 0 auto;
+    color:var(--eetg-ink);
+    text-decoration:none;
+}
+
+.eetg-plan-header .brand img{
+    width:72px;
+    max-height:48px;
+    object-fit:contain;
+}
+
+.eetg-plan-header .brand-text{
+    display:flex;
+    flex-direction:column;
+    font-size:16px;
+    line-height:1;
+    font-weight:900;
+    letter-spacing:.01em;
+}
+
+.eetg-plan-header .brand-text small{
+    margin-top:4px;
+    color:var(--eetg-muted);
+    font-size:8px;
+    font-weight:800;
+    letter-spacing:.08em;
+    white-space:nowrap;
+}
+
+.eetg-plan-header .nav-links{
+    display:flex;
+    align-items:center;
+    gap:4px;
+    margin-left:18px;
+}
+
+.eetg-plan-header .nav-links a{
+    position:relative;
+    padding:10px 12px;
+    border-radius:8px;
+    color:#3a4046;
+    text-decoration:none;
+    font-size:12px;
+    font-weight:800;
+}
+
+.eetg-plan-header .nav-links a:hover{
+    background:#f4f6f7;
+    color:var(--eetg-red);
+}
+
+.eetg-plan-header .nav-links a.active{
+    color:var(--eetg-red);
+    background:#fff1f2;
+}
+
+.eetg-plan-header .nav-links a.active::after{
+    content:"";
+    position:absolute;
+    left:12px;
+    right:12px;
+    bottom:4px;
+    height:2px;
+    border-radius:999px;
+    background:var(--eetg-red);
+}
+
+.eetg-plan-header .nav-actions{
+    margin-left:auto;
+    display:flex;
+    align-items:center;
+    gap:8px;
+}
+
+.plan-user{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    color:var(--eetg-muted);
+    font-size:11px;
+}
+
+.role-badge{
+    background:#eef1f3!important;
+    color:#333a40!important;
+    border:1px solid #dfe3e6;
+    padding:4px 7px!important;
+    border-radius:999px!important;
+}
+
+/* Hauptseiten-CTA */
+.plan-logout,
+button:not(.secondary):not(.danger){
+    border-radius:9px;
+}
+
+.plan-logout{
+    background:var(--eetg-red)!important;
+    color:#fff!important;
+    font-weight:800!important;
+    padding:9px 13px!important;
+}
+
+/* Legende als saubere Unterleiste */
+.eetg-plan-subbar{
+    margin:0!important;
+    min-height:38px;
+    padding:0 max(20px,calc((100vw - 1380px)/2))!important;
+    display:flex;
+    align-items:center;
+    gap:15px;
+    border:0!important;
+    border-bottom:1px solid var(--eetg-line)!important;
+    border-radius:0!important;
+    background:#fff!important;
+    box-shadow:none!important;
+    color:var(--eetg-text)!important;
+}
+
+.eetg-plan-subbar strong{
+    color:var(--eetg-red)!important;
+}
+
+/* App unter der Website-Navigation */
+.app{
+    height:calc(100vh - 104px)!important;
+    background:#f4f6f7;
+}
+
+/* Fahrzeugbibliothek wie eine helle Seitenkarte */
+.sidebar{
+    background:#fff!important;
+    border-right:1px solid var(--eetg-line)!important;
+    box-shadow:4px 0 18px rgba(24,27,31,.035);
+}
+
+.sidebar-section{
+    border-color:var(--eetg-line)!important;
+}
+
+.sidebar-title{
+    color:var(--eetg-ink);
+    font-weight:900!important;
+}
+
+.library-search input,
+.location-select,
+input,
+select,
+textarea{
+    border:1px solid var(--eetg-line)!important;
+    border-radius:9px!important;
+    background:#fff;
+}
+
+/* Arbeitsleiste */
+.workspace-toolbar{
+    height:52px!important;
+    flex:0 0 52px!important;
+    background:#fff!important;
+    border-bottom:1px solid var(--eetg-line)!important;
+    box-shadow:0 3px 12px rgba(24,27,31,.025);
+}
+
+/* Hauptflächen */
+.workspace,
+.plan-container{
+    background-color:#f4f6f7;
+}
+
+/* Gleise und Fahrzeuggruppen als EETG-Karten */
+.track{
+    background:#fff!important;
+    border:1px solid var(--eetg-line)!important;
+    border-radius:14px!important;
+    box-shadow:0 8px 24px rgba(24,27,31,.055)!important;
+}
+
+.vehicle-category{
+    border:1px solid var(--eetg-line)!important;
+    border-radius:11px!important;
+    background:#fff!important;
+}
+
+.vehicle-category-header{
+    background:#f7f8f9!important;
+    color:var(--eetg-ink)!important;
+}
+
+.library-item{
+    border-color:var(--eetg-line)!important;
+    border-radius:10px!important;
+    background:#fff!important;
+}
+
+/* zentrale Datenbank wie Footer-Karte */
+.database-section{
+    background:#fff!important;
+    border-top:1px solid var(--eetg-line)!important;
+}
+
+/* Standardbuttons an die Index-Seite angleichen */
+button{
+    border-radius:8px!important;
+    font-family:inherit!important;
+    font-weight:800!important;
+}
+
+button:not(.secondary):not(.danger):not(.library-status-current):not(.library-status-option):not(.vehicle-status-current):not(.vehicle-status-option){
+    background:var(--eetg-red)!important;
+    color:#fff!important;
+}
+
+button.secondary,
+.secondary-btn,
+.track-edit-btn,
+.track-length-btn,
+.track-drag-handle{
+    background:#343a40!important;
+    color:#fff!important;
+}
+
+button.danger,
+.track-delete-btn{
+    background:#b5121b!important;
+    color:#fff!important;
+}
+
+/* Dialoge im Stil der Hauptseite */
+.modal{
+    background:rgba(17,24,32,.48)!important;
+    backdrop-filter:blur(2px);
+}
+
+.modal-box,
+.db-error-box{
+    background:#fff!important;
+    color:var(--eetg-text)!important;
+    border:1px solid var(--eetg-line)!important;
+    border-radius:16px!important;
+    box-shadow:0 24px 70px rgba(0,0,0,.2)!important;
+}
+
+/* Dropdowns */
+.statistics-dropdown-menu,
+.history-dropdown-menu,
+.library-status-palette{
+    border:1px solid var(--eetg-line)!important;
+    border-radius:12px!important;
+    background:#fff!important;
+    box-shadow:0 16px 40px rgba(24,27,31,.16)!important;
+}
+
+/* DARKMODE erhält die Struktur, aber wird in EETG-Dunkel umgesetzt */
+body.dark .eetg-plan-header,
+body.dark .eetg-plan-subbar,
+body.dark .sidebar,
+body.dark .workspace-toolbar,
+body.dark .database-section{
+    background:#151a1f!important;
+    border-color:#30363d!important;
+}
+
+body.dark .eetg-plan-header .brand,
+body.dark .sidebar-title,
+body.dark .eetg-plan-header .nav-links a{
+    color:#f4f6f7!important;
+}
+
+body.dark .eetg-plan-header .brand-text small,
+body.dark .plan-user{
+    color:#9ba4ad!important;
+}
+
+body.dark .eetg-plan-header .nav-links a:hover,
+body.dark .eetg-plan-header .nav-links a.active{
+    background:#26191b!important;
+    color:#ef5a61!important;
+}
+
+body.dark .track,
+body.dark .vehicle-category,
+body.dark .library-item,
+body.dark .modal-box,
+body.dark .db-error-box,
+body.dark .statistics-dropdown-menu,
+body.dark .history-dropdown-menu{
+    background:#1b2025!important;
+    color:#f4f6f7!important;
+    border-color:#343b42!important;
+}
+
+body.dark .vehicle-category-header{
+    background:#20262c!important;
+    color:#f4f6f7!important;
+}
+
+/* Kleine Displays: Navigation kompakt halten */
+@media(max-width:1100px){
+    .eetg-plan-header .brand-text small{display:none}
+    .eetg-plan-header .nav-links{display:none}
+    .eetg-plan-header .brand img{width:58px}
+}
+
+@media(max-width:760px){
+    .eetg-plan-header .nav{width:calc(100% - 18px)}
+    .plan-user{display:none}
+    .admin-edit-toggle{display:none}
+    .eetg-plan-subbar{overflow-x:auto;white-space:nowrap;padding:0 10px!important}
 }
 
 </style>
@@ -2410,26 +2758,50 @@ body.dark .area-title{
 
 <body>
 
-<header>
+<header class="header eetg-plan-header">
+    <div class="container nav">
+        <a class="brand" href="index.html" aria-label="EETG Startseite">
+            <img src="./assets/img/eetg-logo.png" alt="EETG Logo">
+            <span class="brand-text">
+                EETG
+                <small>ERFURTER EISENBAHN TRANSPORT GESELLSCHAFT</small>
+            </span>
+        </a>
 
-    <div class="logo">
-        🚆 Digitaler Abstellplan
+        <nav class="nav-links" aria-label="Hauptnavigation">
+            <a href="index.html">Startseite</a>
+            <a href="fuhrpark.html">Fahrzeugfuhrpark</a>
+            <a class="active" href="abstellplan.html">Abstellplan</a>
+        </nav>
+
+        <div class="nav-actions user-box">
+            <div class="plan-user">
+                <span id="userName">–</span>
+                <span class="role-badge" id="userRole">–</span>
+            </div>
+
+            <label class="admin-edit-toggle" title="Änderungen am Abstellplan freigeben">
+                <input id="adminEditToggle" type="checkbox" onchange="setAdminEditMode(this.checked)">
+                <span>Bearbeiten</span>
+                <span class="admin-edit-state" id="adminEditState">Gesperrt</span>
+            </label>
+
+            <button
+                class="secondary theme-toggle"
+                id="themeToggle"
+                type="button"
+                onclick="toggleTheme()"
+                aria-label="White/Darkmode wechseln">
+                🌙 Dark
+            </button>
+
+            <button class="cta plan-logout" type="button" onclick="logout()">
+                Abmelden
+            </button>
+        </div>
     </div>
-
-    <div class="user-box">
-        <span id="userName">–</span>
-        <span class="role-badge" id="userRole">–</span>
-        <label class="admin-edit-toggle" title="Änderungen am Abstellplan freigeben">
-            <input id="adminEditToggle" type="checkbox" onchange="setAdminEditMode(this.checked)">
-            <span>Bearbeiten</span>
-            <span class="admin-edit-state" id="adminEditState">Gesperrt</span>
-        </label>
-        <button class="secondary theme-toggle" id="themeToggle" type="button" onclick="toggleTheme()" aria-label="White/Darkmode wechseln">🌙 Dark</button>
-        <button class="secondary" onclick="logout()">Abmelden</button>
-    </div>
-
 </header>
-<div class="status-legend" aria-label="Legende Fahrzeugstatus">
+<div class="status-legend eetg-plan-subbar" aria-label="Legende Fahrzeugstatus">
     <strong>Legende:</strong>
     <span class="legend-item"><span class="legend-dot legend-einsatzbereit"></span>Einsatzbereit</span>
     <span class="legend-item"><span class="legend-dot legend-unterwegs"></span>Unterwegs</span>
@@ -2602,26 +2974,6 @@ body.dark .area-title{
 
 </div>
 
-
-<!-- =====================================================
-     VEHICLE HISTORY MODAL
-===================================================== -->
-<div class="modal" id="vehicleHistoryModal">
-    <div class="modal-box" style="width:min(720px,calc(100% - 30px))">
-        <h2 id="vehicleHistoryTitle">Fahrzeughistorie</h2>
-        <div class="history-filter-row">
-            <input id="vehicleHistorySearch" placeholder="Historie filtern …"
-                oninput="filterVehicleHistory()">
-            <button class="secondary" type="button" onclick="loadVehicleHistoryModal()">↻</button>
-        </div>
-        <div id="vehicleHistoryList" class="history-modal-list">
-            <div class="history-empty">Lade Historie …</div>
-        </div>
-        <div class="modal-buttons">
-            <button class="secondary" type="button" onclick="closeVehicleHistoryModal()">Schließen</button>
-        </div>
-    </div>
-</div>
 
 <!-- =====================================================
      VEHICLE MODAL
@@ -3022,6 +3374,8 @@ let selectedVehicle = null;
 let currentUser = null;
 let currentRole = "viewer";
 let realtimeChannel = null;
+let historyRealtimeChannel = null;
+let realtimeFallbackTimer = null;
 let locations = [];
 let areas = [];
 let currentLocationId = null;
@@ -3031,8 +3385,6 @@ let consists = [];
 let statisticsOpen = false;
 let realtimeReloadTimer = null;
 let historyDropdownOpen = false;
-let currentVehicleHistoryId = null;
-let currentVehicleHistoryRows = [];
 
 let globalSearchQuery = "";
 const collapsedCategories = new Set();
@@ -3513,37 +3865,6 @@ async function loadHistoryDropdown(){
     menu.innerHTML=`<h3>📜 Standort-Historie</h3>${
         rows.length?rows.map(historyRowHtml).join(""):'<div class="history-empty">Noch keine Änderungen protokolliert.</div>'
     }`;
-}
-async function openVehicleHistoryModal(vehicleId){
-    const vehicle=vehicles.find(v=>String(v.id)===String(vehicleId));if(!vehicle)return;
-    currentVehicleHistoryId=String(vehicleId);
-    document.getElementById("vehicleHistoryTitle").textContent=`Historie · ${vehicle.number}`;
-    document.getElementById("vehicleHistorySearch").value="";
-    document.getElementById("vehicleHistoryModal").classList.add("active");
-    await loadVehicleHistoryModal();
-}
-function closeVehicleHistoryModal(){
-    currentVehicleHistoryId=null;currentVehicleHistoryRows=[];
-    document.getElementById("vehicleHistoryModal").classList.remove("active");
-}
-async function loadVehicleHistoryModal(){
-    if(!currentVehicleHistoryId)return;
-    const list=document.getElementById("vehicleHistoryList");
-    list.innerHTML='<div class="history-empty">Lade Historie …</div>';
-    const {data,error}=await window.eetgSupabase.from("vehicle_history").select("*")
-        .eq("vehicle_id",Number(currentVehicleHistoryId)).order("created_at",{ascending:false}).limit(200);
-    if(error){list.innerHTML='<div class="history-empty">Historie konnte nicht geladen werden.</div>';console.error(error);return}
-    currentVehicleHistoryRows=data||[];renderVehicleHistoryRows(currentVehicleHistoryRows);
-}
-function renderVehicleHistoryRows(rows){
-    const list=document.getElementById("vehicleHistoryList");if(!list)return;
-    list.innerHTML=rows.length?rows.map(historyRowHtml).join(""):'<div class="history-empty">Noch keine Historie vorhanden.</div>';
-}
-function filterVehicleHistory(){
-    const q=document.getElementById("vehicleHistorySearch").value.trim().toLowerCase();
-    renderVehicleHistoryRows(!q?currentVehicleHistoryRows:currentVehicleHistoryRows.filter(r=>
-        `${r.action||""} ${r.description||""} ${r.username||""}`.toLowerCase().includes(q)
-    ));
 }
 document.addEventListener("click",event=>{
     const d=document.getElementById("historyDropdown");
@@ -5329,21 +5650,178 @@ function escapeHtml(text) {
         .replace(/'/g, "&#039;");
 }
 
-function subscribeRealtime() {
- if(realtimeChannel)window.eetgSupabase.removeChannel(realtimeChannel);
- const state=document.getElementById("realtimeState"),txt=document.getElementById("realtimeText");
- realtimeChannel=window.eetgSupabase.channel("eetg-abstellplan-live")
- .on("postgres_changes",{event:"*",schema:"public",table:"locations"},async()=>{await loadLocations();scheduleRealtimeReload()})
- .on("postgres_changes",{event:"*",schema:"public",table:"areas"},()=>{if(!activeAreaDrag&&!activeAreaResize)scheduleRealtimeReload()})
- .on("postgres_changes",{event:"*",schema:"public",table:"tracks"},()=>{if(!activeTrackDrag)scheduleRealtimeReload()})
- .on("postgres_changes",{event:"*",schema:"public",table:"vehicles"},scheduleRealtimeReload)
- .on("postgres_changes",{event:"*",schema:"public",table:"consists"},scheduleRealtimeReload)
- .on("postgres_changes",{event:"*",schema:"public",table:"vehicle_history"},async()=>{
-    if(historyDropdownOpen)await loadHistoryDropdown();
-    if(currentVehicleHistoryId)await loadVehicleHistoryModal();
- })
- .subscribe(status=>{if(!state||!txt)return;state.classList.remove("live","error");if(status==="SUBSCRIBED"){state.classList.add("live");txt.textContent="Live"}else if(status==="CHANNEL_ERROR"||status==="TIMED_OUT"){state.classList.add("error");txt.textContent="Verbindung gestört"}else txt.textContent="Synchronisiere …"});
+async function manualRefresh(){
+    await loadLocations();
+    await loadPlan();
+
+    /*
+     * Bei manueller Aktualisierung wird auch die Realtime-Verbindung
+     * sauber neu aufgebaut.
+     */
+    subscribeRealtime();
 }
+
+function setRealtimeStatus(mode, textValue){
+    const state = document.getElementById("realtimeState");
+    const text = document.getElementById("realtimeText");
+
+    if(!state || !text) return;
+
+    state.classList.remove("live","error");
+
+    if(mode === "live"){
+        state.classList.add("live");
+    }else if(mode === "error"){
+        state.classList.add("error");
+    }
+
+    text.textContent = textValue;
+}
+
+function startRealtimeFallback(){
+    if(realtimeFallbackTimer) return;
+
+    /*
+     * Fallback: Falls Supabase Realtime einmal keine Verbindung bekommt,
+     * wird der aktuelle Standort trotzdem regelmäßig synchronisiert.
+     */
+    realtimeFallbackTimer = setInterval(async () => {
+        if(document.hidden) return;
+        if(activeTrackDrag || activeAreaDrag || activeAreaResize) return;
+
+        try{
+            await loadPlan();
+        }catch(error){
+            console.warn("Fallback-Synchronisierung fehlgeschlagen:", error);
+        }
+    }, 15000);
+}
+
+function stopRealtimeFallback(){
+    if(!realtimeFallbackTimer) return;
+
+    clearInterval(realtimeFallbackTimer);
+    realtimeFallbackTimer = null;
+}
+
+function subscribeRealtime() {
+    /*
+     * Hauptdaten und Historie laufen absichtlich in getrennten Channels.
+     * Dadurch kann ein Problem mit vehicle_history nicht mehr die
+     * komplette Gleis-/Fahrzeug-Synchronisierung abschalten.
+     */
+    if(realtimeChannel){
+        window.eetgSupabase.removeChannel(realtimeChannel);
+        realtimeChannel = null;
+    }
+
+    if(historyRealtimeChannel){
+        window.eetgSupabase.removeChannel(historyRealtimeChannel);
+        historyRealtimeChannel = null;
+    }
+
+    setRealtimeStatus("pending", "Synchronisiere …");
+
+    realtimeChannel = window.eetgSupabase
+        .channel("eetg-abstellplan-live-main")
+        .on("postgres_changes",
+            {event:"*",schema:"public",table:"locations"},
+            async () => {
+                await loadLocations();
+                scheduleRealtimeReload();
+            }
+        )
+        .on("postgres_changes",
+            {event:"*",schema:"public",table:"areas"},
+            () => {
+                if(!activeAreaDrag && !activeAreaResize){
+                    scheduleRealtimeReload();
+                }
+            }
+        )
+        .on("postgres_changes",
+            {event:"*",schema:"public",table:"tracks"},
+            () => {
+                if(!activeTrackDrag){
+                    scheduleRealtimeReload();
+                }
+            }
+        )
+        .on("postgres_changes",
+            {event:"*",schema:"public",table:"vehicles"},
+            scheduleRealtimeReload
+        )
+        .on("postgres_changes",
+            {event:"*",schema:"public",table:"consists"},
+            scheduleRealtimeReload
+        )
+        .subscribe(status => {
+            if(status === "SUBSCRIBED"){
+                stopRealtimeFallback();
+                setRealtimeStatus("live", "Live");
+                return;
+            }
+
+            if(
+                status === "CHANNEL_ERROR" ||
+                status === "TIMED_OUT" ||
+                status === "CLOSED"
+            ){
+                /*
+                 * Der Plan bleibt nutzbar und lädt als Fallback alle
+                 * 15 Sekunden neu. Kein kompletter Ausfall mehr.
+                 */
+                setRealtimeStatus("error", "Fallback aktiv");
+                startRealtimeFallback();
+                console.warn("Supabase Realtime Hauptkanal:", status);
+                return;
+            }
+
+            setRealtimeStatus("pending", "Synchronisiere …");
+        });
+
+    /*
+     * Historien-Realtime ist optional. Ein Fehler hier beeinflusst
+     * den Hauptkanal nicht.
+     */
+    historyRealtimeChannel = window.eetgSupabase
+        .channel("eetg-abstellplan-live-history")
+        .on("postgres_changes",
+            {event:"*",schema:"public",table:"vehicle_history"},
+            async () => {
+                if(historyDropdownOpen){
+                    await loadHistoryDropdown();
+                }
+
+                if(currentVehicleHistoryId){
+                    await loadVehicleHistoryModal();
+                }
+            }
+        )
+        .subscribe(status => {
+            if(
+                status === "CHANNEL_ERROR" ||
+                status === "TIMED_OUT"
+            ){
+                console.warn(
+                    "Historien-Realtime ist nicht verfügbar. " +
+                    "Die Hauptsynchronisierung läuft weiter."
+                );
+            }
+        });
+}
+
+window.addEventListener("beforeunload", () => {
+    stopRealtimeFallback();
+
+    if(realtimeChannel){
+        window.eetgSupabase.removeChannel(realtimeChannel);
+    }
+
+    if(historyRealtimeChannel){
+        window.eetgSupabase.removeChannel(historyRealtimeChannel);
+    }
+});
 
 (async function init() {
     loadTheme();
