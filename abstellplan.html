@@ -2393,6 +2393,317 @@ body.dark .area-title{
 .history-entry{padding:9px 10px;margin-bottom:7px;border:1px solid var(--border);border-radius:8px;background:var(--panel2)}
 .history-entry-main{font-size:11px;font-weight:800}.history-entry-meta{margin-top:4px;font-size:9px;color:var(--muted)}
 .history-empty{padding:14px;text-align:center;color:var(--muted);font-size:11px}
+
+/* =========================================================
+   UI CLEANUP – LEGENDE / DATENBANK / HISTORIE
+========================================================= */
+
+/* Legende über die komplette horizontale Breite */
+.status-legend{
+    width:100%!important;
+    max-width:none!important;
+    margin:0!important;
+    padding:10px 20px!important;
+    border-left:0!important;
+    border-right:0!important;
+    border-radius:0!important;
+    box-shadow:none!important;
+}
+
+/* Zentrale Datenbank: nur noch Live-Anzeige */
+.database-section{
+    padding:10px 12px 12px!important;
+}
+
+.database-live-row{
+    display:flex;
+    align-items:center;
+    min-height:32px;
+}
+
+.database-live-row .realtime-state{
+    display:inline-flex!important;
+    margin:0!important;
+}
+
+/* Kein fahrzeugbezogener Historie-Button mehr */
+.library-history-button{
+    display:none!important;
+}
+
+
+/* Standortverwaltung für Admins */
+.location-toolbar .danger{
+    background:#c91420!important;
+    color:#fff!important;
+}
+
+/* =========================================================
+   GLEISBILD-OPTIK NACH KLASSISCHEM STELLWERKS-/GLEISPLAN
+========================================================= */
+
+:root{
+    --diagram-bg:#cfcfcf;
+    --diagram-track:#181818;
+    --diagram-sleeper:#4a4a4a;
+    --diagram-label:#ededed;
+    --diagram-label-border:#8b8b8b;
+}
+
+/* Arbeitsfläche wie beim klassischen Gleisbild */
+.plan-container{
+    background:
+        linear-gradient(#cfcfcf,#cfcfcf)!important;
+    background-color:var(--diagram-bg)!important;
+}
+
+/* Bereiche bleiben sichtbar, aber dezent im Hintergrund */
+.area{
+    opacity:.58;
+}
+
+/* Der bisherige Karten-Look der Gleise wird zu einem flachen Gleisbild */
+.track{
+    min-height:190px!important;
+    background:transparent!important;
+    border:0!important;
+    border-radius:0!important;
+    box-shadow:none!important;
+    overflow:visible!important;
+}
+
+/* Gleisbezeichnung wie Beschriftungsplakette im Vorbild */
+.track-title-box{
+    left:5px!important;
+    top:18px!important;
+    width:68px!important;
+    text-align:center!important;
+}
+
+.track-title{
+    display:inline-block;
+    min-width:54px;
+    padding:3px 5px;
+    background:var(--diagram-label);
+    color:#111!important;
+    border:1px solid var(--diagram-label-border);
+    border-radius:0!important;
+    font-size:12px!important;
+    font-weight:900!important;
+    line-height:1.05!important;
+    box-shadow:none!important;
+}
+
+.track-length-label{
+    margin-top:3px!important;
+    color:#555!important;
+    font-size:8px!important;
+    font-weight:700!important;
+}
+
+.track-capacity{
+    color:#444!important;
+    font-size:8px!important;
+    line-height:1.15!important;
+}
+
+.track-capacity.warning{color:#9a5a00!important}
+.track-capacity.full{color:#b00000!important}
+
+/* Eine einzelne schematische Gleisachse mit Schwellen */
+.track-line{
+    left:80px!important;
+    right:30px!important;
+    top:72px!important;
+    height:5px!important;
+    border-radius:0!important;
+
+    background:
+        repeating-linear-gradient(
+            90deg,
+            var(--diagram-track) 0 7px,
+            transparent 7px 11px
+        )!important;
+
+    border-top:2px solid var(--diagram-track);
+    border-bottom:2px solid var(--diagram-track);
+    z-index:3!important;
+}
+
+/* alte Doppel-Schienen ausblenden */
+.track-line::before,
+.track-line::after{
+    display:none!important;
+}
+
+/* Skala kompakt über dem Gleis wie technische Gleisnummern */
+.scale{
+    top:39px!important;
+    height:22px!important;
+}
+
+.scale-mark{
+    color:#666!important;
+    border-left-color:#666!important;
+    font-size:8px!important;
+}
+
+.scale-mark.scale-major{
+    color:#111!important;
+    border-left:2px solid #111!important;
+    font-size:9px!important;
+    font-weight:900!important;
+}
+
+/* Kleine Zustands-/Belegtmelder an beiden Gleisenden */
+.gleisbild-signal{
+    position:absolute;
+    top:66px;
+    width:12px;
+    height:12px;
+    border:2px solid #111;
+    border-radius:50%;
+    z-index:15;
+    box-shadow:0 0 0 1px rgba(255,255,255,.4);
+}
+
+.gleisbild-signal-left{left:72px}
+.gleisbild-signal-right{right:22px}
+
+.gleisbild-signal.clear{background:#29b24a}
+.gleisbild-signal.occupied{background:#e31b23}
+
+/* Kleine quadratische Markierung neben dem Signal */
+.gleisbild-signal::after{
+    content:"";
+    position:absolute;
+    width:5px;
+    height:5px;
+    top:2px;
+    background:#efefef;
+    border:1px solid #222;
+}
+
+.gleisbild-signal-left::after{left:-9px}
+.gleisbild-signal-right::after{right:-9px}
+
+/* Fahrzeuge als kompakte Belegt-/Zugnummernfelder */
+.vehicle-wrap{
+    top:55px!important;
+    z-index:20!important;
+}
+
+.vehicle-wrap .vehicle{
+    height:31px!important;
+    min-height:31px!important;
+    border-radius:2px!important;
+    border-width:1px!important;
+    font-size:9px!important;
+    box-shadow:0 2px 4px rgba(0,0,0,.25)!important;
+}
+
+.consist-badge{
+    top:-15px!important;
+    border-radius:0!important;
+    font-size:7px!important;
+}
+
+/* Notiz liegt klar unter dem eigentlichen Gleisbild */
+.track-note-wrap{
+    left:80px!important;
+    right:30px!important;
+    top:105px!important;
+    z-index:10!important;
+}
+
+.track-note-label{
+    color:#444!important;
+    font-size:8px!important;
+}
+
+.track-note{
+    min-height:38px!important;
+    max-height:58px!important;
+    border-radius:2px!important;
+    background:rgba(245,245,245,.8)!important;
+    border:1px solid #aaa!important;
+    color:#151515!important;
+    font-size:10px!important;
+}
+
+/* Adminleiste unterhalb des Gleisschemas */
+.track-admin-actions{
+    top:157px!important;
+    left:80px!important;
+    z-index:35!important;
+}
+
+.track-admin-actions button{
+    border-radius:2px!important;
+    font-size:9px!important;
+    padding:5px 8px!important;
+}
+
+/* Hover-/Suchmarkierungen sollen weiterhin deutlich sein */
+.track.search-highlight{
+    background:rgba(255,230,75,.28)!important;
+    outline:2px solid rgba(184,145,0,.7)!important;
+}
+
+.track.capacity-warning,
+.track.capacity-full{
+    box-shadow:none!important;
+}
+
+/* Fahrzeugbibliothek leicht technischer */
+.vehicle-category,
+.library-item{
+    border-radius:2px!important;
+}
+
+.vehicle-category-header{
+    border-radius:0!important;
+}
+
+/* Darkmode: klassisches dunkles Stellwerksbild */
+body.dark .plan-container{
+    background:#24282b!important;
+}
+
+body.dark{
+    --diagram-track:#d6d6d6;
+    --diagram-sleeper:#9aa0a6;
+    --diagram-label:#383d42;
+    --diagram-label-border:#70777d;
+}
+
+body.dark .track-title{
+    color:#fff!important;
+    background:#383d42!important;
+}
+
+body.dark .track-length-label,
+body.dark .track-capacity,
+body.dark .track-note-label{
+    color:#b8bec4!important;
+}
+
+body.dark .scale-mark{
+    color:#9ba2a8!important;
+    border-left-color:#8c9399!important;
+}
+
+body.dark .scale-mark.scale-major{
+    color:#fff!important;
+    border-left-color:#fff!important;
+}
+
+body.dark .track-note{
+    background:#30363b!important;
+    border-color:#666f77!important;
+    color:#fff!important;
+}
+
 </style>
 </head>
 
@@ -2486,16 +2797,11 @@ body.dark .area-title{
             Zentrale Datenbank
         </div>
 
-        <div class="button-row">
-
-            <button onclick="manualRefresh()">
-                ↻ Aktualisieren
-            </button>
-
-            <button class="secondary write-only" onclick="savePlan()">
-                💾 Alles speichern
-            </button>
-
+        <div class="database-live-row">
+            <span class="realtime-state" id="realtimeState">
+                <span class="realtime-dot"></span>
+                <span id="realtimeText">Synchronisiere …</span>
+            </span>
         </div>
 
     </div>
@@ -2522,6 +2828,20 @@ body.dark .area-title{
                 type="button"
                 onclick="openLocationModal()">
                 + Standort
+            </button>
+
+            <button
+                class="secondary admin-only location-admin-btn"
+                type="button"
+                onclick="openLocationEditModal()">
+                ✏ Standort
+            </button>
+
+            <button
+                class="danger admin-only location-admin-btn"
+                type="button"
+                onclick="deleteCurrentLocation()">
+                🗑 Standort
             </button>
 
             <button
@@ -2562,7 +2882,7 @@ body.dark .area-title{
                 onclick="event.stopPropagation()">
             </div>
         </div>
-        <span class="realtime-state" id="realtimeState"><span class="realtime-dot"></span><span id="realtimeText">Synchronisiere …</span></span>
+        
 
         <button
             class="secondary"
@@ -2783,6 +3103,25 @@ body.dark .area-title{
         <div class="modal-buttons">
             <button class="secondary" type="button" onclick="closeModals()">Abbrechen</button>
             <button type="button" onclick="addLocation()">Hinzufügen</button>
+        </div>
+    </div>
+</div>
+
+<!-- =====================================================
+     LOCATION EDIT MODAL
+===================================================== -->
+<div class="modal" id="locationEditModal">
+    <div class="modal-box">
+        <h2>Standort bearbeiten</h2>
+
+        <div class="form-row">
+            <label>Standortname</label>
+            <input id="locationEditName" placeholder="Standortname">
+        </div>
+
+        <div class="modal-buttons">
+            <button class="secondary" type="button" onclick="closeModals()">Abbrechen</button>
+            <button type="button" onclick="saveLocationEdit()">Speichern</button>
         </div>
     </div>
 </div>
@@ -3592,6 +3931,18 @@ function renderPlan() {
 
         trackElement.appendChild(titleBox);
 
+        const occupied = vehicles.some(v => String(v.track) === String(track.id));
+
+        const leftSignal = document.createElement("div");
+        leftSignal.className = "gleisbild-signal gleisbild-signal-left " + (occupied ? "occupied" : "clear");
+        leftSignal.title = occupied ? "Gleis belegt" : "Gleis frei";
+        trackElement.appendChild(leftSignal);
+
+        const rightSignal = document.createElement("div");
+        rightSignal.className = "gleisbild-signal gleisbild-signal-right " + (occupied ? "occupied" : "clear");
+        rightSignal.title = occupied ? "Gleis belegt" : "Gleis frei";
+        trackElement.appendChild(rightSignal);
+
         const line = document.createElement("div");
         line.className = "track-line";
         trackElement.appendChild(line);
@@ -3941,6 +4292,105 @@ async function addLocation() {
     localStorage.setItem("eetg_location_id", currentLocationId);
     renderLocationSelect();
     await loadPlan();
+}
+
+function openLocationEditModal() {
+    if (!enforceEditMode()) return;
+
+    if (!currentLocationId) {
+        alert("Bitte zuerst einen Standort auswählen.");
+        return;
+    }
+
+    const location = locations.find(item => item.id === String(currentLocationId));
+    if (!location) {
+        alert("Der ausgewählte Standort wurde nicht gefunden.");
+        return;
+    }
+
+    document.getElementById("locationEditName").value = location.name || "";
+    document.getElementById("locationEditModal").classList.add("active");
+}
+
+async function saveLocationEdit() {
+    if (!enforceEditMode()) return;
+    if (!currentLocationId) return;
+
+    const name = document.getElementById("locationEditName").value.trim();
+
+    if (!name) {
+        alert("Bitte einen Standortnamen eingeben.");
+        return;
+    }
+
+    const { error } = await window.eetgSupabase
+        .from("locations")
+        .update({ name })
+        .eq("id", Number(currentLocationId));
+
+    if (error) {
+        showSupabaseError("Standort konnte nicht geändert werden.", error);
+        return;
+    }
+
+    closeModals();
+    await loadLocations();
+    renderLocationSelect();
+    await loadPlan();
+}
+
+async function deleteCurrentLocation() {
+    if (!enforceEditMode()) return;
+
+    if (!currentLocationId) {
+        alert("Bitte zuerst einen Standort auswählen.");
+        return;
+    }
+
+    const location = locations.find(item => item.id === String(currentLocationId));
+    if (!location) return;
+
+    const confirmed = confirm(
+        `Standort „${location.name}“ wirklich löschen?\n\n` +
+        "Der Standort kann danach nicht wiederhergestellt werden. " +
+        "Das Löschen funktioniert nur, wenn die Datenbankrichtlinien bzw. " +
+        "Fremdschlüssel das Löschen der zugehörigen Daten erlauben."
+    );
+
+    if (!confirmed) return;
+
+    const deletingId = String(currentLocationId);
+
+    const { error } = await window.eetgSupabase
+        .from("locations")
+        .delete()
+        .eq("id", Number(deletingId));
+
+    if (error) {
+        showSupabaseError("Standort konnte nicht gelöscht werden.", error);
+        return;
+    }
+
+    localStorage.removeItem("eetg_location_id");
+    currentLocationId = null;
+    selectedVehicle = null;
+
+    await loadLocations();
+
+    if (locations.length) {
+        currentLocationId = locations[0].id;
+        localStorage.setItem("eetg_location_id", currentLocationId);
+        renderLocationSelect();
+        await loadPlan();
+    } else {
+        renderLocationSelect();
+        tracks = [];
+        vehicles = [];
+        areas = [];
+        consists = [];
+        renderLibrary();
+        renderPlan();
+    }
 }
 
 function openAreaModal() {
