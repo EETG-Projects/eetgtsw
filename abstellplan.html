@@ -1,272 +1,12 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Vorschau auf den digitalen EETG-Abstellplan. Anmeldung für freigeschaltete Benutzer.">
-<title>Abstellplan | EETG</title>
-<link rel="stylesheet" href="./assets/css/style.css">
-<style>
-:root{
-  --red:#b5121b;
-  --ink:#181b1f;
-  --muted:#69727b;
-  --line:#dfe3e6;
-  --soft:#f4f6f7;
-  --paper:#fff;
-}
-*{box-sizing:border-box}
-body{margin:0;background:#f4f6f7;color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
-.header{background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 12px rgba(24,27,31,.05)}
-.container{width:min(1220px,calc(100% - 32px));margin:0 auto}
-.nav{min-height:72px;display:flex;align-items:center;gap:24px}
-.brand{display:flex;align-items:center;gap:11px;text-decoration:none;color:var(--ink)}
-.brand img{width:74px;max-height:48px;object-fit:contain}
-.brand-text{display:flex;flex-direction:column;font-weight:900;line-height:1}
-.brand-text small{font-size:8px;letter-spacing:.08em;color:var(--muted);margin-top:4px}
-.nav-links{display:flex;gap:6px;margin-left:12px}
-.nav-links a{padding:10px 12px;border-radius:8px;text-decoration:none;color:#3a4046;font-size:.84rem;font-weight:800}
-.nav-links a.active{color:var(--red);background:#fff1f2}
-.nav-actions{margin-left:auto}
-.cta{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:0 18px;border:0;border-radius:10px;background:var(--red);color:#fff;text-decoration:none;font-weight:900}
-.cta:hover{filter:brightness(.92)}
-.hero{padding:62px 0 30px}
-.hero-grid{display:grid;grid-template-columns:1fr auto;gap:28px;align-items:end}
-.eyebrow{display:inline-block;color:var(--red);font-size:.78rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px}
-h1{margin:0;font-size:clamp(2rem,5vw,4.2rem);line-height:.98;letter-spacing:-.04em}
-.lead{max-width:760px;margin:18px 0 0;color:var(--muted);font-size:1.06rem;line-height:1.6}
-.preview-shell{margin:24px auto 56px;background:#fff;border:1px solid var(--line);border-radius:20px;box-shadow:0 18px 50px rgba(24,27,31,.1);overflow:hidden}
-.preview-top{height:48px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);background:#fff}
-.preview-title{font-weight:900}
-.preview-note{color:var(--muted);font-size:.8rem}
-.preview-app{display:grid;grid-template-columns:270px 1fr;min-height:560px}
-.preview-sidebar{border-right:1px solid var(--line);background:#fff;padding:14px}
-.side-title{font-size:.86rem;font-weight:900;margin-bottom:10px}
-.fake-search{height:34px;border:1px solid var(--line);border-radius:8px;background:#f7f8f9;color:#9aa0a6;padding:8px 10px;font-size:.77rem;margin-bottom:12px}
-.category{border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-bottom:10px}
-.category-head{padding:9px 10px;background:#f7f8f9;font-weight:900;font-size:.76rem}
-.vehicle-card{margin:8px;padding:8px;border:1px solid var(--line);border-radius:8px;background:#fff}
-.vehicle-no{font-weight:900;font-size:.76rem}
-.vehicle-meta{color:var(--muted);font-size:.66rem;margin-top:3px}
-.status-pill{margin-top:7px;height:20px;border-radius:5px;background:#dcfce7;border:1px solid #22c55e;color:#166534;font-size:.65rem;font-weight:900;display:flex;align-items:center;padding:0 7px}
-.preview-main{position:relative;overflow:hidden;background:
-linear-gradient(rgba(0,0,0,.035) 1px,transparent 1px),
-linear-gradient(90deg,rgba(0,0,0,.035) 1px,transparent 1px),
-#f4f6f7;
-background-size:25px 25px}
-.legend{height:42px;display:flex;align-items:center;gap:15px;padding:0 16px;border-bottom:1px solid var(--line);background:#fff;font-size:.72rem}
-.legend strong{color:var(--red)}
-.legend-item{display:flex;align-items:center;gap:5px}
-.dot{width:11px;height:11px;border-radius:3px}
-.d-green{background:#22c55e}.d-yellow{background:#facc15}.d-red{background:#ef4444}.d-blue{background:#3b82f6}.d-orange{background:#f97316}
-.plan-area{position:relative;height:518px}
-.track{position:absolute;left:45px;height:132px;background:#fff;border:1px solid var(--line);border-radius:13px;box-shadow:0 7px 22px rgba(24,27,31,.06)}
-.track.t1{top:35px;width:78%}.track.t2{top:200px;width:63%}.track.t3{top:365px;width:84%}
-.track-name{position:absolute;left:12px;top:13px;font-size:.75rem;font-weight:900}
-.track-length{position:absolute;left:12px;top:34px;color:var(--muted);font-size:.65rem}
-.rail{position:absolute;left:82px;right:24px;top:62px;height:5px;background:#6f767d;border-radius:4px}
-.rail:before,.rail:after{content:"";position:absolute;left:0;right:0;height:2px;background:#aaa}
-.rail:before{top:-7px}.rail:after{bottom:-7px}
-.train{position:absolute;top:46px;height:34px;border:2px solid;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:900;white-space:nowrap}
-.train.a{left:145px;width:126px;background:#dcfce7;border-color:#22c55e;color:#166534}
-.train.b{left:290px;width:96px;background:#fef9c3;border-color:#eab308;color:#854d0e}
-.train.c{left:420px;width:150px;background:#dbeafe;border-color:#3b82f6;color:#1e40af}
-.lock-overlay{position:absolute;right:20px;bottom:18px;padding:10px 12px;border-radius:9px;background:rgba(24,27,31,.88);color:#fff;font-size:.73rem;font-weight:800}
-.info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:0 auto 64px}
-.info-card{padding:22px;background:#fff;border:1px solid var(--line);border-radius:16px}
-.info-card h3{margin:0 0 8px;font-size:1rem}
-.info-card p{margin:0;color:var(--muted);font-size:.88rem;line-height:1.55}
-@media(max-width:900px){
-  .nav-links{display:none}
-  .brand-text small{display:none}
-  .hero-grid{grid-template-columns:1fr}
-  .preview-app{grid-template-columns:1fr}
-  .preview-sidebar{display:none}
-  .info-grid{grid-template-columns:1fr}
-}
-
-/* =========================================================
-   DARKMODE – ÖFFENTLICHE ABSTELLPLAN-VORSCHAU
-========================================================= */
-body.dark{
-  --ink:#f5f6f7;
-  --muted:#aeb6bd;
-  --line:#343a40;
-  --soft:#111417;
-  --paper:#1b2025;
-  background:#111417!important;
-  color:#f5f6f7!important;
-}
-
-body.dark .header{
-  background:#15191d!important;
-  border-bottom-color:#343a40!important;
-  box-shadow:0 2px 12px rgba(0,0,0,.28)!important;
-}
-
-body.dark .brand,
-body.dark .nav-links a{
-  color:#f5f6f7!important;
-}
-
-body.dark .brand-text small{
-  color:#9ba4ad!important;
-}
-
-body.dark .nav-links a:hover{
-  background:#20262c!important;
-}
-
-body.dark .nav-links a.active{
-  background:#371a1d!important;
-  color:#ff6b72!important;
-}
-
-body.dark .icon-btn,
-body.dark .menu-btn{
-  background:#20262c!important;
-  color:#f5f6f7!important;
-  border-color:#434a51!important;
-}
-
-body.dark .hero,
-body.dark main{
-  background:#111417!important;
-}
-
-body.dark .lead,
-body.dark .preview-note,
-body.dark .vehicle-meta,
-body.dark .track-length,
-body.dark .info-card p{
-  color:#aeb6bd!important;
-}
-
-body.dark .preview-shell,
-body.dark .preview-top,
-body.dark .preview-sidebar,
-body.dark .legend,
-body.dark .track,
-body.dark .info-card,
-body.dark .vehicle-card{
-  background:#1b2025!important;
-  border-color:#343a40!important;
-  color:#f5f6f7!important;
-}
-
-body.dark .fake-search,
-body.dark .category-head{
-  background:#20262c!important;
-  color:#aeb6bd!important;
-  border-color:#343a40!important;
-}
-
-body.dark .category{
-  border-color:#343a40!important;
-  background:#15191d!important;
-}
-
-body.dark .preview-main{
-  background:
-    linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px),
-    #111417!important;
-  background-size:25px 25px!important;
-}
-
-body.dark .rail{
-  background:#8d959c!important;
-}
-
-body.dark .rail:before,
-body.dark .rail:after{
-  background:#69727b!important;
-}
-
-body.dark .lock-overlay{
-  background:rgba(0,0,0,.82)!important;
-}
-
-body.dark .status-pill{
-  background:#123a20!important;
-  color:#d7ffe2!important;
-  border-color:#22c55e!important;
-}
-
-
-/* =========================================================
-   UNTERNEHMEN IN DER FAHRZEUGBIBLIOTHEK EIN-/AUSKLAPPEN
-========================================================= */
-.vehicle-company-heading{
-    width:100%!important;
-    border:0!important;
-    cursor:pointer;
-    text-align:left;
-}
-
-.vehicle-company-heading:hover{
-    background:rgba(181,18,27,.08)!important;
-}
-
-.vehicle-company-heading::after{
-    display:none!important;
-}
-
-.vehicle-company-heading > span:first-child{
-    flex:1 1 auto;
-}
-
-.vehicle-company-chevron{
-    flex:0 0 auto;
-    transition:transform .18s ease;
-    color:var(--muted);
-    font-size:10px;
-}
-
-.vehicle-company-group.collapsed .vehicle-company-chevron{
-    transform:rotate(-90deg);
-}
-
-.vehicle-company-body{
-    display:block;
-}
-
-.vehicle-company-group.collapsed .vehicle-company-body{
-    display:none;
-}
-
-
-/* =========================================================
-   STANDORTÜBERGREIFENDE FAHRZEUGBIBLIOTHEK
-========================================================= */
-.vehicle-library-location{
-    margin-top:3px;
-    color:var(--muted);
-    font-size:9px;
-    font-weight:800;
-}
-
-body.dark .vehicle-library-location{
-    color:#aeb6bd;
-}
-
-
-/* Globalbibliothek-Fix: Plan bleibt auch bei Bibliotheks-Ladefehler sichtbar. */
-.vehicle-list .empty{
-    min-height:40px;
-}
-
-</style>
-
+<title>Digitaler Abstellplan</title>
 
 <style>
-#authLoading{
-  min-height:100vh;display:flex;align-items:center;justify-content:center;
-  background:#111417;color:#fff;font:800 14px Inter,system-ui,sans-serif
-}
-#authLoading[hidden],#publicAbstellplanView[hidden],#internalAbstellplanView[hidden]{display:none!important}
-
 * {
     box-sizing: border-box;
 }
@@ -3415,136 +3155,115 @@ body.is-admin.admin-edit-enabled .track-section-area:focus-within .track-section
 }
 
 
+/* =========================================================
+   STABILE EIN-SEITEN-LOGIK: ÖFFENTLICH / INTERN
+========================================================= */
+.public-preview{display:none}
+body.public-mode > *:not(#publicPreview):not(script){display:none!important}
+body.public-mode #publicPreview{display:block!important}
+.public-preview{
+    min-height:100vh;background:#f4f6f7;color:#20252a;
+    font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+.public-header{height:72px;background:#fff;border-bottom:1px solid #dfe3e6}
+.public-nav{width:min(1220px,calc(100% - 32px));height:100%;margin:auto;display:flex;align-items:center;gap:24px}
+.public-brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:#20252a;font-weight:900}
+.public-brand img{width:74px;max-height:48px;object-fit:contain}
+.public-brand span{display:flex;flex-direction:column}
+.public-brand small{font-size:8px;color:#69727b}
+.public-nav nav{display:flex;gap:6px;margin-left:18px}
+.public-nav nav a{padding:10px 12px;border-radius:8px;text-decoration:none;color:#3a4046;font-weight:800;font-size:13px}
+.public-nav nav a.active{background:#fff1f2;color:#b5121b}
+.public-login{margin-left:auto;padding:11px 18px;border-radius:9px;background:#b5121b;color:#fff;text-decoration:none;font-weight:900}
+.public-main{background:#111417;min-height:calc(100vh - 72px);color:#fff;padding:48px 0 70px}
+.public-hero,.public-demo{width:min(1220px,calc(100% - 32px));margin:auto}
+.public-hero>span{color:#ef3340;text-transform:uppercase;font-size:12px;font-weight:900;letter-spacing:.09em}
+.public-hero h1{font-size:clamp(48px,6vw,86px);margin:14px 0 18px;line-height:1}
+.public-hero p{max-width:780px;color:#e5e7eb;font-size:19px;line-height:1.65}
+.public-demo{margin-top:38px;border:1px solid #343a40;border-radius:16px;overflow:hidden;background:#1b2025}
+.public-demo-title{height:48px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #343a40;font-weight:900}
+.public-demo-title small{color:#aeb6bd;font-weight:600}
+.public-demo-grid{display:grid;grid-template-columns:270px 1fr;min-height:500px}
+.public-demo-grid aside{padding:14px;border-right:1px solid #343a40}
+.public-search{margin:12px 0;padding:9px;border:1px solid #434a51;border-radius:7px;color:#8d959c}
+.public-cat{border:1px solid #343a40;border-radius:8px;overflow:hidden}
+.public-cat>strong{display:block;background:#20262c;padding:9px}
+.public-cat>div{margin:8px;padding:8px;border:1px solid #343a40;border-radius:7px;font-weight:800}
+.public-cat small{display:block;color:#aeb6bd;font-weight:500;margin-top:3px}
+.public-plan{position:relative;background:
+ linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),
+ linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px),#111417;
+ background-size:25px 25px}
+.public-legend{height:42px;padding:12px 16px;border-bottom:1px solid #343a40;font-size:12px}
+.public-track{position:absolute;left:45px;height:120px;border:1px solid #343a40;border-radius:12px;background:#1b2025}
+.public-track.p1{top:70px;width:78%}.public-track.p2{top:220px;width:64%}.public-track.p3{top:370px;width:82%}
+.public-track b{position:absolute;left:12px;top:12px}.public-track span{position:absolute;left:12px;top:34px;color:#aeb6bd;font-size:11px}
+.public-track i{position:absolute;left:80px;right:24px;top:61px;height:5px;background:#8d959c}
+.public-track i:before,.public-track i:after{content:"";position:absolute;left:0;right:0;height:2px;background:#6f767d}
+.public-track i:before{top:-7px}.public-track i:after{top:10px}
+.public-track em{position:absolute;left:140px;top:46px;width:120px;height:34px;display:flex;align-items:center;justify-content:center;background:#22c55e;color:#111;border-radius:5px;font-style:normal;font-weight:900;font-size:11px}
+@media(max-width:900px){.public-nav nav{display:none}.public-demo-grid{grid-template-columns:1fr}.public-demo-grid aside{display:none}}
+
+
+.vehicle-company-heading{width:100%!important;border:0!important;cursor:pointer;text-align:left}
+.vehicle-company-heading::after{display:none!important}
+.vehicle-company-heading>span:first-child{flex:1}
+.vehicle-company-chevron{font-size:10px;color:var(--muted);transition:transform .18s ease}
+.vehicle-company-group.collapsed .vehicle-company-chevron{transform:rotate(-90deg)}
+.vehicle-company-group.collapsed .vehicle-company-body{display:none}
+.vehicle-library-location{font-size:9px;color:var(--muted);margin-top:2px;font-weight:800}
 </style>
-
 </head>
+
+
 <body>
-<div id="authLoading">Abstellplan wird geladen …</div>
-<div id="publicAbstellplanView" hidden>
-
-<header class="header">
-  <div class="container nav">
-    <a class="brand" href="index.html">
-      <img src="./assets/img/eetg-logo.png" alt="EETG Logo">
-      <span class="brand-text">EETG<small>ERFURTER EISENBAHN TRANSPORT GESELLSCHAFT</small></span>
-    </a>
-    <nav class="nav-links">
-      <a href="index.html">Startseite</a>
-      <a href="fuhrpark.html">Fahrzeugfuhrpark</a>
-      <a class="active" href="abstellplan.html">Abstellplan</a>
-      <a href="miete.html">Miete mich</a>
-      <a href="leistungen.html">Leistungen</a>
-      <a href="kontakt.html">Kontakt</a>
-    </nav>
-    <div class="nav-actions">
-      <button class="icon-btn" id="themeToggle" aria-label="Farbschema wechseln">◐</button>
-      <a class="cta" href="login.html?next=abstellplan.html">Anmelden</a>
-      <button class="menu-btn" id="menuToggle" aria-label="Menü öffnen">☰</button>
-    </div>
-  </div>
-</header>
-
-<main>
-  <section class="hero">
-    <div class="container hero-grid">
-      <div>
-        <span class="eyebrow">Betriebsübersicht</span>
-        <h1>Digitaler Abstellplan</h1>
-        <p class="lead">Eine Vorschau auf die interne EETG-Fahrzeug- und Gleisdisposition. Für die vollständige Ansicht mit Standorten, Fahrzeugstatus, Gleisen und Bearbeitungsfunktionen ist eine Anmeldung erforderlich.</p>
-      </div>
-      
-    </div>
-  </section>
-
-  <section class="container preview-shell" aria-label="Vorschau des digitalen Abstellplans">
-    <div class="preview-top">
-      <div class="preview-title">Vorschau Abstellplan</div>
-      <div class="preview-note">Nur Beispielansicht · keine Live-Daten</div>
-    </div>
-    <div class="preview-app">
-      <aside class="preview-sidebar">
-        <div class="side-title">Fahrzeugbibliothek</div>
-        <div class="fake-search">Lok oder Gleis suchen …</div>
-
-        <div class="category">
-          <div class="category-head">Elektroloks</div>
-          <div class="vehicle-card">
-            <div class="vehicle-no">101 113-9 · EETG</div>
-            <div class="vehicle-meta">BR 101 · 19,1 m</div>
-            <div class="status-pill">Einsatzbereit</div>
-          </div>
-          <div class="vehicle-card">
-            <div class="vehicle-no">143 245-7 · EETG</div>
-            <div class="vehicle-meta">BR 143 · 16,6 m</div>
-            <div class="status-pill">Einsatzbereit</div>
-          </div>
+<div id="publicPreview" class="public-preview" hidden>
+    <header class="public-header">
+        <div class="public-nav">
+            <a class="public-brand" href="index.html">
+                <img src="./assets/img/eetg-logo.png" alt="EETG Logo">
+                <span>EETG<small>ERFURTER EISENBAHN TRANSPORT GESELLSCHAFT</small></span>
+            </a>
+            <nav>
+                <a href="index.html">Startseite</a>
+                <a href="fuhrpark.html">Fahrzeugfuhrpark</a>
+                <a class="active" href="abstellplan.html">Abstellplan</a>
+                <a href="miete.html">Miete mich</a>
+                <a href="leistungen.html">Leistungen</a>
+                <a href="kontakt.html">Kontakt</a>
+            </nav>
+            <a class="public-login" href="login.html?next=abstellplan.html">Anmelden</a>
         </div>
+    </header>
 
-        <div class="category">
-          <div class="category-head">Dieselloks</div>
-          <div class="vehicle-card">
-            <div class="vehicle-no">294 594-7 · RMB</div>
-            <div class="vehicle-meta">BR 294 · 14,2 m</div>
-          </div>
-        </div>
-      </aside>
+    <main class="public-main">
+        <section class="public-hero">
+            <span>Betriebsübersicht</span>
+            <h1>Digitaler Abstellplan</h1>
+            <p>Eine Vorschau auf die interne EETG-Fahrzeug- und Gleisdisposition. Für die vollständige Ansicht mit Standorten, Fahrzeugstatus, Gleisen und Bearbeitungsfunktionen ist eine Anmeldung erforderlich.</p>
+        </section>
 
-      <div class="preview-main">
-        <div class="legend">
-          <strong>Legende:</strong>
-          <span class="legend-item"><span class="dot d-green"></span>Einsatzbereit</span>
-          <span class="legend-item"><span class="dot d-yellow"></span>Unterwegs</span>
-          <span class="legend-item"><span class="dot d-red"></span>Abgestellt</span>
-          <span class="legend-item"><span class="dot d-blue"></span>Vermietet</span>
-          <span class="legend-item"><span class="dot d-orange"></span>Werkstatt</span>
-        </div>
-        <div class="plan-area">
-          <div class="track t1">
-            <div class="track-name">FGM 207</div>
-            <div class="track-length">250 m</div>
-            <div class="rail"></div>
-            <div class="train a">101 113-9</div>
-            <div class="train b">143 245-7</div>
-          </div>
-          <div class="track t2">
-            <div class="track-name">FGM 217</div>
-            <div class="track-length">180 m</div>
-            <div class="rail"></div>
-            <div class="train c">RMB 294 594-7</div>
-          </div>
-          <div class="track t3">
-            <div class="track-name">Werkstatt 1</div>
-            <div class="track-length">300 m</div>
-            <div class="rail"></div>
-          </div>
-          <div class="lock-overlay">🔒 Live-Daten nach Anmeldung</div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="container info-grid">
-    <article class="info-card">
-      <h3>Live-Gleisbelegung</h3>
-      <p>Angemeldete Benutzer sehen die aktuelle Verteilung der Fahrzeuge auf den Standorten und Gleisen.</p>
-    </article>
-    <article class="info-card">
-      <h3>Fahrzeugstatus</h3>
-      <p>Einsatzbereit, unterwegs, abgestellt, vermietet oder in der Werkstatt – zentral im Abstellplan gepflegt.</p>
-    </article>
-    <article class="info-card">
-      <h3>Nur für freigeschaltete Benutzer</h3>
-      <p>Die Vorschau enthält keine echten Betriebsdaten. Der vollständige Abstellplan ist durch das EETG-Login geschützt.</p>
-    </article>
-  </section>
-</main>
-
-
-
-
-
+        <section class="public-demo">
+            <div class="public-demo-title">Vorschau Abstellplan <small>Nur Beispielansicht · keine Live-Daten</small></div>
+            <div class="public-demo-grid">
+                <aside>
+                    <b>Fahrzeugbibliothek</b>
+                    <div class="public-search">Lok oder Gleis suchen …</div>
+                    <div class="public-cat"><strong>Elektroloks</strong>
+                        <div>101 113-9 · EETG<small>BR 101 · 19,1 m</small></div>
+                        <div>143 245-7 · EETG<small>BR 143 · 16,6 m</small></div>
+                    </div>
+                </aside>
+                <div class="public-plan">
+                    <div class="public-legend">🟢 Einsatzbereit &nbsp; 🟡 Unterwegs &nbsp; 🔴 Abgestellt &nbsp; 🔵 Vermietet</div>
+                    <div class="public-track p1"><b>FGM 207</b><span>250 m</span><i></i><em>101 113-9</em></div>
+                    <div class="public-track p2"><b>FGM 217</b><span>180 m</span><i></i></div>
+                    <div class="public-track p3"><b>Werkstatt 1</b><span>300 m</span><i></i></div>
+                </div>
+            </div>
+        </section>
+    </main>
 </div>
-<div id="internalAbstellplanView" hidden>
 
 
 <header>
@@ -4158,19 +3877,9 @@ body.is-admin.admin-edit-enabled .track-section-area:focus-within .track-section
     </div>
 </div>
 
-
-
-
-
-
-
-
-
-</div>
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./assets/js/supabase.js"></script>
-<template id="internalScript0"><script>
+<script>
 
 let lastDbErrorText = "";
 
@@ -4221,7 +3930,7 @@ const VEHICLE_VISUAL_SCALE = 1; // Maßstab: 1 m Fahrzeug = 1 m Gleis.
 
 let tracks = [];
 let vehicles = [];
-let libraryVehicles = []; // immer alle Fahrzeuge aus der zentralen Datenbank
+let libraryVehicles = [];
 let selectedVehicle = null;
 let currentUser = null;
 let currentRole = "viewer";
@@ -4342,9 +4051,15 @@ async function requireLogin() {
     const { data: { session }, error } = await window.eetgSupabase.auth.getSession();
 
     if (error || !session) {
-        window.location.replace("login.html?next=abstellplan-intern.html");
+        document.body.classList.add("public-mode");
+        const preview = document.getElementById("publicPreview");
+        if(preview) preview.hidden = false;
         return false;
     }
+
+    document.body.classList.remove("public-mode");
+    const preview = document.getElementById("publicPreview");
+    if(preview) preview.hidden = true;
 
     currentUser = session.user;
 
@@ -4401,7 +4116,7 @@ function loadTheme() {
 
 async function logout() {
     await window.eetgSupabase.auth.signOut();
-    window.location.replace("login.html");
+    window.location.replace("abstellplan.html");
 }
 
 function mapTrack(row, index = 0) {
@@ -4423,7 +4138,6 @@ function findVehicleById(vehicleId){
         || libraryVehicles.find(v => String(v.id) === id)
         || null;
 }
-
 function mapVehicle(row) {
     return {
         id: String(row.id),
@@ -4757,112 +4471,55 @@ async function loadPlan() {
     }
 
     if (!currentLocationId) {
-        tracks = [];
-        vehicles = [];
-        areas = [];
-        consists = [];
-        renderPlan();
-        renderLibrary();
-        return;
+        tracks=[]; vehicles=[]; areas=[]; consists=[];
+        renderPlan(); renderLibrary(); return;
     }
 
-    /*
-     * Wichtig:
-     * Die globale Fahrzeugbibliothek darf den eigentlichen Abstellplan
-     * niemals blockieren. Deshalb werden Standortdaten und Bibliothek
-     * getrennt geladen.
-     */
     const [
-        { data: trackRows, error: trackError },
-        { data: areaRows, error: areaError },
-        { data: consistRows, error: consistError }
+        trackResult,
+        localVehicleResult,
+        areaResult,
+        consistResult,
+        globalVehicleResult
     ] = await Promise.all([
-        window.eetgSupabase
-            .from("tracks")
-            .select("*")
+        window.eetgSupabase.from("tracks").select("*")
             .eq("location_id", Number(currentLocationId))
-            .order("sort_order", { ascending: true })
-            .order("id"),
+            .order("sort_order",{ascending:true}).order("id"),
 
-        window.eetgSupabase
-            .from("areas")
-            .select("*")
+        window.eetgSupabase.from("vehicles").select("*")
+            .eq("location_id", Number(currentLocationId))
+            .order("track_id").order("position"),
+
+        window.eetgSupabase.from("areas").select("*")
             .or(`location_id.eq.${Number(currentLocationId)},location_id.is.null`)
             .order("id"),
 
-        window.eetgSupabase
-            .from("consists")
-            .select("*")
-            .eq("location_id", Number(currentLocationId))
-            .order("id")
+        window.eetgSupabase.from("consists").select("*")
+            .eq("location_id", Number(currentLocationId)).order("id"),
+
+        window.eetgSupabase.from("vehicles").select("*").order("id")
     ]);
 
-    const planError = trackError || areaError || consistError;
+    const planError =
+        trackResult.error || localVehicleResult.error ||
+        areaResult.error || consistResult.error;
 
-    if (planError) {
-        showSupabaseError(
-            "Der Abstellplan des Standorts konnte nicht aus Supabase geladen werden.",
-            planError
-        );
+    if(planError){
+        showSupabaseError("Der Standort konnte nicht aus Supabase geladen werden.", planError);
         return;
     }
 
-    // Zuerst Planbasis setzen, damit die Gleise unabhängig von der Bibliothek sichtbar bleiben.
-    tracks = (trackRows || []).map((row, index) => mapTrack(row, index));
-    areas = (areaRows || []).map(mapArea);
-    consists = (consistRows || []).map(mapConsist);
+    tracks=(trackResult.data||[]).map((row,index)=>mapTrack(row,index));
+    vehicles=(localVehicleResult.data||[]).map(mapVehicle);
+    areas=(areaResult.data||[]).map(mapArea);
+    consists=(consistResult.data||[]).map(mapConsist);
 
-    /*
-     * Alle Fahrzeuge für die standortübergreifende Bibliothek laden.
-     * Keine Sortierung auf möglicherweise projektspezifischen DB-Spalten:
-     * sortiert wird anschließend rein im Browser.
-     */
-    let globalVehicleRows = [];
-    let globalVehicleError = null;
-
-    {
-        const result = await window.eetgSupabase
-            .from("vehicles")
-            .select("*")
-            .order("id");
-
-        globalVehicleRows = result.data || [];
-        globalVehicleError = result.error || null;
-    }
-
-    if (globalVehicleError) {
-        console.warn(
-            "Globale Fahrzeugbibliothek konnte nicht vollständig geladen werden. " +
-            "Es wird auf den aktuellen Standort zurückgefallen.",
-            globalVehicleError
-        );
-
-        const fallback = await window.eetgSupabase
-            .from("vehicles")
-            .select("*")
-            .eq("location_id", Number(currentLocationId))
-            .order("track_id")
-            .order("position");
-
-        if (fallback.error) {
-            /*
-             * Selbst ein Fahrzeugfehler soll die Gleise nicht verschwinden lassen.
-             * Wir zeigen den Standort daher wenigstens ohne Fahrzeuge.
-             */
-            console.error("Fahrzeuge konnten nicht geladen werden:", fallback.error);
-            libraryVehicles = [];
-            vehicles = [];
-        } else {
-            libraryVehicles = (fallback.data || []).map(mapVehicle);
-            vehicles = [...libraryVehicles];
-        }
-    } else {
-        libraryVehicles = globalVehicleRows.map(mapVehicle);
-
-        // Der Gleisplan zeigt weiterhin ausschließlich Fahrzeuge dieses Standorts.
-        vehicles = libraryVehicles.filter(vehicle =>
-            String(vehicle.location) === String(currentLocationId)
-        );
+    // Globalbibliothek darf niemals das Laden des Plans blockieren.
+    if(globalVehicleResult.error){
+        console.warn("Globale Fahrzeugbibliothek konnte nicht geladen werden:",globalVehicleResult.error);
+        libraryVehicles=[...vehicles];
+    }else{
+        libraryVehicles=(globalVehicleResult.data||[]).map(mapVehicle);
     }
 
     renderPlan();
@@ -5224,7 +4881,7 @@ function renderPlan() {
                 event.preventDefault();
 
                 const id = event.dataTransfer.getData("vehicle");
-                const vehicle = findVehicleById(id);
+                const vehicle = vehicles.find(v => v.id === id);
                 if (!vehicle) return;
 
                 const rect = trackElement.getBoundingClientRect();
@@ -5248,8 +4905,7 @@ function renderPlan() {
                     }
                 }
 
-                // Standortwechsel eines Fahrzeugs sofort überall synchron anzeigen.
-                await loadPlan();
+                renderPlan();
             });
         }
 
@@ -6309,7 +5965,8 @@ async function returnVehicleToLibrary(vehicleId) {
     });
 
     selectedVehicle = null;
-    await loadPlan();
+    renderPlan();
+    renderLibrary();
     return true;
 }
 
@@ -6746,7 +6403,7 @@ function updateRenderedVehicleStatus(vehicleId, status) {
     );
 
     if (trackVehicle) {
-        const vehicle = vehicles.find(v => v.id === String(vehicleId));
+        const vehicle = findVehicleById(vehicleId);
         if (vehicle) {
             trackVehicle.className =
                 "vehicle " + vehicle.type + " " + statusClass(status);
@@ -6784,10 +6441,7 @@ function createLibraryVehicleCard(vehicle) {
             ${escapeHtml(vehicle.model || vehicle.type)} · ${vehicle.length} m
         </div>
         <div class="vehicle-library-location">
-            ${escapeHtml(
-                locations.find(location => String(location.id) === String(vehicle.location))?.name
-                || "Kein Standort"
-            )}
+            ${escapeHtml(locations.find(l => String(l.id) === String(vehicle.location))?.name || "Kein Standort")}
         </div>
         ${imageHtml}
     `;
@@ -6964,38 +6618,18 @@ async function deleteVehicleFromLibrary(vehicleId){
 function companyCollapseKey(category, company){
     return `${category}::${company}`;
 }
-
 function toggleVehicleCompany(category, company){
     const key = companyCollapseKey(category, company);
-
-    if(collapsedCompanies.has(key)){
-        collapsedCompanies.delete(key);
-    }else{
-        collapsedCompanies.add(key);
-    }
-
-    try{
-        localStorage.setItem(
-            "eetg_collapsed_vehicle_companies",
-            JSON.stringify([...collapsedCompanies])
-        );
-    }catch(_){}
-
+    collapsedCompanies.has(key) ? collapsedCompanies.delete(key) : collapsedCompanies.add(key);
+    try{localStorage.setItem("eetg_collapsed_vehicle_companies",JSON.stringify([...collapsedCompanies]));}catch(_){}
     renderLibrary();
 }
-
 function loadCollapsedCompanies(){
     try{
-        const saved = JSON.parse(
-            localStorage.getItem("eetg_collapsed_vehicle_companies") || "[]"
-        );
-
-        if(Array.isArray(saved)){
-            saved.forEach(key => collapsedCompanies.add(String(key)));
-        }
+        const saved=JSON.parse(localStorage.getItem("eetg_collapsed_vehicle_companies")||"[]");
+        if(Array.isArray(saved)) saved.forEach(key=>collapsedCompanies.add(String(key)));
     }catch(_){}
 }
-
 function renderLibrary() {
     const library = document.getElementById("vehicleLibrary");
     library.innerHTML = "";
@@ -7042,9 +6676,7 @@ function renderLibrary() {
 
                 const companyKey = companyCollapseKey(category, company);
                 const companyGroup = document.createElement("div");
-                companyGroup.className =
-                    "vehicle-company-group" +
-                    (collapsedCompanies.has(companyKey) ? " collapsed" : "");
+                companyGroup.className = "vehicle-company-group" + (collapsedCompanies.has(companyKey) ? " collapsed" : "");
 
                 const heading = document.createElement("button");
                 heading.type = "button";
@@ -7054,16 +6686,11 @@ function renderLibrary() {
                     <span class="vehicle-company-count">${companyVehicles.length}</span>
                     <span class="vehicle-company-chevron">▼</span>
                 `;
-                heading.addEventListener("click", () => {
-                    toggleVehicleCompany(category, company);
-                });
+                heading.addEventListener("click", () => toggleVehicleCompany(category, company));
 
                 const companyBody = document.createElement("div");
                 companyBody.className = "vehicle-company-body";
-
-                companyVehicles.forEach(vehicle => {
-                    companyBody.appendChild(createLibraryVehicleCard(vehicle));
-                });
+                companyVehicles.forEach(vehicle => companyBody.appendChild(createLibraryVehicleCard(vehicle)));
 
                 companyGroup.appendChild(heading);
                 companyGroup.appendChild(companyBody);
@@ -7095,25 +6722,6 @@ function handleGlobalSearch(value) {
                 );
 
             if (hasMatch) collapsedCategories.delete(category);
-
-            ["EETG", "RMB"].forEach(company => {
-                const companyHasMatch = libraryVehicles
-                    .filter(v =>
-                        v.category === category &&
-                        (v.company || "EETG") === company
-                    )
-                    .some(vehicle =>
-                        `${vehicle.number} ${vehicle.model || ""} ${vehicle.company || ""} ${VEHICLE_CATEGORY_LABELS[vehicle.category] || ""}`
-                            .toLowerCase()
-                            .includes(globalSearchQuery)
-                    );
-
-                if(companyHasMatch){
-                    collapsedCompanies.delete(
-                        companyCollapseKey(category, company)
-                    );
-                }
-            });
         });
 
         renderLibrary();
@@ -7439,8 +7047,8 @@ window.addEventListener("beforeunload",()=>{
     await loadPlan();
     subscribeRealtime();
 })();
-</script></template>
-<template id="internalScript1"><script>
+</script>
+<script>
 window.addEventListener("resize", () => {
     updatePlanCanvasSize();
 });
@@ -7453,8 +7061,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (toggle) toggle.checked = false;
     if (state) state.textContent = "Gesperrt";
 });
-</script></template>
-<template id="internalScript2"><script>
+</script>
+
+<script>
 document.addEventListener("DOMContentLoaded", function(){
     const picker = document.getElementById("areaColor");
     const hex = document.getElementById("areaColorHex");
@@ -7478,129 +7087,7 @@ document.addEventListener("DOMContentLoaded", function(){
         });
     }
 });
-</script></template>
-
-<script>
-(async function(){
-  const loading = document.getElementById("authLoading");
-  const pub = document.getElementById("publicAbstellplanView");
-  const inside = document.getElementById("internalAbstellplanView");
-
-  async function startInternal(){
-    pub.hidden = true;
-    inside.hidden = false;
-    loading.hidden = true;
-
-    for(let i=0;i<3;i++){
-      const tpl = document.getElementById("internalScript"+i);
-      if(!tpl) continue;
-      const old = tpl.content.querySelector("script");
-      if(!old) continue;
-
-      if(old.src){
-        await new Promise((resolve,reject)=>{
-          const s=document.createElement("script");
-          s.src=old.getAttribute("src");
-          s.onload=resolve;
-          s.onerror=reject;
-          document.body.appendChild(s);
-        });
-      }else{
-        const s=document.createElement("script");
-        s.textContent=old.textContent;
-        document.body.appendChild(s);
-      }
-    }
-  }
-
-  function startPublic(){
-    inside.hidden = true;
-    pub.hidden = false;
-    loading.hidden = true;
-  }
-
-  try{
-    const client = window.eetgSupabase;
-    if(!client || !client.auth || !client.auth.getSession){
-      startPublic();
-      return;
-    }
-
-    const result = await client.auth.getSession();
-    if(result && result.data && result.data.session){
-      await startInternal();
-    }else{
-      startPublic();
-    }
-  }catch(error){
-    console.error("Anmeldeprüfung fehlgeschlagen:", error);
-    startPublic();
-  }
-})();
 </script>
 
-<script src="./assets/js/app.js"></script>
-<script>
-(function(){
-  const STORAGE_KEY = "eetg_public_theme";
-
-  function applyPublicTheme(theme){
-    const dark = theme === "dark";
-    document.body.classList.toggle("dark", dark);
-
-    // Zusätzlich mit der Hauptseite kompatibel halten.
-    document.documentElement.dataset.theme = dark ? "dark" : "light";
-
-    const btn = document.getElementById("themeToggle");
-    if(btn){
-      btn.textContent = dark ? "☀" : "◐";
-      btn.setAttribute(
-        "aria-label",
-        dark ? "Helles Farbschema wechseln" : "Dunkles Farbschema wechseln"
-      );
-      btn.title = dark ? "White Mode" : "Dark Mode";
-    }
-  }
-
-  let saved = null;
-  try{
-    saved = localStorage.getItem(STORAGE_KEY)
-      || localStorage.getItem("theme")
-      || localStorage.getItem("eetg_theme");
-  }catch(_){}
-
-  if(saved !== "dark" && saved !== "light"){
-    saved = window.matchMedia &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches
-        ? "dark"
-        : "light";
-  }
-
-  applyPublicTheme(saved);
-
-  const btn = document.getElementById("themeToggle");
-  if(btn){
-    /*
-     * Capture-Modus verhindert, dass eine eventuell bereits in app.js
-     * registrierte Theme-Funktion den Klick ein zweites Mal umschaltet.
-     */
-    btn.addEventListener("click", function(event){
-      event.preventDefault();
-      event.stopImmediatePropagation();
-
-      const next = document.body.classList.contains("dark")
-        ? "light"
-        : "dark";
-
-      try{
-        localStorage.setItem(STORAGE_KEY, next);
-        localStorage.setItem("theme", next);
-      }catch(_){}
-
-      applyPublicTheme(next);
-    }, true);
-  }
-})();
-</script>
 </body>
 </html>
