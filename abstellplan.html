@@ -2377,6 +2377,33 @@ body.dark .area-title{
     display:none!important;
 }
 
+
+/* =========================================================
+   AUSBAUSTUFE 3 – HISTORIE
+========================================================= */
+.history-dropdown{position:relative;display:inline-flex;align-items:center}
+.history-dropdown-menu{
+    position:absolute;top:calc(100% + 7px);right:0;z-index:1200;
+    width:480px;max-width:min(480px,calc(100vw - 24px));max-height:520px;overflow:auto;
+    padding:12px;border:1px solid var(--border);border-radius:12px;
+    background:var(--panel);box-shadow:0 16px 40px rgba(0,0,0,.24);display:none
+}
+.history-dropdown.open .history-dropdown-menu{display:block}
+.history-dropdown-menu h3{margin:0 0 10px}
+.history-entry{padding:9px 10px;margin-bottom:7px;border:1px solid var(--border);border-radius:8px;background:var(--panel2)}
+.history-entry-main{font-size:11px;font-weight:800}.history-entry-meta{margin-top:4px;font-size:9px;color:var(--muted)}
+.history-empty{padding:14px;text-align:center;color:var(--muted);font-size:11px}
+.library-history-button{
+    flex:1;min-height:28px;padding:6px 8px!important;border-radius:6px!important;
+    background:#5d646b!important;color:#fff!important;font-size:10px!important;font-weight:800!important
+}
+.history-modal-list{max-height:520px;overflow:auto;display:grid;gap:7px;margin-top:12px}
+.history-filter-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.history-filter-row input{
+    flex:1;min-width:0;padding:8px 10px;border:1px solid var(--border);border-radius:7px;
+    background:var(--panel2);color:var(--text)
+}
+
 </style>
 </head>
 
@@ -2520,6 +2547,17 @@ body.dark .area-title{
             🔗 Zugverband bilden
         </button>
         <button class="write-only" onclick="dissolveSelectedConsist()">⛓ Verband auflösen</button>
+        <div class="history-dropdown" id="historyDropdown">
+            <button class="secondary" type="button" id="historyButton"
+                onclick="toggleHistoryDropdown(event)" aria-expanded="false">
+                📜 Historie ▾
+            </button>
+            <div class="history-dropdown-menu" id="historyDropdownMenu"
+                onclick="event.stopPropagation()">
+                <div class="history-empty">Lade Historie …</div>
+            </div>
+        </div>
+
         <div class="statistics-dropdown" id="statisticsDropdown">
             <button
                 class="secondary"
@@ -2564,6 +2602,26 @@ body.dark .area-title{
 
 </div>
 
+
+<!-- =====================================================
+     VEHICLE HISTORY MODAL
+===================================================== -->
+<div class="modal" id="vehicleHistoryModal">
+    <div class="modal-box" style="width:min(720px,calc(100% - 30px))">
+        <h2 id="vehicleHistoryTitle">Fahrzeughistorie</h2>
+        <div class="history-filter-row">
+            <input id="vehicleHistorySearch" placeholder="Historie filtern …"
+                oninput="filterVehicleHistory()">
+            <button class="secondary" type="button" onclick="loadVehicleHistoryModal()">↻</button>
+        </div>
+        <div id="vehicleHistoryList" class="history-modal-list">
+            <div class="history-empty">Lade Historie …</div>
+        </div>
+        <div class="modal-buttons">
+            <button class="secondary" type="button" onclick="closeVehicleHistoryModal()">Schließen</button>
+        </div>
+    </div>
+</div>
 
 <!-- =====================================================
      VEHICLE MODAL
@@ -2972,6 +3030,9 @@ let activeAreaResize = null;
 let consists = [];
 let statisticsOpen = false;
 let realtimeReloadTimer = null;
+let historyDropdownOpen = false;
+let currentVehicleHistoryId = null;
+let currentVehicleHistoryRows = [];
 
 let globalSearchQuery = "";
 const collapsedCategories = new Set();
@@ -3399,6 +3460,96 @@ document.addEventListener("click", event => {
 });
 
 function scheduleRealtimeReload(){clearTimeout(realtimeReloadTimer);realtimeReloadTimer=setTimeout(()=>loadPlan(),120)}
+function getCurrentUsername(){
+    const shown=document.getElementById("userName")?.textContent?.trim();
+    if(shown && shown!=="–") return shown;
+    return currentUser?.user_metadata?.username ||
+           currentUser?.user_metadata?.display_name ||
+           currentUser?.email || "Unbekannt";
+}
+function getTrackName(trackId){
+    if(trackId==null) return "Fahrzeugbibliothek";
+    return tracks.find(t=>String(t.id)===String(trackId))?.number || `Gleis ${trackId}`;
+}
+async function logVehicleHistory(vehicle,action,description,details={}){
+    if(!vehicle?.id || !currentLocationId) return;
+    const {error}=await window.eetgSupabase.from("vehicle_history").insert({
+        vehicle_id:Number(vehicle.id),
+        location_id:Number(currentLocationId),
+        username:getCurrentUsername(),
+        action,description,details
+    });
+    if(error) console.error("Historie konnte nicht gespeichert werden:",error);
+}
+function formatHistoryDate(value){return value?new Date(value).toLocaleString("de-DE"):"–"}
+function historyRowHtml(row){
+    const vehicle=row.vehicle_number?`<strong>${escapeHtml(row.vehicle_number)}</strong> · `:"";
+    return `<div class="history-entry">
+        <div class="history-entry-main">${vehicle}${escapeHtml(row.description||row.action||"Änderung")}</div>
+        <div class="history-entry-meta">${formatHistoryDate(row.created_at)} · ${escapeHtml(row.username||"Unbekannt")}</div>
+    </div>`;
+}
+async function toggleHistoryDropdown(event){
+    if(event) event.stopPropagation();
+    historyDropdownOpen=!historyDropdownOpen;
+    document.getElementById("historyDropdown")?.classList.toggle("open",historyDropdownOpen);
+    document.getElementById("historyButton")?.setAttribute("aria-expanded",historyDropdownOpen?"true":"false");
+    if(historyDropdownOpen) await loadHistoryDropdown();
+}
+function closeHistoryDropdown(){
+    historyDropdownOpen=false;
+    document.getElementById("historyDropdown")?.classList.remove("open");
+    document.getElementById("historyButton")?.setAttribute("aria-expanded","false");
+}
+async function loadHistoryDropdown(){
+    const menu=document.getElementById("historyDropdownMenu");
+    if(!menu||!currentLocationId)return;
+    menu.innerHTML='<div class="history-empty">Lade Historie …</div>';
+    const {data,error}=await window.eetgSupabase.from("vehicle_history")
+        .select("id,vehicle_id,vehicle_number,username,action,description,created_at")
+        .eq("location_id",Number(currentLocationId)).order("created_at",{ascending:false}).limit(30);
+    if(error){menu.innerHTML='<div class="history-empty">Historie konnte nicht geladen werden.</div>';console.error(error);return}
+    const rows=data||[];
+    menu.innerHTML=`<h3>📜 Standort-Historie</h3>${
+        rows.length?rows.map(historyRowHtml).join(""):'<div class="history-empty">Noch keine Änderungen protokolliert.</div>'
+    }`;
+}
+async function openVehicleHistoryModal(vehicleId){
+    const vehicle=vehicles.find(v=>String(v.id)===String(vehicleId));if(!vehicle)return;
+    currentVehicleHistoryId=String(vehicleId);
+    document.getElementById("vehicleHistoryTitle").textContent=`Historie · ${vehicle.number}`;
+    document.getElementById("vehicleHistorySearch").value="";
+    document.getElementById("vehicleHistoryModal").classList.add("active");
+    await loadVehicleHistoryModal();
+}
+function closeVehicleHistoryModal(){
+    currentVehicleHistoryId=null;currentVehicleHistoryRows=[];
+    document.getElementById("vehicleHistoryModal").classList.remove("active");
+}
+async function loadVehicleHistoryModal(){
+    if(!currentVehicleHistoryId)return;
+    const list=document.getElementById("vehicleHistoryList");
+    list.innerHTML='<div class="history-empty">Lade Historie …</div>';
+    const {data,error}=await window.eetgSupabase.from("vehicle_history").select("*")
+        .eq("vehicle_id",Number(currentVehicleHistoryId)).order("created_at",{ascending:false}).limit(200);
+    if(error){list.innerHTML='<div class="history-empty">Historie konnte nicht geladen werden.</div>';console.error(error);return}
+    currentVehicleHistoryRows=data||[];renderVehicleHistoryRows(currentVehicleHistoryRows);
+}
+function renderVehicleHistoryRows(rows){
+    const list=document.getElementById("vehicleHistoryList");if(!list)return;
+    list.innerHTML=rows.length?rows.map(historyRowHtml).join(""):'<div class="history-empty">Noch keine Historie vorhanden.</div>';
+}
+function filterVehicleHistory(){
+    const q=document.getElementById("vehicleHistorySearch").value.trim().toLowerCase();
+    renderVehicleHistoryRows(!q?currentVehicleHistoryRows:currentVehicleHistoryRows.filter(r=>
+        `${r.action||""} ${r.description||""} ${r.username||""}`.toLowerCase().includes(q)
+    ));
+}
+document.addEventListener("click",event=>{
+    const d=document.getElementById("historyDropdown");
+    if(historyDropdownOpen&&d&&!d.contains(event.target))closeHistoryDropdown();
+});
+
 
 function renderPlan() {
     const plan = document.getElementById("plan");
@@ -3594,10 +3745,16 @@ function renderPlan() {
                 } else {
                     const movingVehicles=vehicle.consist?vehicles.filter(v=>String(v.consist)===String(vehicle.consist)):[vehicle];
                     if(!canFitOnTrack(track.id,movingVehicles)){alert(`Nicht genügend Platz auf ${track.number}.`);return;}
+                    const previousTrackName=getTrackName(vehicle.track);
                     vehicle.track = track.id;
                     vehicle.location = String(currentLocationId);
                     vehicle.position = position;
-                    await updateVehicle(vehicle);
+                    const saved=await updateVehicle(vehicle);
+                    if(saved!==false){
+                        await logVehicleHistory(vehicle,"track_move",`${previousTrackName} → ${track.number}`,{
+                            from_track:previousTrackName,to_track:track.number,position_m:position
+                        });
+                    }
                 }
 
                 renderPlan();
@@ -4238,6 +4395,7 @@ async function returnVehicleToLibrary(vehicleId) {
     const oldTrack = vehicle.track;
     const oldPosition = vehicle.position;
     const oldConsist = vehicle.consist;
+    const oldTrackName = getTrackName(oldTrack);
 
     vehicle.track = null;
     vehicle.location = String(currentLocationId);
@@ -4252,6 +4410,10 @@ async function returnVehicleToLibrary(vehicleId) {
         vehicle.consist = oldConsist;
         return false;
     }
+
+    await logVehicleHistory(vehicle,"library_return",`${oldTrackName} → Fahrzeugbibliothek`,{
+        from_track:oldTrackName,to:"Fahrzeugbibliothek"
+    });
 
     selectedVehicle = null;
     renderPlan();
@@ -4340,13 +4502,27 @@ async function createConsist() {
     const {data,error}=await window.eetgSupabase.from("consists").insert({location_id:Number(currentLocationId),train_number:trainNumber.trim()||null,name:name.trim()||"Zugverband"}).select().single();
     if(error){showSupabaseError("Zugverband konnte nicht angelegt werden.",error);return}
     nearby.forEach(v=>v.consist=String(data.id));
-    await Promise.all(nearby.map(updateVehicle));await loadPlan();
+    await Promise.all(nearby.map(updateVehicle));
+    await Promise.all(nearby.map(v=>logVehicleHistory(
+        v,"consist_join",
+        `Zugverband ${[trainNumber.trim(),name.trim()].filter(Boolean).join(" · ")||"Zugverband"} gebildet`,
+        {consist_id:String(data.id),train_number:trainNumber.trim()||null,name:name.trim()||"Zugverband"}
+    )));
+    await loadPlan();
 }
 async function dissolveSelectedConsist(){
     if(!enforceWritePermission())return;
     const selected=vehicles.find(v=>v.id===selectedVehicle);if(!selected?.consist){alert("Kein Zugverband ausgewählt.");return}
     const id=String(selected.consist);if(!confirm("Zugverband wirklich auflösen?"))return;
-    const members=vehicles.filter(v=>String(v.consist)===id);members.forEach(v=>v.consist=null);await Promise.all(members.map(updateVehicle));
+    const members=vehicles.filter(v=>String(v.consist)===id);
+    const consistInfo=consists.find(c=>String(c.id)===id);
+    members.forEach(v=>v.consist=null);
+    await Promise.all(members.map(updateVehicle));
+    await Promise.all(members.map(v=>logVehicleHistory(
+        v,"consist_leave",
+        `Zugverband ${[consistInfo?.number,consistInfo?.name].filter(Boolean).join(" · ")||id} aufgelöst`,
+        {consist_id:id}
+    )));
     const {error}=await window.eetgSupabase.from("consists").delete().eq("id",Number(id));if(error){showSupabaseError("Zugverband konnte nicht gelöscht werden.",error);return}await loadPlan();
 }
 
@@ -4487,6 +4663,13 @@ async function addVehicle() {
         console.error(error);
         showSupabaseError("Fahrzeug konnte nicht angelegt werden.", error);
         return;
+    }
+
+    if(insertedVehicle){
+        const createdVehicle=mapVehicle(insertedVehicle);
+        await logVehicleHistory(createdVehicle,"vehicle_created",`Fahrzeug ${createdVehicle.number} angelegt`,{
+            model:createdVehicle.model,category:createdVehicle.category,company:createdVehicle.company,length:createdVehicle.length
+        });
     }
 
     closeModals();
@@ -4759,6 +4942,10 @@ function createLibraryVehicleCard(vehicle) {
                 currentButton.className =
                     "library-status-current " + statusClass(previousStatus);
                 updateRenderedVehicleStatus(vehicle.id, previousStatus);
+            } else {
+                await logVehicleHistory(vehicle,"status_change",`${previousStatus} → ${status}`,{
+                    from_status:previousStatus,to_status:status
+                });
             }
         });
 
@@ -4796,6 +4983,17 @@ function createLibraryVehicleCard(vehicle) {
     });
 
     editRow.appendChild(editButton);
+
+    const historyButton=document.createElement("button");
+    historyButton.type="button";
+    historyButton.className="library-history-button";
+    historyButton.textContent="📜 Historie";
+    historyButton.addEventListener("click",event=>{
+        event.stopPropagation();
+        openVehicleHistoryModal(vehicle.id);
+    });
+    editRow.appendChild(historyButton);
+
     item.appendChild(editRow);
 
     if (canWrite()) {
@@ -5032,7 +5230,7 @@ function closeVehicleEditModal() {
     document.getElementById("vehicleEditModal").classList.remove("active");
 }
 
-async function saveVehicleEdit() {
+async async function saveVehicleEdit() {
     if (!enforceEditMode()) return;
 
     const vehicle = vehicles.find(v => v.id === String(editingVehicleId));
@@ -5056,6 +5254,11 @@ async function saveVehicleEdit() {
         return;
     }
 
+    const beforeEdit={
+        number:vehicle.number,model:vehicle.model,category:vehicle.category,
+        company:vehicle.company,image:vehicle.image,length:vehicle.length,status:vehicle.status
+    };
+
     vehicle.number = number;
     vehicle.model = model;
     vehicle.category = category;
@@ -5072,6 +5275,17 @@ async function saveVehicleEdit() {
     const ok = await updateVehicle(vehicle);
 
     if (ok === false) return;
+
+    const changes=[];
+    if(beforeEdit.number!==vehicle.number)changes.push(`Nummer: ${beforeEdit.number} → ${vehicle.number}`);
+    if(beforeEdit.model!==vehicle.model)changes.push(`Modell: ${beforeEdit.model||"–"} → ${vehicle.model||"–"}`);
+    if(beforeEdit.category!==vehicle.category)changes.push(`Kategorie: ${beforeEdit.category} → ${vehicle.category}`);
+    if(beforeEdit.company!==vehicle.company)changes.push(`Unternehmen: ${beforeEdit.company} → ${vehicle.company}`);
+    if(Number(beforeEdit.length)!==Number(vehicle.length))changes.push(`Länge: ${beforeEdit.length} m → ${vehicle.length} m`);
+    if(beforeEdit.status!==vehicle.status)changes.push(`Status: ${beforeEdit.status} → ${vehicle.status}`);
+    if(beforeEdit.image!==vehicle.image)changes.push("Fahrzeugbild geändert");
+
+    if(changes.length) await logVehicleHistory(vehicle,"vehicle_edit",changes.join(" · "),{before:beforeEdit});
 
     closeVehicleEditModal();
     await loadPlan();
@@ -5124,6 +5338,10 @@ function subscribeRealtime() {
  .on("postgres_changes",{event:"*",schema:"public",table:"tracks"},()=>{if(!activeTrackDrag)scheduleRealtimeReload()})
  .on("postgres_changes",{event:"*",schema:"public",table:"vehicles"},scheduleRealtimeReload)
  .on("postgres_changes",{event:"*",schema:"public",table:"consists"},scheduleRealtimeReload)
+ .on("postgres_changes",{event:"*",schema:"public",table:"vehicle_history"},async()=>{
+    if(historyDropdownOpen)await loadHistoryDropdown();
+    if(currentVehicleHistoryId)await loadVehicleHistoryModal();
+ })
  .subscribe(status=>{if(!state||!txt)return;state.classList.remove("live","error");if(status==="SUBSCRIBED"){state.classList.add("live");txt.textContent="Live"}else if(status==="CHANNEL_ERROR"||status==="TIMED_OUT"){state.classList.add("error");txt.textContent="Verbindung gestört"}else txt.textContent="Synchronisiere …"});
 }
 
