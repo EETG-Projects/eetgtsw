@@ -2949,6 +2949,60 @@ body.role-viewer #clearSelectionButton{
     display:none!important;
 }
 
+
+/* =========================================================
+   INTERNER ABSTELLPLAN – FUNKTIONSFIXES
+========================================================= */
+.library-edit-row{
+    display:flex!important;
+    gap:6px!important;
+    flex-wrap:wrap;
+}
+
+.library-delete-button{
+    flex:1 1 90px;
+    min-height:30px!important;
+    padding:0 9px!important;
+    border:0!important;
+    border-radius:6px!important;
+    background:#c91420!important;
+    color:#fff!important;
+    font-size:10px!important;
+    font-weight:900!important;
+    cursor:pointer;
+}
+
+body:not(.is-admin) .library-delete-button,
+body.is-admin:not(.admin-edit-enabled) .library-delete-button{
+    display:none!important;
+}
+
+/* Bereiche immer sichtbar */
+.plan-zoom-layer .area{
+    display:block!important;
+    visibility:visible!important;
+    opacity:1!important;
+    z-index:4!important;
+}
+
+.plan-zoom-layer .track{
+    z-index:10!important;
+}
+
+.area-titlebar,
+.area-title{
+    visibility:visible!important;
+    opacity:1!important;
+}
+
+/* Verschieben-Button zuverlässig klick-/ziehbar */
+body.is-admin.admin-edit-enabled .track-drag-handle{
+    display:inline-flex!important;
+    pointer-events:auto!important;
+    touch-action:none!important;
+    cursor:grab!important;
+}
+
 </style>
 </head>
 
@@ -3723,7 +3777,7 @@ async function requireLogin() {
     const { data: { session }, error } = await window.eetgSupabase.auth.getSession();
 
     if (error || !session) {
-        window.location.replace("login.html?next=abstellplan.html");
+        window.location.replace("login.html?next=abstellplan-intern.html");
         return false;
     }
 
@@ -3749,6 +3803,7 @@ async function requireLogin() {
     document.getElementById("userRole").textContent = currentRole;
     document.body.classList.toggle("readonly", !canWrite());
     document.body.classList.toggle("is-admin", currentRole === "admin");
+    applyRoleVisibility();
     return true;
 }
 
@@ -3828,7 +3883,7 @@ function mapConsist(row) {
 function mapArea(row) {
     return {
         id: String(row.id),
-        location: String(row.location_id),
+        location: row.location_id == null ? null : String(row.location_id),
         name: row.name,
         type: row.area_type || "sonstiges",
         x: Number(row.x_position || 0),
@@ -4153,7 +4208,10 @@ async function loadPlan() {
             .order("position"),
 
         window.eetgSupabase
-            .from("areas").select("*").eq("location_id", Number(currentLocationId)).order("id"),
+            .from("areas")
+            .select("*")
+            .or(`location_id.eq.${Number(currentLocationId)},location_id.is.null`)
+            .order("id"),
         window.eetgSupabase
             .from("consists").select("*").eq("location_id", Number(currentLocationId)).order("id")
     ]);
@@ -4645,8 +4703,9 @@ function startAreaDrag(event, area, element) {
         area,
         element,
         pointerId: event.pointerId,
-        offsetX: event.clientX - rect.left + plan.scrollLeft - area.x,
-        offsetY: event.clientY - rect.top + plan.scrollTop - area.y
+        zoom: Number(planZoom) || 1,
+        offsetX: (event.clientX - rect.left + plan.scrollLeft) / (Number(planZoom) || 1) - area.x,
+        offsetY: (event.clientY - rect.top + plan.scrollTop) / (Number(planZoom) || 1) - area.y
     };
 
     element.classList.add("dragging-area");
@@ -4664,8 +4723,9 @@ function onAreaDragMove(event) {
     const rect = plan.getBoundingClientRect();
     const grid = 25;
 
-    let x = event.clientX - rect.left + plan.scrollLeft - activeAreaDrag.offsetX;
-    let y = event.clientY - rect.top + plan.scrollTop - activeAreaDrag.offsetY;
+    const zoom = activeAreaDrag.zoom || Number(planZoom) || 1;
+    let x = (event.clientX - rect.left + plan.scrollLeft) / zoom - activeAreaDrag.offsetX;
+    let y = (event.clientY - rect.top + plan.scrollTop) / zoom - activeAreaDrag.offsetY;
 
     x = Math.max(0, Math.round(x / grid) * grid);
     y = Math.max(0, Math.round(y / grid) * grid);
@@ -4710,6 +4770,7 @@ function startAreaResize(event, area, element) {
         element,
         startX: event.clientX,
         startY: event.clientY,
+        zoom: Number(planZoom) || 1,
         startWidth: area.width,
         startHeight: area.height
     };
@@ -5101,8 +5162,9 @@ function startTrackDrag(event, track, element) {
         track,
         element,
         pointerId: event.pointerId,
-        offsetX: event.clientX - planRect.left + plan.scrollLeft - track.x,
-        offsetY: event.clientY - planRect.top + plan.scrollTop - track.y
+        zoom: Number(planZoom) || 1,
+        offsetX: (event.clientX - planRect.left + plan.scrollLeft) / (Number(planZoom) || 1) - track.x,
+        offsetY: (event.clientY - planRect.top + plan.scrollTop) / (Number(planZoom) || 1) - track.y
     };
 
     element.classList.add("dragging-track");
@@ -5119,8 +5181,9 @@ function onTrackDragMove(event) {
     const plan = document.getElementById("plan");
     const planRect = plan.getBoundingClientRect();
 
-    let x = event.clientX - planRect.left + plan.scrollLeft - activeTrackDrag.offsetX;
-    let y = event.clientY - planRect.top + plan.scrollTop - activeTrackDrag.offsetY;
+    const zoom = activeTrackDrag.zoom || Number(planZoom) || 1;
+    let x = (event.clientX - planRect.left + plan.scrollLeft) / zoom - activeTrackDrag.offsetX;
+    let y = (event.clientY - planRect.top + plan.scrollTop) / zoom - activeTrackDrag.offsetY;
 
     // Kleine Rasterung für sauberes Ausrichten.
     const grid = 10;
@@ -5905,6 +5968,18 @@ function createLibraryVehicleCard(vehicle) {
     });
     editRow.appendChild(historyButton);
 
+    const deleteButton = document.createElement("button");
+    deleteButton.type = "button";
+    deleteButton.className = "library-delete-button";
+    deleteButton.textContent = "🗑 Löschen";
+    deleteButton.title = "Fahrzeug dauerhaft löschen";
+    deleteButton.addEventListener("click", event => {
+        event.preventDefault();
+        event.stopPropagation();
+        deleteVehicleFromLibrary(vehicle.id);
+    });
+    editRow.appendChild(deleteButton);
+
     item.appendChild(editRow);
 
     if (canWrite()) {
@@ -5931,6 +6006,34 @@ function toggleVehicleCategory(category) {
         collapsedCategories.add(category);
     }
     renderLibrary();
+}
+
+
+async function deleteVehicleFromLibrary(vehicleId){
+    if(!enforceEditMode()) return;
+
+    const vehicle = vehicles.find(v => String(v.id) === String(vehicleId));
+    if(!vehicle) return;
+
+    if(!confirm(`Fahrzeug „${vehicle.number}“ wirklich löschen?\n\nDas Fahrzeug wird dauerhaft aus der zentralen Datenbank entfernt.`)){
+        return;
+    }
+
+    const { error } = await window.eetgSupabase
+        .from("vehicles")
+        .delete()
+        .eq("id", Number(vehicle.id));
+
+    if(error){
+        showSupabaseError("Fahrzeug konnte nicht gelöscht werden.", error);
+        return;
+    }
+
+    if(String(selectedVehicle) === String(vehicle.id)){
+        selectedVehicle = null;
+    }
+
+    await loadPlan();
 }
 
 function renderLibrary() {
