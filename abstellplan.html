@@ -2165,6 +2165,144 @@ body.is-admin:not(.admin-edit-enabled) .library-edit-button{
     border-left:3px solid var(--accent);
 }
 
+
+/* =========================================================
+   STANDORTE + BEREICHE
+========================================================= */
+.location-toolbar{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    min-width:0;
+}
+
+.location-toolbar label{
+    color:var(--muted);
+    font-size:11px;
+    font-weight:800;
+}
+
+.location-select{
+    min-width:180px;
+    max-width:280px;
+    height:32px;
+    padding:5px 9px;
+    border:1px solid var(--border);
+    border-radius:7px;
+    background:var(--panel2);
+    color:var(--text);
+    font-weight:800;
+}
+
+.location-admin-btn{
+    padding:7px 9px!important;
+    font-size:11px!important;
+}
+
+.area{
+    position:absolute;
+    z-index:1;
+    border:2px dashed rgba(181,18,27,.55);
+    border-radius:12px;
+    background:rgba(181,18,27,.055);
+    min-width:120px;
+    min-height:80px;
+    box-sizing:border-box;
+    overflow:visible;
+}
+
+.area[data-area-type="werkstatt"]{
+    border-color:rgba(249,115,22,.75);
+    background:rgba(249,115,22,.07);
+}
+.area[data-area-type="abstellung"]{
+    border-color:rgba(59,130,246,.65);
+    background:rgba(59,130,246,.055);
+}
+.area[data-area-type="service"]{
+    border-color:rgba(34,197,94,.65);
+    background:rgba(34,197,94,.055);
+}
+.area[data-area-type="sonstiges"]{
+    border-color:rgba(168,85,247,.65);
+    background:rgba(168,85,247,.055);
+}
+
+.area-titlebar{
+    position:absolute;
+    left:8px;
+    top:7px;
+    right:8px;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    pointer-events:none;
+}
+
+.area-title{
+    padding:4px 7px;
+    border-radius:6px;
+    background:var(--panel);
+    border:1px solid var(--border);
+    color:var(--text);
+    font-size:11px;
+    font-weight:900;
+    box-shadow:0 3px 10px rgba(0,0,0,.08);
+}
+
+.area-admin-actions{
+    position:absolute;
+    right:8px;
+    top:8px;
+    z-index:45;
+    display:flex;
+    gap:5px;
+}
+
+.area-admin-actions button{
+    padding:5px 7px!important;
+    font-size:10px!important;
+    border-radius:6px!important;
+}
+
+.area-resize-handle{
+    position:absolute;
+    right:-6px;
+    bottom:-6px;
+    width:16px;
+    height:16px;
+    z-index:50;
+    border-radius:4px;
+    background:var(--accent);
+    border:2px solid var(--panel);
+    cursor:nwse-resize;
+    display:none;
+}
+
+body.is-admin.admin-edit-enabled .area-resize-handle{
+    display:block;
+}
+
+body.is-admin.admin-edit-enabled .area{
+    cursor:move;
+}
+
+.area.dragging-area,
+.area.resizing-area{
+    z-index:90;
+    box-shadow:0 14px 34px rgba(0,0,0,.18);
+}
+
+body.dark .area-title{
+    background:#1b2025;
+}
+
+.location-empty{
+    padding:28px;
+    color:var(--muted);
+    font-size:13px;
+}
+
 </style>
 </head>
 
@@ -2282,6 +2420,27 @@ body.is-admin:not(.admin-edit-enabled) .library-edit-button{
 <main class="workspace">
 
     <div class="workspace-toolbar">
+
+        <div class="location-toolbar">
+            <label for="locationSelect">Standort</label>
+            <select id="locationSelect" class="location-select" onchange="changeLocation(this.value)">
+                <option value="">Lade Standorte …</option>
+            </select>
+
+            <button
+                class="secondary admin-only location-admin-btn"
+                type="button"
+                onclick="openLocationModal()">
+                + Standort
+            </button>
+
+            <button
+                class="secondary admin-only location-admin-btn"
+                type="button"
+                onclick="openAreaModal()">
+                + Bereich
+            </button>
+        </div>
 
         <button class="write-only" onclick="createConsist()">
             🔗 Zugverband bilden
@@ -2490,6 +2649,65 @@ body.is-admin:not(.admin-edit-enabled) .library-edit-button{
     </div>
 </div>
 
+
+<!-- =====================================================
+     LOCATION MODAL
+===================================================== -->
+<div class="modal" id="locationModal">
+    <div class="modal-box">
+        <h2>Standort hinzufügen</h2>
+
+        <div class="form-row">
+            <label>Standortname</label>
+            <input id="locationName" placeholder="z.B. Frankfurt-Griesheim">
+        </div>
+
+        <div class="modal-buttons">
+            <button class="secondary" type="button" onclick="closeModals()">Abbrechen</button>
+            <button type="button" onclick="addLocation()">Hinzufügen</button>
+        </div>
+    </div>
+</div>
+
+<!-- =====================================================
+     AREA MODAL
+===================================================== -->
+<div class="modal" id="areaModal">
+    <div class="modal-box">
+        <h2>Bereich hinzufügen</h2>
+
+        <div class="form-row">
+            <label>Bezeichnung</label>
+            <input id="areaName" placeholder="z.B. Werkstatt">
+        </div>
+
+        <div class="form-row">
+            <label>Bereichstyp</label>
+            <select id="areaType">
+                <option value="abstellung">Abstellung</option>
+                <option value="werkstatt">Werkstatt</option>
+                <option value="service">Service / Tankstelle / Waschanlage</option>
+                <option value="sonstiges">Sonstiges</option>
+            </select>
+        </div>
+
+        <div class="form-row">
+            <label>Breite in Raster-Kästchen</label>
+            <input id="areaWidth" type="number" min="4" value="20">
+        </div>
+
+        <div class="form-row">
+            <label>Höhe in Raster-Kästchen</label>
+            <input id="areaHeight" type="number" min="3" value="8">
+        </div>
+
+        <div class="modal-buttons">
+            <button class="secondary" type="button" onclick="closeModals()">Abbrechen</button>
+            <button type="button" onclick="addArea()">Hinzufügen</button>
+        </div>
+    </div>
+</div>
+
 <!-- =====================================================
      TRACK MODAL
 ===================================================== -->
@@ -2655,6 +2873,12 @@ let selectedVehicle = null;
 let currentUser = null;
 let currentRole = "viewer";
 let realtimeChannel = null;
+let locations = [];
+let areas = [];
+let currentLocationId = null;
+let activeAreaDrag = null;
+let activeAreaResize = null;
+
 let globalSearchQuery = "";
 const collapsedCategories = new Set();
 
@@ -2800,7 +3024,8 @@ function mapTrack(row, index = 0) {
         length: Number(row.length),
         x: row.x_position == null ? 20 : Number(row.x_position),
         y: row.y_position == null ? (20 + index * 250) : Number(row.y_position),
-        note: row.note || ""
+        note: row.note || "",
+        location: row.location_id == null ? null : String(row.location_id)
     };
 }
 
@@ -2817,25 +3042,152 @@ function mapVehicle(row) {
         track: row.track_id,
         position: Number(row.position || 0),
         consist: row.consist,
-        status: row.status || "Abgestellt"
+        status: row.status || "Abgestellt",
+        location: row.location_id == null ? null : String(row.location_id)
     };
 }
 
-async function loadPlan() {
-    const [{ data: trackRows, error: trackError }, { data: vehicleRows, error: vehicleError }] =
-        await Promise.all([
-            window.eetgSupabase.from("tracks").select("*").order("sort_order", { ascending: true }).order("id"),
-            window.eetgSupabase.from("vehicles").select("*").order("track_id").order("position")
-        ]);
+function mapLocation(row) {
+    return {
+        id: String(row.id),
+        name: row.name
+    };
+}
 
-    if (trackError || vehicleError) {
-        console.error(trackError || vehicleError);
-        showSupabaseError("Der Abstellplan konnte nicht aus Supabase geladen werden.", trackError || vehicleError);
+function mapArea(row) {
+    return {
+        id: String(row.id),
+        location: String(row.location_id),
+        name: row.name,
+        type: row.area_type || "sonstiges",
+        x: Number(row.x_position || 0),
+        y: Number(row.y_position || 0),
+        width: Number(row.width_px || 500),
+        height: Number(row.height_px || 200)
+    };
+}
+
+async function loadLocations() {
+    const { data, error } = await window.eetgSupabase
+        .from("locations")
+        .select("*")
+        .order("name");
+
+    if (error) {
+        showSupabaseError("Standorte konnten nicht geladen werden.", error);
+        return false;
+    }
+
+    locations = (data || []).map(mapLocation);
+
+    if (!locations.length) {
+        currentLocationId = null;
+        renderLocationSelect();
+        return true;
+    }
+
+    const saved = localStorage.getItem("eetg_location_id");
+    const validSaved = locations.some(location => location.id === String(saved));
+
+    if (!currentLocationId || !locations.some(location => location.id === String(currentLocationId))) {
+        currentLocationId = validSaved ? String(saved) : locations[0].id;
+    }
+
+    renderLocationSelect();
+    return true;
+}
+
+function renderLocationSelect() {
+    const select = document.getElementById("locationSelect");
+    if (!select) return;
+
+    select.innerHTML = "";
+
+    if (!locations.length) {
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = "Kein Standort";
+        select.appendChild(option);
+        return;
+    }
+
+    locations.forEach(location => {
+        const option = document.createElement("option");
+        option.value = location.id;
+        option.textContent = location.name;
+        option.selected = location.id === String(currentLocationId);
+        select.appendChild(option);
+    });
+}
+
+async function changeLocation(locationId) {
+    if (!locationId) return;
+
+    currentLocationId = String(locationId);
+    localStorage.setItem("eetg_location_id", currentLocationId);
+
+    selectedVehicle = null;
+
+    const plan = document.getElementById("plan");
+    if (plan) {
+        plan.scrollLeft = 0;
+        plan.scrollTop = 0;
+    }
+
+    await loadPlan();
+}
+
+async function loadPlan() {
+    if (!locations.length) {
+        const ok = await loadLocations();
+        if (!ok) return;
+    }
+
+    if (!currentLocationId) {
+        tracks = [];
+        vehicles = [];
+        areas = [];
+        renderPlan();
+        renderLibrary();
+        return;
+    }
+
+    const [
+        { data: trackRows, error: trackError },
+        { data: vehicleRows, error: vehicleError },
+        { data: areaRows, error: areaError }
+    ] = await Promise.all([
+        window.eetgSupabase
+            .from("tracks")
+            .select("*")
+            .eq("location_id", Number(currentLocationId))
+            .order("sort_order", { ascending: true })
+            .order("id"),
+
+        window.eetgSupabase
+            .from("vehicles")
+            .select("*")
+            .eq("location_id", Number(currentLocationId))
+            .order("track_id")
+            .order("position"),
+
+        window.eetgSupabase
+            .from("areas")
+            .select("*")
+            .eq("location_id", Number(currentLocationId))
+            .order("id")
+    ]);
+
+    const error = trackError || vehicleError || areaError;
+
+    if (error) {
+        showSupabaseError("Der Standort konnte nicht aus Supabase geladen werden.", error);
         return;
     }
 
     tracks = (trackRows || []).map((row, index) => mapTrack(row, index));
     vehicles = (vehicleRows || []).map(mapVehicle);
+    areas = (areaRows || []).map(mapArea);
 
     renderPlan();
     renderLibrary();
@@ -2844,6 +3196,15 @@ async function loadPlan() {
 function renderPlan() {
     const plan = document.getElementById("plan");
     plan.innerHTML = "";
+
+    if (!currentLocationId) {
+        plan.innerHTML = '<div class="location-empty">Bitte zuerst einen Standort anlegen oder auswählen.</div>';
+        return;
+    }
+
+    areas.forEach(area => {
+        plan.appendChild(createAreaElement(area));
+    });
 
     tracks.forEach(track => {
         const trackElement = document.createElement("div");
@@ -3017,6 +3378,7 @@ function renderPlan() {
                     await moveConsist(vehicle.consist, track.id, position);
                 } else {
                     vehicle.track = track.id;
+                    vehicle.location = String(currentLocationId);
                     vehicle.position = position;
                     await updateVehicle(vehicle);
                 }
@@ -3031,6 +3393,347 @@ function renderPlan() {
     updatePlanCanvasSize();
     applySearchHighlights(false);
 }
+
+function createAreaElement(area) {
+    const element = document.createElement("div");
+    element.className = "area";
+    element.dataset.areaId = area.id;
+    element.dataset.areaType = area.type;
+    element.style.left = area.x + "px";
+    element.style.top = area.y + "px";
+    element.style.width = area.width + "px";
+    element.style.height = area.height + "px";
+
+    const titlebar = document.createElement("div");
+    titlebar.className = "area-titlebar";
+
+    const title = document.createElement("div");
+    title.className = "area-title";
+    title.textContent = area.name;
+    titlebar.appendChild(title);
+    element.appendChild(titlebar);
+
+    if (isAdmin() && adminEditMode) {
+        const actions = document.createElement("div");
+        actions.className = "area-admin-actions";
+
+        const renameButton = document.createElement("button");
+        renameButton.className = "secondary";
+        renameButton.type = "button";
+        renameButton.textContent = "✏";
+        renameButton.title = "Bereich umbenennen";
+        renameButton.addEventListener("click", event => {
+            event.stopPropagation();
+            renameArea(area.id);
+        });
+
+        const deleteButton = document.createElement("button");
+        deleteButton.className = "danger";
+        deleteButton.type = "button";
+        deleteButton.textContent = "🗑";
+        deleteButton.title = "Bereich löschen";
+        deleteButton.addEventListener("click", event => {
+            event.stopPropagation();
+            deleteArea(area.id);
+        });
+
+        actions.appendChild(renameButton);
+        actions.appendChild(deleteButton);
+        element.appendChild(actions);
+
+        const resizeHandle = document.createElement("div");
+        resizeHandle.className = "area-resize-handle";
+        resizeHandle.title = "Bereich vergrößern / verkleinern";
+        resizeHandle.addEventListener("pointerdown", event => {
+            event.preventDefault();
+            event.stopPropagation();
+            startAreaResize(event, area, element);
+        });
+        element.appendChild(resizeHandle);
+
+        element.addEventListener("pointerdown", event => {
+            if (event.target.closest("button, .area-resize-handle")) return;
+            startAreaDrag(event, area, element);
+        });
+    }
+
+    return element;
+}
+
+function startAreaDrag(event, area, element) {
+    if (!enforceEditMode()) return;
+
+    const plan = document.getElementById("plan");
+    const rect = plan.getBoundingClientRect();
+
+    activeAreaDrag = {
+        area,
+        element,
+        pointerId: event.pointerId,
+        offsetX: event.clientX - rect.left + plan.scrollLeft - area.x,
+        offsetY: event.clientY - rect.top + plan.scrollTop - area.y
+    };
+
+    element.classList.add("dragging-area");
+    element.setPointerCapture?.(event.pointerId);
+
+    window.addEventListener("pointermove", onAreaDragMove);
+    window.addEventListener("pointerup", endAreaDrag, { once: true });
+    window.addEventListener("pointercancel", endAreaDrag, { once: true });
+}
+
+function onAreaDragMove(event) {
+    if (!activeAreaDrag) return;
+
+    const plan = document.getElementById("plan");
+    const rect = plan.getBoundingClientRect();
+    const grid = 25;
+
+    let x = event.clientX - rect.left + plan.scrollLeft - activeAreaDrag.offsetX;
+    let y = event.clientY - rect.top + plan.scrollTop - activeAreaDrag.offsetY;
+
+    x = Math.max(0, Math.round(x / grid) * grid);
+    y = Math.max(0, Math.round(y / grid) * grid);
+
+    activeAreaDrag.area.x = x;
+    activeAreaDrag.area.y = y;
+    activeAreaDrag.element.style.left = x + "px";
+    activeAreaDrag.element.style.top = y + "px";
+
+    updatePlanCanvasSize();
+}
+
+async function endAreaDrag() {
+    if (!activeAreaDrag) return;
+
+    const { area, element } = activeAreaDrag;
+    activeAreaDrag = null;
+
+    element.classList.remove("dragging-area");
+    window.removeEventListener("pointermove", onAreaDragMove);
+
+    const { error } = await window.eetgSupabase
+        .from("areas")
+        .update({
+            x_position: area.x,
+            y_position: area.y,
+            updated_at: new Date().toISOString()
+        })
+        .eq("id", Number(area.id));
+
+    if (error) {
+        showSupabaseError("Bereichsposition konnte nicht gespeichert werden.", error);
+        await loadPlan();
+    }
+}
+
+function startAreaResize(event, area, element) {
+    if (!enforceEditMode()) return;
+
+    activeAreaResize = {
+        area,
+        element,
+        startX: event.clientX,
+        startY: event.clientY,
+        startWidth: area.width,
+        startHeight: area.height
+    };
+
+    element.classList.add("resizing-area");
+
+    window.addEventListener("pointermove", onAreaResizeMove);
+    window.addEventListener("pointerup", endAreaResize, { once: true });
+    window.addEventListener("pointercancel", endAreaResize, { once: true });
+}
+
+function onAreaResizeMove(event) {
+    if (!activeAreaResize) return;
+
+    const grid = 25;
+
+    let width =
+        activeAreaResize.startWidth +
+        (event.clientX - activeAreaResize.startX);
+
+    let height =
+        activeAreaResize.startHeight +
+        (event.clientY - activeAreaResize.startY);
+
+    width = Math.max(125, Math.round(width / grid) * grid);
+    height = Math.max(75, Math.round(height / grid) * grid);
+
+    activeAreaResize.area.width = width;
+    activeAreaResize.area.height = height;
+
+    activeAreaResize.element.style.width = width + "px";
+    activeAreaResize.element.style.height = height + "px";
+
+    updatePlanCanvasSize();
+}
+
+async function endAreaResize() {
+    if (!activeAreaResize) return;
+
+    const { area, element } = activeAreaResize;
+    activeAreaResize = null;
+
+    element.classList.remove("resizing-area");
+    window.removeEventListener("pointermove", onAreaResizeMove);
+
+    const { error } = await window.eetgSupabase
+        .from("areas")
+        .update({
+            width_px: area.width,
+            height_px: area.height,
+            updated_at: new Date().toISOString()
+        })
+        .eq("id", Number(area.id));
+
+    if (error) {
+        showSupabaseError("Bereichsgröße konnte nicht gespeichert werden.", error);
+        await loadPlan();
+    }
+}
+
+function openLocationModal() {
+    if (!enforceEditMode()) return;
+    document.getElementById("locationModal").classList.add("active");
+}
+
+async function addLocation() {
+    if (!enforceEditMode()) return;
+
+    const name = document.getElementById("locationName").value.trim();
+
+    if (!name) {
+        alert("Bitte einen Standortnamen eingeben.");
+        return;
+    }
+
+    const { data, error } = await window.eetgSupabase
+        .from("locations")
+        .insert({ name })
+        .select()
+        .single();
+
+    if (error) {
+        showSupabaseError("Standort konnte nicht angelegt werden.", error);
+        return;
+    }
+
+    closeModals();
+    document.getElementById("locationName").value = "";
+
+    await loadLocations();
+    currentLocationId = String(data.id);
+    localStorage.setItem("eetg_location_id", currentLocationId);
+    renderLocationSelect();
+    await loadPlan();
+}
+
+function openAreaModal() {
+    if (!enforceEditMode()) return;
+
+    if (!currentLocationId) {
+        alert("Bitte zuerst einen Standort auswählen.");
+        return;
+    }
+
+    document.getElementById("areaModal").classList.add("active");
+}
+
+async function addArea() {
+    if (!enforceEditMode()) return;
+
+    if (!currentLocationId) return;
+
+    const name = document.getElementById("areaName").value.trim();
+    const type = document.getElementById("areaType").value;
+    const widthBoxes = Number(document.getElementById("areaWidth").value);
+    const heightBoxes = Number(document.getElementById("areaHeight").value);
+
+    if (!name) {
+        alert("Bitte eine Bezeichnung für den Bereich eingeben.");
+        return;
+    }
+
+    if (!Number.isFinite(widthBoxes) || widthBoxes < 4 ||
+        !Number.isFinite(heightBoxes) || heightBoxes < 3) {
+        alert("Bitte eine gültige Bereichsgröße eingeben.");
+        return;
+    }
+
+    const { error } = await window.eetgSupabase
+        .from("areas")
+        .insert({
+            location_id: Number(currentLocationId),
+            name,
+            area_type: type,
+            x_position: 25,
+            y_position: 25,
+            width_px: widthBoxes * 25,
+            height_px: heightBoxes * 25
+        });
+
+    if (error) {
+        showSupabaseError("Bereich konnte nicht angelegt werden.", error);
+        return;
+    }
+
+    closeModals();
+    document.getElementById("areaName").value = "";
+    await loadPlan();
+}
+
+async function renameArea(areaId) {
+    if (!enforceEditMode()) return;
+
+    const area = areas.find(a => a.id === String(areaId));
+    if (!area) return;
+
+    const name = prompt("Bereichsname:", area.name);
+    if (name === null) return;
+
+    const clean = name.trim();
+    if (!clean) return;
+
+    const { error } = await window.eetgSupabase
+        .from("areas")
+        .update({
+            name: clean,
+            updated_at: new Date().toISOString()
+        })
+        .eq("id", Number(area.id));
+
+    if (error) {
+        showSupabaseError("Bereich konnte nicht umbenannt werden.", error);
+        return;
+    }
+
+    await loadPlan();
+}
+
+async function deleteArea(areaId) {
+    if (!enforceEditMode()) return;
+
+    const area = areas.find(a => a.id === String(areaId));
+    if (!area) return;
+
+    if (!confirm(`Bereich "${area.name}" wirklich löschen?`)) return;
+
+    const { error } = await window.eetgSupabase
+        .from("areas")
+        .delete()
+        .eq("id", Number(area.id));
+
+    if (error) {
+        showSupabaseError("Bereich konnte nicht gelöscht werden.", error);
+        return;
+    }
+
+    await loadPlan();
+}
+
 
 function updatePlanCanvasSize() {
     const plan = document.getElementById("plan");
@@ -3051,6 +3754,18 @@ function updatePlanCanvasSize() {
 
     let contentRight = 0;
     let contentBottom = 0;
+
+    areas.forEach(area => {
+        contentRight = Math.max(
+            contentRight,
+            Number(area.x || 0) + Number(area.width || 0)
+        );
+
+        contentBottom = Math.max(
+            contentBottom,
+            Number(area.y || 0) + Number(area.height || 0)
+        );
+    });
 
     tracks.forEach(track => {
         const trackWidth =
@@ -3271,6 +3986,9 @@ async function updateVehicle(vehicle) {
             type: vehicle.type,
             length: vehicle.length,
             track_id: vehicle.track,
+            location_id: vehicle.location == null
+                ? (currentLocationId ? Number(currentLocationId) : null)
+                : Number(vehicle.location),
             position: vehicle.position,
             consist: vehicle.consist,
             status: vehicle.status || "Abgestellt",
@@ -3305,6 +4023,7 @@ async function returnVehicleToLibrary(vehicleId) {
     const oldConsist = vehicle.consist;
 
     vehicle.track = null;
+    vehicle.location = String(currentLocationId);
     vehicle.position = 0;
     vehicle.consist = null;
 
@@ -3385,6 +4104,7 @@ async function moveConsist(consistId, targetTrack, newStart) {
 
     consistVehicles.forEach(vehicle => {
         vehicle.track = targetTrack;
+        vehicle.location = String(currentLocationId);
         vehicle.position = Math.max(0, vehicle.position + offset);
     });
 
@@ -3542,6 +4262,7 @@ async function addVehicle() {
             type,
             length,
             track_id: tracks[0].id,
+            location_id: Number(currentLocationId),
             position: 10,
             consist: null,
             status: "Abgestellt"
@@ -3594,6 +4315,7 @@ async function addTrack() {
             number,
             length,
             sort_order: sortOrder,
+            location_id: Number(currentLocationId),
             x_position: 20,
             y_position: 20 + tracks.length * 250,
             note: ""
@@ -4186,6 +4908,13 @@ function subscribeRealtime() {
 
     realtimeChannel = window.eetgSupabase
         .channel("eetg-abstellplan")
+        .on("postgres_changes", { event: "*", schema: "public", table: "locations" }, async () => {
+            await loadLocations();
+            await loadPlan();
+        })
+        .on("postgres_changes", { event: "*", schema: "public", table: "areas" }, () => {
+            if (!activeAreaDrag && !activeAreaResize) loadPlan();
+        })
         .on("postgres_changes", { event: "*", schema: "public", table: "tracks" }, () => {
             if (!activeTrackDrag) loadPlan();
         })
@@ -4199,6 +4928,7 @@ function subscribeRealtime() {
     const ok = await requireLogin();
     if (!ok) return;
 
+    await loadLocations();
     await loadPlan();
     subscribeRealtime();
 })();
