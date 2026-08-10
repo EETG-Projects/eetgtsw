@@ -295,7 +295,15 @@ button.danger {
 .plan-container {
     flex: 1;
     position: relative;
-    overflow: auto;
+    min-width: 0;
+    min-height: 0;
+
+    /* Horizontale und vertikale Scrollbar dauerhaft ermöglichen */
+    overflow: scroll;
+    scrollbar-gutter: stable;
+
+    --canvas-width: 3000px;
+    --canvas-height: 1800px;
 
     background:
         linear-gradient(
@@ -311,6 +319,42 @@ button.danger {
     background-size: 25px 25px;
 
     padding: 25px;
+}
+
+/* Unsichtbare Zeichenfläche erzeugt den scrollbaren Bereich.
+   Die Gleise bleiben absolut darüber positioniert. */
+.plan-container::before {
+    content: "";
+    display: block;
+    width: var(--canvas-width);
+    height: var(--canvas-height);
+    pointer-events: none;
+}
+
+/* Besser sichtbare Slider / Scrollbars */
+.plan-container::-webkit-scrollbar {
+    width: 14px;
+    height: 14px;
+}
+
+.plan-container::-webkit-scrollbar-track {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+}
+
+.plan-container::-webkit-scrollbar-thumb {
+    background: #5d646b;
+    border: 3px solid var(--panel2);
+    border-radius: 999px;
+}
+
+.plan-container::-webkit-scrollbar-thumb:hover {
+    background: #737b84;
+}
+
+.plan-container {
+    scrollbar-width: auto;
+    scrollbar-color: #5d646b var(--panel2);
 }
 
 
@@ -2592,19 +2636,48 @@ function updatePlanCanvasSize() {
     const plan = document.getElementById("plan");
     if (!plan) return;
 
-    let maxRight = 1200;
-    let maxBottom = 850;
+    /*
+     * Zusätzliche freie Arbeitsfläche:
+     * rechts  = 2000 px
+     * unten   = 1200 px
+     *
+     * Die Fläche wächst automatisch weiter, sobald Gleise
+     * weiter nach rechts oder unten verschoben werden.
+     */
+    const EXTRA_RIGHT = 2000;
+    const EXTRA_BOTTOM = 1200;
+
+    let maxRight = Math.max(plan.clientWidth, 1400);
+    let maxBottom = Math.max(plan.clientHeight, 900);
 
     tracks.forEach(track => {
         const width = track.length * PIXELS_PER_METER + 110 + 25;
-        maxRight = Math.max(maxRight, track.x + width + 80);
-        const visibleTrackHeight = (isAdmin() && adminEditMode) ? 285 : 215;
-        maxBottom = Math.max(maxBottom, track.y + visibleTrackHeight + 50);
+        const visibleTrackHeight =
+            (isAdmin() && adminEditMode) ? 285 : 215;
+
+        maxRight = Math.max(
+            maxRight,
+            track.x + width
+        );
+
+        maxBottom = Math.max(
+            maxBottom,
+            track.y + visibleTrackHeight
+        );
     });
 
-    // Absolute Elemente benötigen eine explizite Arbeitsfläche.
-    plan.style.minWidth = maxRight + "px";
-    plan.style.minHeight = maxBottom + "px";
+    const canvasWidth = maxRight + EXTRA_RIGHT;
+    const canvasHeight = maxBottom + EXTRA_BOTTOM;
+
+    plan.style.setProperty(
+        "--canvas-width",
+        canvasWidth + "px"
+    );
+
+    plan.style.setProperty(
+        "--canvas-height",
+        canvasHeight + "px"
+    );
 }
 
 let activeTrackDrag = null;
@@ -3544,6 +3617,10 @@ function subscribeRealtime() {
 })();
 </script>
 <script>
+window.addEventListener("resize", () => {
+    updatePlanCanvasSize();
+});
+
 document.addEventListener("DOMContentLoaded", () => {
     adminEditMode = false;
     document.body.classList.remove("admin-edit-enabled");
