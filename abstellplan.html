@@ -259,6 +259,8 @@ button.danger {
     flex-direction: column;
 
     min-width: 0;
+    min-height: 0;
+    overflow: hidden;
 }
 
 
@@ -293,14 +295,18 @@ button.danger {
 ========================================================= */
 
 .plan-container {
-    flex: 1;
+    flex: 1 1 0;
+    width: 100%;
+    height: 100%;
     position: relative;
     min-width: 0;
     min-height: 0;
 
     /* Horizontale und vertikale Scrollbar dauerhaft ermöglichen */
-    overflow: scroll;
-    scrollbar-gutter: stable;
+    overflow-x: scroll !important;
+    overflow-y: scroll !important;
+    scrollbar-gutter: stable both-edges;
+    overscroll-behavior: contain;
 
     --canvas-width: 3000px;
     --canvas-height: 1800px;
@@ -326,8 +332,8 @@ button.danger {
 .plan-container::before {
     content: "";
     display: block;
-    width: var(--canvas-width);
-    height: var(--canvas-height);
+    width: max(var(--canvas-width), calc(100% + 1000px));
+    height: max(var(--canvas-height), calc(100% + 800px));
     pointer-events: none;
 }
 
@@ -1831,6 +1837,24 @@ body.dark .vehicle-company-heading{
     background:rgba(255,255,255,.055);
 }
 
+
+/* Zentrale Datenbank / Aktualisieren eine Raster-Kachel (25 px) nach oben */
+.database-section{
+    transform:translateY(-25px);
+    margin-bottom:-25px;
+}
+
+/* Horizontalen Slider am unteren Rand der Planfläche klar sichtbar halten */
+.plan-container::-webkit-scrollbar:horizontal{
+    height:16px;
+}
+.plan-container::-webkit-scrollbar:vertical{
+    width:16px;
+}
+.plan-container::-webkit-scrollbar-corner{
+    background:var(--panel2);
+}
+
 </style>
 </head>
 
@@ -1918,7 +1942,7 @@ body.dark .vehicle-company-heading{
         Du bist als Betrachter angemeldet. Änderungen sind deaktiviert.
     </div>
 
-    <div class="sidebar-section">
+    <div class="sidebar-section database-section">
 
         <div class="sidebar-title">
             Zentrale Datenbank
