@@ -2706,6 +2706,146 @@ body.sidebar-collapsed .sidebar-toggle-button{
     margin:0 auto;
 }
 
+
+/* =========================================================
+   ABSTELLPLAN ZOOM
+========================================================= */
+.zoom-controls{
+    display:flex;
+    align-items:center;
+    gap:4px;
+    margin-left:auto;
+}
+
+.zoom-button,
+.zoom-reset{
+    min-width:30px;
+    height:30px;
+    padding:0 8px!important;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    font-size:13px!important;
+    border-radius:6px!important;
+}
+
+.zoom-value{
+    min-width:44px;
+    text-align:center;
+    color:var(--muted);
+    font-size:10px;
+    font-weight:900;
+}
+
+.plan-container{
+    position:relative!important;
+    overflow:scroll!important;
+}
+
+/*
+ * Der innere Layer enthält alle Gleise/Bereiche und wird gezoomt.
+ * CSS zoom skaliert dabei auch die Layout-Abmessungen und eignet sich
+ * deshalb hier besser als transform:scale().
+ */
+.plan-zoom-layer{
+    position:relative;
+    width:var(--canvas-width);
+    height:var(--canvas-height);
+    min-width:0;
+    min-height:0;
+    transform-origin:0 0;
+}
+
+/* Der alte Scroll-Spacer muss auf dem Viewport weg, weil der Zoom-Layer
+   jetzt selbst die scrollbare Fläche erzeugt. */
+.plan-container::before{
+    display:none!important;
+    content:none!important;
+}
+
+
+/* =========================================================
+   BEREICHE – SICHTBAR + ADMIN LÖSCHEN
+========================================================= */
+.plan-zoom-layer .area{
+    display:block!important;
+    visibility:visible!important;
+    opacity:1!important;
+    z-index:2!important;
+    border-width:2px!important;
+    border-style:dashed!important;
+}
+
+/* Gleise/Fahrzeuge bleiben darüber. */
+.plan-zoom-layer .track{
+    z-index:10!important;
+}
+
+/* Bereichsname ist für alle Benutzer jederzeit sichtbar. */
+.area-titlebar{
+    z-index:20!important;
+    pointer-events:none!important;
+}
+
+.area-title{
+    display:inline-flex!important;
+    align-items:center;
+    min-height:25px;
+    padding:5px 8px!important;
+    font-size:11px!important;
+    font-weight:900!important;
+    opacity:1!important;
+}
+
+/* Admin-Aktionen nur im aktivierten Bearbeitungsmodus. */
+.area-admin-actions{
+    display:none!important;
+    top:8px!important;
+    right:8px!important;
+    z-index:80!important;
+    gap:5px!important;
+}
+
+body.is-admin.admin-edit-enabled .area-admin-actions{
+    display:flex!important;
+}
+
+.area-admin-actions button{
+    pointer-events:auto!important;
+    white-space:nowrap;
+    padding:5px 8px!important;
+    font-size:9px!important;
+}
+
+/* Löschbutton deutlich rot. */
+.area-admin-actions .danger{
+    background:#b91c1c!important;
+    color:#fff!important;
+}
+
+/* Resize-Griff bleibt ebenfalls nur für Admin + Bearbeiten sichtbar. */
+.area-resize-handle{
+    z-index:85!important;
+}
+
+/* Bereichsflächen etwas kräftiger, damit man sie im Plan erkennt. */
+.area[data-area-type="abstellung"]{
+    border-color:rgba(59,130,246,.9)!important;
+    background:rgba(59,130,246,.10)!important;
+}
+.area[data-area-type="werkstatt"]{
+    border-color:rgba(249,115,22,.9)!important;
+    background:rgba(249,115,22,.11)!important;
+}
+.area[data-area-type="service"]{
+    border-color:rgba(34,197,94,.9)!important;
+    background:rgba(34,197,94,.10)!important;
+}
+.area[data-area-type="sonstiges"]{
+    border-color:rgba(168,85,247,.9)!important;
+    background:rgba(168,85,247,.10)!important;
+}
+
 </style>
 </head>
 
@@ -2922,6 +3062,13 @@ body.sidebar-collapsed .sidebar-toggle-button{
 
         </button>
 
+        <div class="zoom-controls" aria-label="Zoomsteuerung">
+            <button class="secondary zoom-button" type="button" onclick="zoomOut()" title="Herauszoomen">−</button>
+            <span class="zoom-value" id="zoomValue">100%</span>
+            <button class="secondary zoom-button" type="button" onclick="zoomIn()" title="Hineinzoomen">+</button>
+            <button class="secondary zoom-reset" type="button" onclick="resetZoom()" title="Zoom zurücksetzen">100%</button>
+        </div>
+
         <div class="scale-info">
 
             1 px = 0,125 m
@@ -2934,6 +3081,8 @@ body.sidebar-collapsed .sidebar-toggle-button{
     <div
         class="plan-container"
         id="plan">
+
+        <div class="plan-zoom-layer" id="planZoomLayer"></div>
 
     </div>
 
@@ -3364,6 +3513,11 @@ let historyRealtimeChannel = null;
 let realtimeFallbackTimer = null;
 let globalInfo = null;
 let vehicleSidebarCollapsed = false;
+let planZoom = 1;
+const PLAN_ZOOM_MIN = 0.4;
+const PLAN_ZOOM_MAX = 2.0;
+const PLAN_ZOOM_STEP = 0.1;
+
 let locations = [];
 let areas = [];
 let currentLocationId = null;
@@ -3567,6 +3721,93 @@ function mapArea(row) {
 }
 
 
+
+
+function clampPlanZoom(value){
+    return Math.min(PLAN_ZOOM_MAX, Math.max(PLAN_ZOOM_MIN, value));
+}
+
+function applyPlanZoom(keepCenter = true){
+    const viewport = document.getElementById("plan");
+    const layer = document.getElementById("planZoomLayer");
+    const label = document.getElementById("zoomValue");
+
+    if(!viewport || !layer) return;
+
+    let centerX = 0;
+    let centerY = 0;
+
+    if(keepCenter){
+        centerX = (viewport.scrollLeft + viewport.clientWidth / 2) / (parseFloat(layer.dataset.zoom || "1"));
+        centerY = (viewport.scrollTop + viewport.clientHeight / 2) / (parseFloat(layer.dataset.zoom || "1"));
+    }
+
+    layer.style.zoom = String(planZoom);
+    layer.dataset.zoom = String(planZoom);
+
+    if(label){
+        label.textContent = Math.round(planZoom * 100) + "%";
+    }
+
+    try{
+        localStorage.setItem("eetg_plan_zoom", String(planZoom));
+    }catch(_){}
+
+    updatePlanCanvasSize();
+
+    if(keepCenter){
+        requestAnimationFrame(() => {
+            viewport.scrollLeft = Math.max(0, centerX * planZoom - viewport.clientWidth / 2);
+            viewport.scrollTop = Math.max(0, centerY * planZoom - viewport.clientHeight / 2);
+        });
+    }
+}
+
+function zoomIn(){
+    planZoom = clampPlanZoom(Math.round((planZoom + PLAN_ZOOM_STEP) * 10) / 10);
+    applyPlanZoom(true);
+}
+
+function zoomOut(){
+    planZoom = clampPlanZoom(Math.round((planZoom - PLAN_ZOOM_STEP) * 10) / 10);
+    applyPlanZoom(true);
+}
+
+function resetZoom(){
+    planZoom = 1;
+    applyPlanZoom(true);
+}
+
+function loadPlanZoom(){
+    try{
+        const saved = Number(localStorage.getItem("eetg_plan_zoom"));
+        if(Number.isFinite(saved) && saved >= PLAN_ZOOM_MIN && saved <= PLAN_ZOOM_MAX){
+            planZoom = saved;
+        }
+    }catch(_){}
+
+    applyPlanZoom(false);
+}
+
+/* Strg + Mausrad zoomt den Abstellplan, normales Mausrad scrollt weiter. */
+function setupPlanWheelZoom(){
+    const viewport = document.getElementById("plan");
+    if(!viewport || viewport.dataset.zoomWheelReady === "1") return;
+
+    viewport.dataset.zoomWheelReady = "1";
+
+    viewport.addEventListener("wheel", event => {
+        if(!event.ctrlKey) return;
+
+        event.preventDefault();
+
+        if(event.deltaY < 0){
+            zoomIn();
+        }else{
+            zoomOut();
+        }
+    }, { passive:false });
+}
 
 function applyVehicleLibraryState(){
     document.body.classList.toggle("sidebar-collapsed", vehicleSidebarCollapsed);
@@ -3983,7 +4224,8 @@ document.addEventListener("click",event=>{
 
 
 function renderPlan() {
-    const plan = document.getElementById("plan");
+    const plan = document.getElementById("planZoomLayer");
+    if (!plan) return;
     plan.innerHTML = "";
 
 
@@ -4214,7 +4456,17 @@ function createAreaElement(area) {
 
     const title = document.createElement("div");
     title.className = "area-title";
-    title.textContent = area.name;
+
+    const typeLabels = {
+        abstellung: "Abstellung",
+        werkstatt: "Werkstatt",
+        service: "Service",
+        sonstiges: "Bereich"
+    };
+
+    title.textContent =
+        `${area.name} · ${typeLabels[area.type] || "Bereich"}`;
+
     titlebar.appendChild(title);
     element.appendChild(titlebar);
 
@@ -4225,7 +4477,7 @@ function createAreaElement(area) {
         const renameButton = document.createElement("button");
         renameButton.className = "secondary";
         renameButton.type = "button";
-        renameButton.textContent = "✏";
+        renameButton.textContent = "✏ Name";
         renameButton.title = "Bereich umbenennen";
         renameButton.addEventListener("click", event => {
             event.stopPropagation();
@@ -4235,7 +4487,7 @@ function createAreaElement(area) {
         const deleteButton = document.createElement("button");
         deleteButton.className = "danger";
         deleteButton.type = "button";
-        deleteButton.textContent = "🗑";
+        deleteButton.textContent = "🗑 Löschen";
         deleteButton.title = "Bereich löschen";
         deleteButton.addEventListener("click", event => {
             event.stopPropagation();
@@ -4620,10 +4872,21 @@ async function renameArea(areaId) {
 async function deleteArea(areaId) {
     if (!enforceEditMode()) return;
 
+    if (!isAdmin()) {
+        alert("Nur Administratoren dürfen Bereiche löschen.");
+        return;
+    }
+
     const area = areas.find(a => a.id === String(areaId));
     if (!area) return;
 
-    if (!confirm(`Bereich "${area.name}" wirklich löschen?`)) return;
+    const confirmed = confirm(
+        `Bereich „${area.name}“ wirklich löschen?\n\n` +
+        "Der Bereich wird nur aus dem Abstellplan entfernt. " +
+        "Gleise und Fahrzeuge bleiben bestehen."
+    );
+
+    if (!confirmed) return;
 
     const { error } = await window.eetgSupabase
         .from("areas")
@@ -5951,6 +6214,8 @@ window.addEventListener("beforeunload",()=>{
 (async function init() {
     loadTheme();
     loadVehicleLibraryState();
+    loadPlanZoom();
+    setupPlanWheelZoom();
 
     const ok = await requireLogin();
     if (!ok) return;
