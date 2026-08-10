@@ -1602,6 +1602,138 @@ body.dark .library-status-palette{
     border-color:#434a51!important;
 }
 
+
+/* =========================================================
+   FAHRZEUGKATEGORIEN + SUCHE
+========================================================= */
+.library-head-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:10px;
+}
+
+.library-head-row .sidebar-title{
+    margin:0;
+    white-space:nowrap;
+}
+
+.library-search{
+    flex:1;
+    min-width:0;
+    position:relative;
+}
+
+.library-search input{
+    width:100%;
+    height:34px;
+    padding:7px 34px 7px 10px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    background:var(--panel2);
+    color:var(--text);
+    font-size:12px;
+}
+
+.library-search button{
+    position:absolute;
+    right:4px;
+    top:4px;
+    width:26px;
+    height:26px;
+    padding:0!important;
+    border-radius:6px;
+    background:transparent!important;
+    color:var(--muted)!important;
+    font-size:14px!important;
+}
+
+.search-result-info{
+    min-height:16px;
+    margin:4px 0 0;
+    color:var(--muted);
+    font-size:10px;
+}
+
+.vehicle-category{
+    margin-bottom:10px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    overflow:hidden;
+    background:var(--panel);
+}
+
+.vehicle-category-header{
+    width:100%;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    padding:9px 10px!important;
+    border-radius:0!important;
+    background:var(--panel2)!important;
+    color:var(--text)!important;
+    text-align:left;
+    font-size:12px!important;
+}
+
+.vehicle-category-header:hover{
+    background:rgba(181,18,27,.08)!important;
+}
+
+.vehicle-category-chevron{
+    transition:transform .18s ease;
+}
+
+.vehicle-category.collapsed .vehicle-category-chevron{
+    transform:rotate(-90deg);
+}
+
+.vehicle-category-body{
+    padding:7px;
+}
+
+.vehicle-category.collapsed .vehicle-category-body{
+    display:none;
+}
+
+.vehicle-category-count{
+    margin-left:auto;
+    color:var(--muted);
+    font-size:10px;
+    font-weight:700;
+}
+
+.search-highlight{
+    outline:3px solid #facc15!important;
+    box-shadow:0 0 0 3px rgba(250,204,21,.22),0 0 22px rgba(250,204,21,.55)!important;
+    animation:eetgSearchPulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes eetgSearchPulse{
+    from{filter:brightness(1)}
+    to{filter:brightness(1.15)}
+}
+
+.track.search-highlight{
+    z-index:160!important;
+}
+
+.library-item.search-highlight{
+    position:relative;
+    z-index:5;
+}
+
+body.dark .vehicle-category{
+    background:#15191d;
+    border-color:#343a40;
+}
+
+body.dark .vehicle-category-header{
+    background:#20262c!important;
+    color:#f5f6f7!important;
+}
+
 </style>
 </head>
 
@@ -1649,9 +1781,19 @@ body.dark .library-status-palette{
 
     <div class="sidebar-section">
 
-        <div class="sidebar-title">
-            Fahrzeugbibliothek
+        <div class="library-head-row">
+            <div class="sidebar-title">Fahrzeugbibliothek</div>
+            <div class="library-search">
+                <input
+                    id="globalSearch"
+                    type="search"
+                    placeholder="Lok oder Gleis suchen …"
+                    autocomplete="off"
+                    oninput="handleGlobalSearch(this.value)">
+                <button type="button" onclick="clearGlobalSearch()" title="Suche löschen">×</button>
+            </div>
         </div>
+        <div class="search-result-info" id="searchResultInfo"></div>
 
         <div class="button-row write-only">
 
@@ -1788,17 +1930,21 @@ body.dark .library-status-palette{
             </label>
 
             <select id="vehicleType">
-
-                <option value="lok">
-                    Lokomotive
-                </option>
-
-                <option value="wagen">
-                    Wagen
-                </option>
-
+                <option value="lok">Lokomotive</option>
+                <option value="wagen">Wagen</option>
             </select>
 
+        </div>
+
+        <div class="form-row">
+            <label>Fahrzeugkategorie</label>
+            <select id="vehicleCategory">
+                <option value="elektrolok">Elektroloks</option>
+                <option value="diesellok">Dieselloks</option>
+                <option value="triebwagen">Triebwagen</option>
+                <option value="personenwagen">Personenwagen</option>
+                <option value="gueterwagen">Güterwagen</option>
+            </select>
         </div>
 
 
@@ -2017,6 +2163,25 @@ let selectedVehicle = null;
 let currentUser = null;
 let currentRole = "viewer";
 let realtimeChannel = null;
+let globalSearchQuery = "";
+const collapsedCategories = new Set();
+
+const VEHICLE_CATEGORY_LABELS = {
+    elektrolok: "Elektroloks",
+    diesellok: "Dieselloks",
+    triebwagen: "Triebwagen",
+    personenwagen: "Personenwagen",
+    gueterwagen: "Güterwagen"
+};
+
+const VEHICLE_CATEGORY_ORDER = [
+    "elektrolok",
+    "diesellok",
+    "triebwagen",
+    "personenwagen",
+    "gueterwagen"
+];
+
 
 function canWrite() {
     return currentRole === "dispatcher" || currentRole === "admin";
@@ -2153,6 +2318,7 @@ function mapVehicle(row) {
         number: row.number,
         model: row.model || "",
         image: row.image_url || "",
+        category: row.category || (row.type === "wagen" ? "personenwagen" : "elektrolok"),
         type: row.type,
         length: Number(row.length),
         track: row.track_id,
@@ -2190,6 +2356,7 @@ function renderPlan() {
         const trackElement = document.createElement("div");
         trackElement.className = "track";
         trackElement.dataset.track = track.id;
+        trackElement.dataset.searchText = `${track.number} ${track.length}m`.toLowerCase();
 
         const width = track.length * PIXELS_PER_METER;
         // Die Umrandung endet passend zur tatsächlichen Gleislänge.
@@ -2369,6 +2536,7 @@ function renderPlan() {
     });
 
     updatePlanCanvasSize();
+    applySearchHighlights(false);
 }
 
 function updatePlanCanvasSize() {
@@ -2552,6 +2720,8 @@ function createVehicleElement(vehicle) {
         });
     }
 
+    // Das Lok-/Fahrzeugkästchen muss weiterhin in den Wrapper eingefügt werden.
+    wrap.appendChild(element);
 
     return wrap;
 }
@@ -2563,6 +2733,7 @@ async function updateVehicle(vehicle) {
             number: vehicle.number,
             model: vehicle.model,
             image_url: vehicle.image || null,
+            category: vehicle.category || (vehicle.type === "wagen" ? "personenwagen" : "elektrolok"),
             type: vehicle.type,
             length: vehicle.length,
             track_id: vehicle.track,
@@ -2647,6 +2818,22 @@ async function editSelected() {
         vehicle.length = Number(length);
     }
 
+    const category = prompt(
+        "Kategorie: elektrolok, diesellok, triebwagen, personenwagen oder gueterwagen",
+        vehicle.category || "elektrolok"
+    );
+
+    if (category !== null) {
+        const normalizedCategory = category.trim().toLowerCase();
+        if (VEHICLE_CATEGORY_ORDER.includes(normalizedCategory)) {
+            vehicle.category = normalizedCategory;
+            vehicle.type = ["personenwagen", "gueterwagen"].includes(normalizedCategory) ? "wagen" : "lok";
+        } else if (normalizedCategory) {
+            alert("Ungültige Kategorie. Erlaubt: elektrolok, diesellok, triebwagen, personenwagen, gueterwagen.");
+            return;
+        }
+    }
+
     await updateVehicle(vehicle);
     renderPlan();
     renderLibrary();
@@ -2689,6 +2876,7 @@ async function addVehicle() {
     const model = document.getElementById("vehicleModel").value.trim();
     const image = document.getElementById("vehicleImage").value.trim();
     const type = document.getElementById("vehicleType").value;
+    const category = document.getElementById("vehicleCategory").value;
     const length = Number(document.getElementById("vehicleLength").value);
 
     if (!number) {
@@ -2712,6 +2900,7 @@ async function addVehicle() {
             number,
             model,
             image_url: image || null,
+            category,
             type,
             length,
             track_id: tracks[0].id,
@@ -2916,6 +3105,130 @@ function updateRenderedVehicleStatus(vehicleId, status) {
     }
 }
 
+function createLibraryVehicleCard(vehicle) {
+    const item = document.createElement("div");
+    item.className = "vehicle-item library-item";
+    item.dataset.vehicleId = vehicle.id;
+    item.dataset.searchText =
+        `${vehicle.number} ${vehicle.model || ""} ${VEHICLE_CATEGORY_LABELS[vehicle.category] || vehicle.category || ""}`.toLowerCase();
+    item.draggable = canWrite();
+
+    const imageHtml = vehicle.image
+        ? `<div class="vehicle-thumb">
+               <img
+                   src="${escapeHtml(vehicle.image)}"
+                   alt="${escapeHtml(vehicle.number)}"
+                   loading="lazy"
+                   onerror="this.parentElement.innerHTML='<div class=&quot;vehicle-thumb-placeholder&quot;>Bild konnte nicht geladen werden</div>'">
+           </div>`
+        : `<div class="vehicle-thumb">
+               <div class="vehicle-thumb-placeholder">Kein Fahrzeugbild hinterlegt</div>
+           </div>`;
+
+    item.innerHTML = `
+        <div class="vehicle-name">${escapeHtml(vehicle.number)}</div>
+        <div class="vehicle-info">
+            ${escapeHtml(vehicle.model || vehicle.type)} · ${vehicle.length} m
+        </div>
+        ${imageHtml}
+    `;
+
+    const statusControl = document.createElement("div");
+    statusControl.className = "library-status-control";
+
+    const currentButton = document.createElement("button");
+    currentButton.type = "button";
+    currentButton.className =
+        "library-status-current " + statusClass(vehicle.status);
+    currentButton.textContent = vehicle.status || "Abgestellt";
+    currentButton.disabled = !canWrite();
+
+    const palette = document.createElement("div");
+    palette.className = "library-status-palette";
+
+    [
+        "Einsatzbereit",
+        "Unterwegs",
+        "Abgestellt",
+        "Vermietet",
+        "In der Werkstatt"
+    ].forEach(status => {
+        const option = document.createElement("button");
+        option.type = "button";
+        option.className = "library-status-option";
+        option.dataset.status = status;
+        option.textContent = status;
+
+        option.addEventListener("click", async event => {
+            event.stopPropagation();
+            if (!canWrite()) return;
+
+            const previousStatus = vehicle.status;
+            vehicle.status = status;
+
+            currentButton.textContent = status;
+            currentButton.className =
+                "library-status-current " + statusClass(status);
+            palette.classList.remove("open");
+
+            updateRenderedVehicleStatus(vehicle.id, status);
+
+            const ok = await updateVehicle(vehicle);
+
+            if (ok === false) {
+                vehicle.status = previousStatus;
+                currentButton.textContent = previousStatus;
+                currentButton.className =
+                    "library-status-current " + statusClass(previousStatus);
+                updateRenderedVehicleStatus(vehicle.id, previousStatus);
+            }
+        });
+
+        palette.appendChild(option);
+    });
+
+    currentButton.addEventListener("click", event => {
+        event.stopPropagation();
+        if (!canWrite()) return;
+
+        document
+            .querySelectorAll(".library-status-palette.open")
+            .forEach(other => {
+                if (other !== palette) other.classList.remove("open");
+            });
+
+        palette.classList.toggle("open");
+    });
+
+    statusControl.addEventListener("click", event => event.stopPropagation());
+    statusControl.appendChild(currentButton);
+    statusControl.appendChild(palette);
+    item.appendChild(statusControl);
+
+    if (canWrite()) {
+        item.addEventListener("dragstart", event => {
+            event.dataTransfer.setData("vehicle", vehicle.id);
+        });
+    }
+
+    item.addEventListener("click", () => {
+        selectedVehicle = vehicle.id;
+        renderPlan();
+        applySearchHighlights(false);
+    });
+
+    return item;
+}
+
+function toggleVehicleCategory(category) {
+    if (collapsedCategories.has(category)) {
+        collapsedCategories.delete(category);
+    } else {
+        collapsedCategories.add(category);
+    }
+    renderLibrary();
+}
+
 function renderLibrary() {
     const library = document.getElementById("vehicleLibrary");
     library.innerHTML = "";
@@ -2925,116 +3238,147 @@ function renderLibrary() {
         return;
     }
 
-    vehicles.forEach(vehicle => {
-        const item = document.createElement("div");
-        item.className = "vehicle-item library-item";
-        item.draggable = canWrite();
+    VEHICLE_CATEGORY_ORDER.forEach(category => {
+        const categoryVehicles = vehicles.filter(v => v.category === category);
+        const section = document.createElement("section");
+        section.className =
+            "vehicle-category" + (collapsedCategories.has(category) ? " collapsed" : "");
+        section.dataset.category = category;
 
-        const imageHtml = vehicle.image
-            ? `<div class="vehicle-thumb">
-                   <img
-                       src="${escapeHtml(vehicle.image)}"
-                       alt="${escapeHtml(vehicle.number)}"
-                       loading="lazy"
-                       onerror="this.parentElement.innerHTML='<div class=&quot;vehicle-thumb-placeholder&quot;>Bild konnte nicht geladen werden</div>'">
-               </div>`
-            : `<div class="vehicle-thumb">
-                   <div class="vehicle-thumb-placeholder">Kein Fahrzeugbild hinterlegt</div>
-               </div>`;
-
-        item.innerHTML = `
-            <div class="vehicle-name">${escapeHtml(vehicle.number)}</div>
-            <div class="vehicle-info">
-                ${escapeHtml(vehicle.model || vehicle.type)} · ${vehicle.length} m
-            </div>
-            ${imageHtml}
+        const header = document.createElement("button");
+        header.type = "button";
+        header.className = "vehicle-category-header";
+        header.innerHTML = `
+            <span>${escapeHtml(VEHICLE_CATEGORY_LABELS[category])}</span>
+            <span class="vehicle-category-count">${categoryVehicles.length}</span>
+            <span class="vehicle-category-chevron">▼</span>
         `;
+        header.addEventListener("click", () => toggleVehicleCategory(category));
 
-        const statusControl = document.createElement("div");
-        statusControl.className = "library-status-control";
+        const body = document.createElement("div");
+        body.className = "vehicle-category-body";
 
-        const currentButton = document.createElement("button");
-        currentButton.type = "button";
-        currentButton.className =
-            "library-status-current " + statusClass(vehicle.status);
-        currentButton.textContent = vehicle.status || "Abgestellt";
-        currentButton.disabled = !canWrite();
-
-        const palette = document.createElement("div");
-        palette.className = "library-status-palette";
-
-        [
-            "Einsatzbereit",
-            "Unterwegs",
-            "Abgestellt",
-            "Vermietet",
-            "In der Werkstatt"
-        ].forEach(status => {
-            const option = document.createElement("button");
-            option.type = "button";
-            option.className = "library-status-option";
-            option.dataset.status = status;
-            option.textContent = status;
-
-            option.addEventListener("click", async event => {
-                event.stopPropagation();
-                if (!canWrite()) return;
-
-                const previousStatus = vehicle.status;
-                vehicle.status = status;
-
-                currentButton.textContent = status;
-                currentButton.className =
-                    "library-status-current " + statusClass(status);
-                palette.classList.remove("open");
-
-                updateRenderedVehicleStatus(vehicle.id, status);
-
-                const ok = await updateVehicle(vehicle);
-
-                if (ok === false) {
-                    vehicle.status = previousStatus;
-                    currentButton.textContent = previousStatus;
-                    currentButton.className =
-                        "library-status-current " + statusClass(previousStatus);
-                    updateRenderedVehicleStatus(vehicle.id, previousStatus);
-                }
-            });
-
-            palette.appendChild(option);
-        });
-
-        currentButton.addEventListener("click", event => {
-            event.stopPropagation();
-            if (!canWrite()) return;
-
-            document
-                .querySelectorAll(".library-status-palette.open")
-                .forEach(other => {
-                    if (other !== palette) other.classList.remove("open");
-                });
-
-            palette.classList.toggle("open");
-        });
-
-        statusControl.addEventListener("click", event => event.stopPropagation());
-        statusControl.appendChild(currentButton);
-        statusControl.appendChild(palette);
-        item.appendChild(statusControl);
-
-        if (canWrite()) {
-            item.addEventListener("dragstart", event => {
-                event.dataTransfer.setData("vehicle", vehicle.id);
+        if (!categoryVehicles.length) {
+            body.innerHTML = '<div class="empty">Keine Fahrzeuge</div>';
+        } else {
+            categoryVehicles.forEach(vehicle => {
+                body.appendChild(createLibraryVehicleCard(vehicle));
             });
         }
 
-        item.addEventListener("click", () => {
-            selectedVehicle = vehicle.id;
-            renderPlan();
+        section.appendChild(header);
+        section.appendChild(body);
+        library.appendChild(section);
+    });
+
+    applySearchHighlights(false);
+}
+
+function handleGlobalSearch(value) {
+    globalSearchQuery = String(value || "").trim().toLowerCase();
+
+    if (globalSearchQuery) {
+        // Kategorien mit passenden Fahrzeugen automatisch öffnen.
+        VEHICLE_CATEGORY_ORDER.forEach(category => {
+            const hasMatch = vehicles
+                .filter(v => v.category === category)
+                .some(vehicle =>
+                    `${vehicle.number} ${vehicle.model || ""} ${VEHICLE_CATEGORY_LABELS[vehicle.category] || ""}`
+                        .toLowerCase()
+                        .includes(globalSearchQuery)
+                );
+
+            if (hasMatch) collapsedCategories.delete(category);
         });
 
-        library.appendChild(item);
+        renderLibrary();
+        applySearchHighlights(true);
+    } else {
+        renderLibrary();
+        applySearchHighlights(false);
+    }
+}
+
+function clearGlobalSearch() {
+    const input = document.getElementById("globalSearch");
+    if (input) input.value = "";
+    globalSearchQuery = "";
+    renderLibrary();
+    applySearchHighlights(false);
+}
+
+function applySearchHighlights(scrollToFirst = false) {
+    document
+        .querySelectorAll(".search-highlight")
+        .forEach(element => element.classList.remove("search-highlight"));
+
+    const info = document.getElementById("searchResultInfo");
+
+    if (!globalSearchQuery) {
+        if (info) info.textContent = "";
+        return;
+    }
+
+    const matchingVehicles = vehicles.filter(vehicle =>
+        `${vehicle.number} ${vehicle.model || ""} ${VEHICLE_CATEGORY_LABELS[vehicle.category] || vehicle.category || ""}`
+            .toLowerCase()
+            .includes(globalSearchQuery)
+    );
+
+    const matchingTracks = tracks.filter(track =>
+        `${track.number} ${track.length}m`
+            .toLowerCase()
+            .includes(globalSearchQuery)
+    );
+
+    matchingVehicles.forEach(vehicle => {
+        const libraryCard = document.querySelector(
+            `.library-item[data-vehicle-id="${CSS.escape(String(vehicle.id))}"]`
+        );
+        if (libraryCard) libraryCard.classList.add("search-highlight");
+
+        const trackVehicle = document.querySelector(
+            `.vehicle[data-vehicle-id="${CSS.escape(String(vehicle.id))}"]`
+        );
+        if (trackVehicle) trackVehicle.classList.add("search-highlight");
     });
+
+    matchingTracks.forEach(track => {
+        const trackElement = document.querySelector(
+            `.track[data-track="${CSS.escape(String(track.id))}"]`
+        );
+        if (trackElement) trackElement.classList.add("search-highlight");
+    });
+
+    const total = matchingVehicles.length + matchingTracks.length;
+
+    if (info) {
+        if (!total) {
+            info.textContent = "Kein Ergebnis gefunden";
+        } else {
+            const parts = [];
+            if (matchingVehicles.length) {
+                parts.push(`${matchingVehicles.length} Fahrzeug${matchingVehicles.length === 1 ? "" : "e"}`);
+            }
+            if (matchingTracks.length) {
+                parts.push(`${matchingTracks.length} Gleis${matchingTracks.length === 1 ? "" : "e"}`);
+            }
+            info.textContent = parts.join(" · ");
+        }
+    }
+
+    if (scrollToFirst && total) {
+        const first =
+            document.querySelector(".track.search-highlight") ||
+            document.querySelector(".vehicle.search-highlight") ||
+            document.querySelector(".library-item.search-highlight");
+
+        first?.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+            inline: "center"
+        });
+    }
 }
 
 function closeModals() {
