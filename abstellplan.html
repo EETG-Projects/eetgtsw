@@ -194,6 +194,63 @@ body.dark .status-pill{
   border-color:#22c55e!important;
 }
 
+
+/* =========================================================
+   UNTERNEHMEN IN DER FAHRZEUGBIBLIOTHEK EIN-/AUSKLAPPEN
+========================================================= */
+.vehicle-company-heading{
+    width:100%!important;
+    border:0!important;
+    cursor:pointer;
+    text-align:left;
+}
+
+.vehicle-company-heading:hover{
+    background:rgba(181,18,27,.08)!important;
+}
+
+.vehicle-company-heading::after{
+    display:none!important;
+}
+
+.vehicle-company-heading > span:first-child{
+    flex:1 1 auto;
+}
+
+.vehicle-company-chevron{
+    flex:0 0 auto;
+    transition:transform .18s ease;
+    color:var(--muted);
+    font-size:10px;
+}
+
+.vehicle-company-group.collapsed .vehicle-company-chevron{
+    transform:rotate(-90deg);
+}
+
+.vehicle-company-body{
+    display:block;
+}
+
+.vehicle-company-group.collapsed .vehicle-company-body{
+    display:none;
+}
+
+
+/* =========================================================
+   STANDORTÜBERGREIFENDE FAHRZEUGBIBLIOTHEK
+========================================================= */
+.vehicle-library-location{
+    margin-top:3px;
+    color:var(--muted);
+    font-size:9px;
+    font-weight:800;
+}
+
+body.dark .vehicle-library-location{
+    color:#aeb6bd;
+}
+
 </style>
 
 
@@ -4158,6 +4215,7 @@ const VEHICLE_VISUAL_SCALE = 1; // Maßstab: 1 m Fahrzeug = 1 m Gleis.
 
 let tracks = [];
 let vehicles = [];
+let libraryVehicles = []; // immer alle Fahrzeuge aus der zentralen Datenbank
 let selectedVehicle = null;
 let currentUser = null;
 let currentRole = "viewer";
@@ -4184,6 +4242,7 @@ let historyDropdownOpen = false;
 
 let globalSearchQuery = "";
 const collapsedCategories = new Set();
+const collapsedCompanies = new Set();
 
 const VEHICLE_CATEGORY_LABELS = {
     elektrolok: "Elektroloks",
@@ -4349,6 +4408,14 @@ function mapTrack(row, index = 0) {
         note: row.note || "",
         location: row.location_id == null ? null : String(row.location_id)
     };
+}
+
+
+function findVehicleById(vehicleId){
+    const id = String(vehicleId);
+    return vehicles.find(v => String(v.id) === id)
+        || libraryVehicles.find(v => String(v.id) === id)
+        || null;
 }
 
 function mapVehicle(row) {
@@ -4705,12 +4772,14 @@ async function loadPlan() {
             .order("sort_order", { ascending: true })
             .order("id"),
 
+        // Fahrzeugbibliothek ist standortübergreifend:
+        // alle Fahrzeuge laden, der Plan selbst filtert danach auf den Standort.
         window.eetgSupabase
             .from("vehicles")
             .select("*")
-            .eq("location_id", Number(currentLocationId))
-            .order("track_id")
-            .order("position"),
+            .order("company")
+            .order("category")
+            .order("number"),
 
         window.eetgSupabase
             .from("areas")
@@ -4729,7 +4798,16 @@ async function loadPlan() {
     }
 
     tracks = (trackRows || []).map((row, index) => mapTrack(row, index));
-    vehicles = (vehicleRows || []).map(mapVehicle);
+
+    // Eine zentrale Fahrzeugbibliothek für ALLE Standorte.
+    libraryVehicles = (vehicleRows || []).map(mapVehicle);
+
+    // Auf dem eigentlichen Abstellplan werden weiterhin nur Fahrzeuge
+    // des aktuell ausgewählten Standorts verwendet.
+    vehicles = libraryVehicles.filter(vehicle =>
+        String(vehicle.location) === String(currentLocationId)
+    );
+
     areas = (areaRows || []).map(mapArea);
     consists = (consistRows || []).map(mapConsist);
 
@@ -5093,7 +5171,7 @@ function renderPlan() {
                 event.preventDefault();
 
                 const id = event.dataTransfer.getData("vehicle");
-                const vehicle = vehicles.find(v => v.id === id);
+                const vehicle = findVehicleById(id);
                 if (!vehicle) return;
 
                 const rect = trackElement.getBoundingClientRect();
@@ -5117,7 +5195,8 @@ function renderPlan() {
                     }
                 }
 
-                renderPlan();
+                // Standortwechsel eines Fahrzeugs sofort überall synchron anzeigen.
+                await loadPlan();
             });
         }
 
@@ -6144,7 +6223,7 @@ async function updateVehicle(vehicle) {
 async function returnVehicleToLibrary(vehicleId) {
     if (!enforceWritePermission()) return false;
 
-    const vehicle = vehicles.find(v => v.id === String(vehicleId));
+    const vehicle = findVehicleById(vehicleId);
     if (!vehicle) return false;
 
     /*
@@ -6177,8 +6256,7 @@ async function returnVehicleToLibrary(vehicleId) {
     });
 
     selectedVehicle = null;
-    renderPlan();
-    renderLibrary();
+    await loadPlan();
     return true;
 }
 
@@ -6652,6 +6730,12 @@ function createLibraryVehicleCard(vehicle) {
         <div class="vehicle-info">
             ${escapeHtml(vehicle.model || vehicle.type)} · ${vehicle.length} m
         </div>
+        <div class="vehicle-library-location">
+            ${escapeHtml(
+                locations.find(location => String(location.id) === String(vehicle.location))?.name
+                || "Kein Standort"
+            )}
+        </div>
         ${imageHtml}
     `;
 
@@ -6799,7 +6883,7 @@ function toggleVehicleCategory(category) {
 async function deleteVehicleFromLibrary(vehicleId){
     if(!enforceEditMode()) return;
 
-    const vehicle = vehicles.find(v => String(v.id) === String(vehicleId));
+    const vehicle = findVehicleById(vehicleId);
     if(!vehicle) return;
 
     if(!confirm(`Fahrzeug „${vehicle.number}“ wirklich löschen?\n\nDas Fahrzeug wird dauerhaft aus der zentralen Datenbank entfernt.`)){
@@ -6823,17 +6907,53 @@ async function deleteVehicleFromLibrary(vehicleId){
     await loadPlan();
 }
 
+
+function companyCollapseKey(category, company){
+    return `${category}::${company}`;
+}
+
+function toggleVehicleCompany(category, company){
+    const key = companyCollapseKey(category, company);
+
+    if(collapsedCompanies.has(key)){
+        collapsedCompanies.delete(key);
+    }else{
+        collapsedCompanies.add(key);
+    }
+
+    try{
+        localStorage.setItem(
+            "eetg_collapsed_vehicle_companies",
+            JSON.stringify([...collapsedCompanies])
+        );
+    }catch(_){}
+
+    renderLibrary();
+}
+
+function loadCollapsedCompanies(){
+    try{
+        const saved = JSON.parse(
+            localStorage.getItem("eetg_collapsed_vehicle_companies") || "[]"
+        );
+
+        if(Array.isArray(saved)){
+            saved.forEach(key => collapsedCompanies.add(String(key)));
+        }
+    }catch(_){}
+}
+
 function renderLibrary() {
     const library = document.getElementById("vehicleLibrary");
     library.innerHTML = "";
 
-    if (!vehicles.length) {
+    if (!libraryVehicles.length) {
         library.innerHTML = '<div class="empty">Keine Fahrzeuge vorhanden.</div>';
         return;
     }
 
     VEHICLE_CATEGORY_ORDER.forEach(category => {
-        const categoryVehicles = vehicles.filter(v => v.category === category);
+        const categoryVehicles = libraryVehicles.filter(v => v.category === category);
         const section = document.createElement("section");
         section.className =
             "vehicle-category" + (collapsedCategories.has(category) ? " collapsed" : "");
@@ -6867,22 +6987,33 @@ function renderLibrary() {
 
                 if (!companyVehicles.length) return;
 
+                const companyKey = companyCollapseKey(category, company);
                 const companyGroup = document.createElement("div");
-                companyGroup.className = "vehicle-company-group";
+                companyGroup.className =
+                    "vehicle-company-group" +
+                    (collapsedCompanies.has(companyKey) ? " collapsed" : "");
 
-                const heading = document.createElement("div");
+                const heading = document.createElement("button");
+                heading.type = "button";
                 heading.className = "vehicle-company-heading";
                 heading.innerHTML = `
                     <span>${company}</span>
                     <span class="vehicle-company-count">${companyVehicles.length}</span>
+                    <span class="vehicle-company-chevron">▼</span>
                 `;
-
-                companyGroup.appendChild(heading);
-
-                companyVehicles.forEach(vehicle => {
-                    companyGroup.appendChild(createLibraryVehicleCard(vehicle));
+                heading.addEventListener("click", () => {
+                    toggleVehicleCompany(category, company);
                 });
 
+                const companyBody = document.createElement("div");
+                companyBody.className = "vehicle-company-body";
+
+                companyVehicles.forEach(vehicle => {
+                    companyBody.appendChild(createLibraryVehicleCard(vehicle));
+                });
+
+                companyGroup.appendChild(heading);
+                companyGroup.appendChild(companyBody);
                 body.appendChild(companyGroup);
             });
         }
@@ -6902,7 +7033,7 @@ function handleGlobalSearch(value) {
     if (globalSearchQuery) {
         // Kategorien mit passenden Fahrzeugen automatisch öffnen.
         VEHICLE_CATEGORY_ORDER.forEach(category => {
-            const hasMatch = vehicles
+            const hasMatch = libraryVehicles
                 .filter(v => v.category === category)
                 .some(vehicle =>
                     `${vehicle.number} ${vehicle.model || ""} ${vehicle.company || ""} ${VEHICLE_CATEGORY_LABELS[vehicle.category] || ""}`
@@ -6911,6 +7042,25 @@ function handleGlobalSearch(value) {
                 );
 
             if (hasMatch) collapsedCategories.delete(category);
+
+            ["EETG", "RMB"].forEach(company => {
+                const companyHasMatch = libraryVehicles
+                    .filter(v =>
+                        v.category === category &&
+                        (v.company || "EETG") === company
+                    )
+                    .some(vehicle =>
+                        `${vehicle.number} ${vehicle.model || ""} ${vehicle.company || ""} ${VEHICLE_CATEGORY_LABELS[vehicle.category] || ""}`
+                            .toLowerCase()
+                            .includes(globalSearchQuery)
+                    );
+
+                if(companyHasMatch){
+                    collapsedCompanies.delete(
+                        companyCollapseKey(category, company)
+                    );
+                }
+            });
         });
 
         renderLibrary();
@@ -6941,7 +7091,7 @@ function applySearchHighlights(scrollToFirst = false) {
         return;
     }
 
-    const matchingVehicles = vehicles.filter(vehicle =>
+    const matchingVehicles = libraryVehicles.filter(vehicle =>
         `${vehicle.number} ${vehicle.model || ""} ${vehicle.company || ""} ${VEHICLE_CATEGORY_LABELS[vehicle.category] || vehicle.category || ""}`
             .toLowerCase()
             .includes(globalSearchQuery)
@@ -7010,7 +7160,7 @@ let editingVehicleId = null;
 function openVehicleEditModal(vehicleId) {
     if (!enforceEditMode()) return;
 
-    const vehicle = vehicles.find(v => v.id === String(vehicleId));
+    const vehicle = findVehicleById(vehicleId);
     if (!vehicle) return;
 
     editingVehicleId = vehicle.id;
@@ -7034,7 +7184,7 @@ function closeVehicleEditModal() {
 async function saveVehicleEdit() {
     if (!enforceEditMode()) return;
 
-    const vehicle = vehicles.find(v => v.id === String(editingVehicleId));
+    const vehicle = findVehicleById(editingVehicleId);
     if (!vehicle) return;
 
     const number = document.getElementById("editVehicleNumber").value.trim();
@@ -7222,6 +7372,7 @@ window.addEventListener("beforeunload",()=>{
 (async function init() {
     loadTheme();
     loadVehicleLibraryState();
+    loadCollapsedCompanies();
     loadPlanZoom();
     setupPlanWheelZoom();
 
