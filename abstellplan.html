@@ -3637,6 +3637,12 @@ body.light .plan-container::before{
     background:transparent!important;
 }
 
+
+/* Gleis bündig am linken Planrand ausrichten */
+.track-edge-btn{
+    background:#4b5563!important;
+}
+
 </style>
 </head>
 
@@ -4358,6 +4364,11 @@ async function copyDbError() {
 const PIXELS_PER_METER = 8; // Darstellung x4: 1 m = 8 px
 const VEHICLE_VISUAL_SCALE = 1; // Maßstab: 1 m Fahrzeug = 1 m Gleis.
 
+// Gleise rasten nahe am linken Rand auf 0 px ein.
+// Durch das 25-px-Innenpadding der Planfläche entspricht das optisch
+// genau dem Abstand zwischen den Gleiskarten.
+const TRACK_EDGE_SNAP_PX = 40;
+
 // Fahrzeug-Snap: Wird ein Fahrzeug nahe an ein anderes geschoben,
 // rastet es automatisch Kante an Kante ein.
 const VEHICLE_SNAP_DISTANCE_M = 3;
@@ -4558,7 +4569,7 @@ function mapTrack(row, index = 0) {
         id: row.id,
         number: row.number,
         length: Number(row.length),
-        x: row.x_position == null ? 20 : Number(row.x_position),
+        x: row.x_position == null ? 0 : Number(row.x_position),
         y: row.y_position == null ? (20 + index * 250) : Number(row.y_position),
         note: row.note || "",
         location: row.location_id == null ? null : String(row.location_id)
@@ -5287,6 +5298,33 @@ function renderPlan() {
                 deleteTrack(track.id);
             });
 
+            const edgeButton = document.createElement("button");
+            edgeButton.className = "track-edge-btn";
+            edgeButton.type = "button";
+            edgeButton.textContent = "↤ An Rand";
+            edgeButton.title = "Gleis auf den linken Planrand ausrichten";
+            edgeButton.addEventListener("click", async event => {
+                event.stopPropagation();
+                track.x = 0;
+                trackElement.style.left = "0px";
+
+                const { error } = await window.eetgSupabase
+                    .from("tracks")
+                    .update({
+                        x_position: 0,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq("id", track.id);
+
+                if (error) {
+                    showSupabaseError("Das Gleis konnte nicht am Rand ausgerichtet werden.", error);
+                    await loadPlan();
+                    return;
+                }
+
+                updatePlanCanvasSize();
+            });
+
             const dragHandle = document.createElement("button");
             dragHandle.className = "track-drag-handle";
             dragHandle.type = "button";
@@ -5301,6 +5339,7 @@ function renderPlan() {
             actions.appendChild(editButton);
             actions.appendChild(lengthButton);
             actions.appendChild(deleteButton);
+            actions.appendChild(edgeButton);
             actions.appendChild(dragHandle);
 
             // Wichtig: Die Admin-Leiste gehört direkt in den Gleiskasten,
@@ -6321,6 +6360,13 @@ function onTrackDragMove(event) {
     const grid = 10;
     x = Math.max(0, Math.round(x / grid) * grid);
     y = Math.max(0, Math.round(y / grid) * grid);
+
+    // Magnetischer Rand:
+    // Sobald das Gleis nahe genug an den linken bzw. oberen Rand kommt,
+    // rastet es exakt auf 0 ein. Das sichtbare Außenmaß bleibt durch
+    // das 25-px-Padding der Planfläche erhalten.
+    if (x <= TRACK_EDGE_SNAP_PX) x = 0;
+    if (y <= TRACK_EDGE_SNAP_PX) y = 0;
 
     activeTrackDrag.track.x = x;
     activeTrackDrag.track.y = y;
