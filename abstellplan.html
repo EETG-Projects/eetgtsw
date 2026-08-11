@@ -3536,6 +3536,26 @@ body.public-dark .library-item.vehicle-in-library{
     border-left-color:#ef4444!important;
 }
 
+
+/* Auch im Darkmode:
+   Bibliothek = grün, auf dem Abstellplan = rot */
+body.dark .library-item.vehicle-in-library,
+body.public-dark .library-item.vehicle-in-library{
+    border-left:3px solid #22c55e!important;
+}
+
+body.dark .library-item:not(.vehicle-in-library),
+body.public-dark .library-item:not(.vehicle-in-library){
+    border-left:3px solid #ef4444!important;
+}
+
+body.dark .track-vehicle,
+body.dark .vehicle-on-track,
+body.public-dark .track-vehicle,
+body.public-dark .vehicle-on-track{
+    border-left-color:#ef4444!important;
+}
+
 </style>
 </head>
 
