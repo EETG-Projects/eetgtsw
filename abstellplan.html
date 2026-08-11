@@ -3556,6 +3556,15 @@ body.public-dark .vehicle-on-track{
     border-left-color:#ef4444!important;
 }
 
+
+/* Fahrzeug-Snap */
+body:not(.readonly) .track .vehicle{
+    cursor:grab;
+}
+body:not(.readonly) .track .vehicle:active{
+    cursor:grabbing;
+}
+
 </style>
 </head>
 
@@ -4276,6 +4285,10 @@ async function copyDbError() {
 
 const PIXELS_PER_METER = 8; // Darstellung x4: 1 m = 8 px
 const VEHICLE_VISUAL_SCALE = 1; // Maßstab: 1 m Fahrzeug = 1 m Gleis.
+
+// Fahrzeug-Snap: Wird ein Fahrzeug nahe an ein anderes geschoben,
+// rastet es automatisch Kante an Kante ein.
+const VEHICLE_SNAP_DISTANCE_M = 3;
 
 let tracks = [];
 let vehicles = [];
@@ -5046,6 +5059,83 @@ document.addEventListener("click",event=>{
 });
 
 
+
+function getVehicleSpan(vehicleList){
+    if(!vehicleList?.length) return {start:0, end:0, length:0};
+
+    const start = Math.min(...vehicleList.map(v => Number(v.position || 0)));
+    const end = Math.max(...vehicleList.map(v =>
+        Number(v.position || 0) + Number(v.length || 0)
+    ));
+
+    return {start, end, length:Math.max(0, end - start)};
+}
+
+
+function clampVehiclePositionToTrack(trackId, desiredStart, movingVehicles){
+    const track = tracks.find(t => String(t.id) === String(trackId));
+    if(!track) return Math.max(0, Number(desiredStart || 0));
+
+    const moving = movingVehicles?.length ? movingVehicles : [];
+    const span = getVehicleSpan(moving);
+    const movingLength = span.length || Number(moving[0]?.length || 0);
+    const trackLength = Math.max(0, Number(track.length || 0));
+    const maxStart = Math.max(0, trackLength - movingLength);
+
+    return Math.max(0, Math.min(Number(desiredStart || 0), maxStart));
+}
+
+function snapVehiclePosition(trackId, desiredStart, movingVehicles){
+    const track = tracks.find(t => String(t.id) === String(trackId));
+    if(!track) return Math.max(0, desiredStart);
+
+    const moving = movingVehicles?.length ? movingVehicles : [];
+    const movingIds = new Set(moving.map(v => String(v.id)));
+    const span = getVehicleSpan(moving);
+    const movingLength = span.length || Number(moving[0]?.length || 0);
+
+    const others = vehicles
+        .filter(v =>
+            String(v.track) === String(trackId) &&
+            !movingIds.has(String(v.id))
+        )
+        .sort((a,b) => Number(a.position) - Number(b.position));
+
+    const trackLength = Number(track.length || 0);
+    const maxStart = Math.max(0, trackLength - movingLength);
+    let start = clampVehiclePositionToTrack(trackId, desiredStart, moving);
+
+    // Mögliche Einrastpositionen:
+    // - direkt am Gleisanfang
+    // - direkt hinter einem Fahrzeug
+    // - direkt vor einem Fahrzeug
+    // - direkt am Gleisende
+    const candidates = [0, maxStart];
+
+    others.forEach(other => {
+        const otherStart = Number(other.position || 0);
+        const otherEnd = otherStart + Number(other.length || 0);
+
+        candidates.push(otherEnd);                 // hinter anderem Fahrzeug
+        candidates.push(otherStart - movingLength); // vor anderem Fahrzeug
+    });
+
+    let best = start;
+    let bestDistance = VEHICLE_SNAP_DISTANCE_M + 0.0001;
+
+    candidates.forEach(candidate => {
+        if(candidate < 0 || candidate > maxStart) return;
+
+        const distance = Math.abs(candidate - start);
+        if(distance <= bestDistance){
+            best = candidate;
+            bestDistance = distance;
+        }
+    });
+
+    return Math.max(0, Math.min(best, maxStart));
+}
+
 function renderPlan() {
     const plan = document.getElementById("planZoomLayer");
     if (!plan) return;
@@ -5239,18 +5329,59 @@ function renderPlan() {
                 if (!vehicle) return;
 
                 const rect = trackElement.getBoundingClientRect();
-                let x = event.clientX - rect.left - 80;
+                const zoom = Number(planZoom) || 1;
+
+                // Mausposition wieder in reale Plan-Meter umrechnen.
+                let x = (event.clientX - rect.left) / zoom - 80;
                 let position = Math.max(0, x / PIXELS_PER_METER);
 
                 if (vehicle.consist) {
-                    await moveConsist(vehicle.consist, track.id, position);
+                    const movingVehicles = vehicles
+                        .filter(v => String(v.consist) === String(vehicle.consist))
+                        .sort((a,b) => Number(a.position) - Number(b.position));
+
+                    const span = getVehicleSpan(movingVehicles);
+                    const desiredStart = position;
+                    const snappedStart = snapVehiclePosition(
+                        track.id,
+                        desiredStart,
+                        movingVehicles
+                    );
+
+                    if(!canFitOnTrack(track.id,movingVehicles)){
+                        alert(`Nicht genügend Platz auf ${track.number}.`);
+                        return;
+                    }
+
+                    await moveConsist(vehicle.consist, track.id, snappedStart);
                 } else {
-                    const movingVehicles=vehicle.consist?vehicles.filter(v=>String(v.consist)===String(vehicle.consist)):[vehicle];
-                    if(!canFitOnTrack(track.id,movingVehicles)){alert(`Nicht genügend Platz auf ${track.number}.`);return;}
+                    const movingVehicles = [vehicle];
+
+                    if(!canFitOnTrack(track.id,movingVehicles)){
+                        alert(`Nicht genügend Platz auf ${track.number}.`);
+                        return;
+                    }
+
+                    // Liegt die Ablageposition höchstens 3 m von einer Fahrzeugkante
+                    // entfernt, wird automatisch exakt Kante an Kante eingerastet.
+                    position = snapVehiclePosition(
+                        track.id,
+                        position,
+                        movingVehicles
+                    );
+
                     const previousTrackName=getTrackName(vehicle.track);
                     vehicle.track = track.id;
                     vehicle.location = String(currentLocationId);
-                    vehicle.position = position;
+
+                    // Harte Gleisgrenze: Das Fahrzeug darf mit seiner hinteren
+                    // Kante niemals über das reale Gleisende hinausragen.
+                    vehicle.position = clampVehiclePositionToTrack(
+                        track.id,
+                        position,
+                        [vehicle]
+                    );
+
                     const saved=await updateVehicle(vehicle);
                     if(saved!==false){
                         await logVehicleHistory(vehicle,"track_move",`${previousTrackName} → ${track.number}`,{
@@ -6377,17 +6508,23 @@ async function moveConsist(consistId, targetTrack, newStart) {
     if (!enforceWritePermission()) return;
 
     const consistVehicles = vehicles
-        .filter(v => v.consist === consistId)
-        .sort((a, b) => a.position - b.position);
+        .filter(v => String(v.consist) === String(consistId))
+        .sort((a, b) => Number(a.position) - Number(b.position));
 
     if (!consistVehicles.length) return;
 
-    const offset = newStart - consistVehicles[0].position;
+    const oldStart = Number(consistVehicles[0].position || 0);
+    const safeStart = clampVehiclePositionToTrack(
+        targetTrack,
+        newStart,
+        consistVehicles
+    );
+    const offset = safeStart - oldStart;
 
     consistVehicles.forEach(vehicle => {
         vehicle.track = targetTrack;
         vehicle.location = String(currentLocationId);
-        vehicle.position = Math.max(0, vehicle.position + offset);
+        vehicle.position = Math.max(0, Number(vehicle.position || 0) + offset);
     });
 
     const results = await Promise.all(consistVehicles.map(updateVehicle));
