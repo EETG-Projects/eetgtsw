@@ -3643,6 +3643,18 @@ body.light .plan-container::before{
     background:#4b5563!important;
 }
 
+
+/* =========================================================
+   ÄUSSERER ABSTAND DER GLEISKARTEN
+   Links/oben jetzt ungefähr so eng wie zwischen den Gleisen.
+========================================================= */
+.plan-container{
+    padding:10px!important;
+}
+
+/* Neue / an den Rand geschobene Gleise sitzen direkt auf x/y = 0
+   innerhalb dieser 10-px-Innenkante. */
+
 </style>
 </head>
 
@@ -4367,7 +4379,7 @@ const VEHICLE_VISUAL_SCALE = 1; // Maßstab: 1 m Fahrzeug = 1 m Gleis.
 // Gleise rasten nahe am linken Rand auf 0 px ein.
 // Durch das 25-px-Innenpadding der Planfläche entspricht das optisch
 // genau dem Abstand zwischen den Gleiskarten.
-const TRACK_EDGE_SNAP_PX = 40;
+const TRACK_EDGE_SNAP_PX = 25;
 
 // Fahrzeug-Snap: Wird ein Fahrzeug nahe an ein anderes geschoben,
 // rastet es automatisch Kante an Kante ein.
