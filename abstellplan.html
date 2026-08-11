@@ -3519,6 +3519,23 @@ body.public-dark .library-item.vehicle-in-library{
     border-left-color:#c91420!important;
 }
 
+
+/* Fahrzeug-Markierungsstreifen:
+   Bibliothek = grün, auf dem Abstellplan = rot */
+.library-item.vehicle-in-library{
+    border-left:3px solid #22c55e!important;
+}
+
+.library-item:not(.vehicle-in-library){
+    border-left:3px solid #ef4444!important;
+}
+
+/* Gleisfahrzeuge ebenfalls rot markieren */
+.track-vehicle,
+.vehicle-on-track{
+    border-left-color:#ef4444!important;
+}
+
 </style>
 </head>
 
