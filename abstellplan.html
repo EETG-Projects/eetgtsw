@@ -3498,6 +3498,20 @@ body.public-mode.public-dark .theme-half-icon::after{
     left:-2px;
 }
 
+
+/* INFO blinkt nur, wenn tatsächlich eine Information eingetragen ist */
+@keyframes eetgInfoBlink{
+    0%, 45%   { opacity:1; transform:scale(1); box-shadow:0 0 0 rgba(181,18,27,0); }
+    50%, 95%  { opacity:.35; transform:scale(.96); box-shadow:0 0 12px rgba(181,18,27,.55); }
+    100%      { opacity:1; transform:scale(1); box-shadow:0 0 0 rgba(181,18,27,0); }
+}
+.global-info-label.has-info{
+    animation:eetgInfoBlink 1.25s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce){
+    .global-info-label.has-info{animation:none}
+}
+
 </style>
 </head>
 
@@ -4635,6 +4649,7 @@ function renderGlobalInfo(){
     const messageEl = document.getElementById("globalInfoMessage");
     const textInput = document.getElementById("globalInfoText");
     const colorInput = document.getElementById("globalInfoColor");
+    const infoLabel = document.querySelector("#globalInfoBar .global-info-label");
 
     if(!messageEl) return;
 
@@ -4643,6 +4658,10 @@ function renderGlobalInfo(){
 
     messageEl.textContent = message || "Keine aktuelle Information.";
     messageEl.style.color = color;
+
+    // Sobald echter Infotext vorhanden ist, blinkt der INFO-Button.
+    // Bei leerem Feld / "Keine aktuelle Information." bleibt er ruhig.
+    if(infoLabel) infoLabel.classList.toggle("has-info", Boolean(message));
 
     if(textInput) textInput.value = message;
     if(colorInput) colorInput.value = color;
