@@ -3565,6 +3565,78 @@ body:not(.readonly) .track .vehicle:active{
     cursor:grabbing;
 }
 
+
+/* Grundfläche des Abstellplans optisch wie die Gleiskarten */
+.plan-container{
+    background:rgba(255,255,255,0.025)!important;
+}
+
+/* Auch die komplette scrollbare Zeichenfläche erhält denselben Hintergrund. */
+.plan-container::before{
+    background:rgba(255,255,255,0.025);
+}
+
+/* Im hellen Modus bleibt die Grundfläche passend zu den Gleisen. */
+body.light .plan-container,
+body.light .plan-container::before{
+    background:rgba(0,0,0,0.025)!important;
+}
+
+
+/* =========================================================
+   RASTER NUR IM ADMIN-BEARBEITUNGSMODUS
+========================================================= */
+
+/* Normalansicht: gleicher ruhiger Hintergrund wie die Gleisfelder */
+.plan-container{
+    background:rgba(255,255,255,0.025)!important;
+    background-size:auto!important;
+}
+
+/* Bearbeiten aktiv: ursprüngliches 25px-Raster wieder einblenden */
+body.admin-edit-enabled .plan-container{
+    background:
+        linear-gradient(
+            rgba(255,255,255,0.025) 1px,
+            transparent 1px
+        ),
+        linear-gradient(
+            90deg,
+            rgba(255,255,255,0.025) 1px,
+            transparent 1px
+        ),
+        rgba(255,255,255,0.025)!important;
+    background-size:25px 25px!important;
+}
+
+/* White-/Lightmode */
+body.light .plan-container{
+    background:rgba(0,0,0,0.025)!important;
+    background-size:auto!important;
+}
+
+body.light.admin-edit-enabled .plan-container{
+    background:
+        linear-gradient(
+            rgba(0,0,0,0.055) 1px,
+            transparent 1px
+        ),
+        linear-gradient(
+            90deg,
+            rgba(0,0,0,0.055) 1px,
+            transparent 1px
+        ),
+        rgba(0,0,0,0.025)!important;
+    background-size:25px 25px!important;
+}
+
+/* Die Scroll-Zeichenfläche selbst bleibt transparent,
+   damit das Raster der plan-container-Fläche überall sichtbar bleibt. */
+.plan-container::before,
+body.light .plan-container::before{
+    background:transparent!important;
+}
+
 </style>
 </head>
 
