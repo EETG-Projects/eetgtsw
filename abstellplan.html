@@ -4206,6 +4206,12 @@ body.light .plan-container::before{
     display:none!important;
 }
 
+
+/* Neues Stromlos-Icon */
+.stromlos-legend-icon{width:16px;height:16px;object-fit:contain;border-radius:3px;vertical-align:middle}
+.track-stromlos-image{width:100%;height:100%;object-fit:contain;display:block;border-radius:7px}
+.track-note-icon-display{overflow:hidden!important;font-size:0!important}
+
 </style>
 </head>
 
@@ -4303,15 +4309,9 @@ body.light .plan-container::before{
         <span class="legend-item">
             <span class="legend-dot legend-werkstatt"></span>In der Werkstatt
         </span>
-
         <span class="legend-divider" aria-hidden="true"></span>
-
-        <span class="legend-item legend-track-item" title="Werkstatt">🔧 Werkstatt</span>
-        <span class="legend-item legend-track-item" title="Elektrisch">⚡ Elektrisch</span>
-        <span class="legend-item legend-track-item" title="Stromlos">🚫⚡ Stromlos</span>
-        <span class="legend-item legend-track-item" title="Waschanlage">🧼 Waschanlage</span>
-        <span class="legend-item legend-track-item" title="Sondergleis">⭐ Sondergleis</span>
-    </div>
+        <span class="legend-item legend-track-item" title="Stromlos"><img class="stromlos-legend-icon" src="./assets/img/stromlos.png" alt=""> Stromlos</span>
+</div>
 
     <div class="global-info-bar" id="globalInfoBar">
         <div class="global-info-label">Info</div>
@@ -5153,7 +5153,10 @@ function mapTrack(row, index = 0) {
         x: row.x_position == null ? 0 : Number(row.x_position),
         y: row.y_position == null ? (20 + index * 250) : Number(row.y_position),
         note: String(row.note || "").replace(/^\[ICON:[^\]]*\]\s*/, ""),
-        icon: ((String(row.note || "").match(/^\[ICON:([^\]]*)\]/) || [])[1] || ""),
+        icon: (() => {
+            const saved = ((String(row.note || "").match(/^\[ICON:([^\]]*)\]/) || [])[1] || "");
+            return (saved === "🚫⚡" || saved === "Stromlos" || saved === "stromlos") ? "stromlos" : "";
+        })(),
         location: row.location_id == null ? null : String(row.location_id)
     };
 }
@@ -5964,14 +5967,28 @@ function renderPlan() {
         const noteContent = document.createElement("div");
         noteContent.className = "track-note-content";
 
+        if (track.icon === "🚫⚡" || track.icon === "Stromlos") track.icon = "stromlos";
+        else if (track.icon && track.icon !== "stromlos") track.icon = "";
+
         const iconBox = document.createElement("div");
         iconBox.className = "track-note-icon-box";
 
         const iconDisplay = document.createElement("div");
         iconDisplay.className = "track-note-icon-display";
-        iconDisplay.textContent = track.icon || "";
-        iconDisplay.dataset.empty = track.icon ? "false" : "true";
-        iconDisplay.title = track.icon ? "Gleisausstattung" : "";
+        const renderTrackIcon = () => {
+            iconDisplay.replaceChildren();
+            const hasIcon = track.icon === "stromlos";
+            iconDisplay.dataset.empty = hasIcon ? "false" : "true";
+            iconDisplay.title = hasIcon ? "Stromlos" : "";
+            if (hasIcon) {
+                const img = document.createElement("img");
+                img.src = "./assets/img/stromlos.png";
+                img.alt = "Stromlos";
+                img.className = "track-stromlos-image";
+                iconDisplay.appendChild(img);
+            }
+        };
+        renderTrackIcon();
         iconBox.appendChild(iconDisplay);
 
         if (isAdmin() && adminEditMode) {
@@ -5981,15 +5998,11 @@ function renderPlan() {
 
             [
                 ["", "Kein Icon"],
-                ["🔧", "Werkstatt"],
-                ["⚡", "Elektrisch"],
-                ["🚫⚡", "Stromlos"],
-                ["🧼", "Waschanlage"],
-                ["⭐", "Sondergleis"]
+                ["stromlos", "Stromlos"]
             ].forEach(([value,label]) => {
                 const option = document.createElement("option");
                 option.value = value;
-                option.textContent = value ? `${value} ${label}` : label;
+                option.textContent = label;
                 option.selected = value === (track.icon || "");
                 iconSelect.appendChild(option);
             });
@@ -6014,8 +6027,8 @@ function renderPlan() {
                 if (error) {
                     track.icon = previous;
                     iconSelect.value = previous;
-                    iconDisplay.textContent = previous || "";
-                    iconDisplay.dataset.empty = previous ? "false" : "true";
+                    track.icon = previous;
+                    renderTrackIcon();
                     showSupabaseError("Das Gleis-Icon konnte nicht gespeichert werden.", error);
                 }
             });
