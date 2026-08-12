@@ -3661,6 +3661,77 @@ body.light .plan-container::before{
 .track-icon-select{width:112px;height:24px;padding:0 5px;border:1px solid var(--border);border-radius:6px;background:var(--panel);color:var(--text);font-size:10px;font-weight:700;outline:none}
 .track-icon-select:focus{border-color:var(--accent)}
 
+
+/* Gleisausstattung links neben der Gleisnotiz */
+.track-note-content{
+    display:flex;
+    align-items:stretch;
+    gap:10px;
+    width:100%;
+}
+.track-note-icon-box{
+    width:142px;
+    flex:0 0 142px;
+    min-height:44px;
+    display:flex;
+    align-items:center;
+    gap:7px;
+}
+.track-note-icon-display{
+    min-width:42px;
+    height:42px;
+    padding:0 5px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    box-sizing:border-box;
+    border:1px solid var(--border);
+    border-radius:8px;
+    background:rgba(255,255,255,.04);
+    font-size:23px;
+    line-height:1;
+}
+.track-note-icon-select{
+    min-width:88px;
+    max-width:88px;
+    height:32px;
+    padding:0 5px;
+    border:1px solid var(--border);
+    border-radius:7px;
+    background:var(--panel);
+    color:var(--text);
+    font-size:10px;
+    font-weight:800;
+    outline:none;
+}
+.track-note-content .track-note{
+    flex:1 1 auto;
+    width:auto!important;
+    min-width:0;
+}
+
+/* Gleis-Icons in der oberen Legende */
+.track-icon-legend{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:0 12px;
+    min-height:36px;
+    white-space:nowrap;
+    border-left:1px solid var(--border);
+    font-size:11px;
+    font-weight:700;
+}
+.track-icon-legend-title{
+    color:var(--accent);
+    font-weight:900;
+}
+.track-icon-legend span:not(.track-icon-legend-title){
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+}
+
 </style>
 </head>
 
@@ -3748,7 +3819,15 @@ body.light .plan-container::before{
     <span class="legend-item"><span class="legend-dot legend-vermietet"></span>Vermietet</span>
     <span class="legend-item"><span class="legend-dot legend-werkstatt"></span>In der Werkstatt</span>
 </div>
-<div class="global-info-bar" id="globalInfoBar">
+<div class="track-icon-legend" aria-label="Gleisausstattung">
+            <span class="track-icon-legend-title">Gleis:</span>
+            <span title="Werkstatt">🔧 Werkstatt</span>
+            <span title="Elektrisch">⚡ Elektrisch</span>
+            <span title="Nicht elektrisch">🚫⚡ Nicht elektrisch</span>
+            <span title="Waschanlage">🧼 Waschanlage</span>
+            <span title="Sondergleis">⭐ Sondergleis</span>
+        </div>
+        <div class="global-info-bar" id="globalInfoBar">
     <div class="global-info-label">Info</div>
     <div class="global-info-message" id="globalInfoMessage">Keine aktuelle Information.</div>
 
@@ -5277,62 +5356,6 @@ function renderPlan() {
         title.textContent = track.number;
         titleBox.appendChild(title);
 
-        const iconRow = document.createElement("div");
-        iconRow.className = "track-icon-row";
-
-        const iconDisplay = document.createElement("span");
-        iconDisplay.className = "track-icon-display";
-        iconDisplay.textContent = track.icon || "＋";
-        iconRow.appendChild(iconDisplay);
-
-        if (isAdmin() && adminEditMode) {
-            const iconSelect = document.createElement("select");
-            iconSelect.className = "track-icon-select";
-            iconSelect.title = "Icon für dieses Gleis auswählen";
-
-            [
-                ["", "Kein Icon"], ["🚂", "Lokomotive"], ["🚆", "Zug"],
-                ["🚃", "Wagen"], ["🔧", "Werkstatt"], ["⛽", "Tankstelle"],
-                ["🧼", "Waschanlage"], ["⚡", "Elektrisch"], ["🅿️", "Abstellung"],
-                ["🏭", "Betriebswerk"], ["📦", "Güterbereich"], ["🚧", "Gesperrt"],
-                ["⚠️", "Achtung"], ["⭐", "Sondergleis"]
-            ].forEach(([value,label]) => {
-                const option = document.createElement("option");
-                option.value = value;
-                option.textContent = value ? `${value} ${label}` : label;
-                option.selected = value === (track.icon || "");
-                iconSelect.appendChild(option);
-            });
-
-            iconSelect.addEventListener("pointerdown", e => e.stopPropagation());
-            iconSelect.addEventListener("click", e => e.stopPropagation());
-            iconSelect.addEventListener("change", async e => {
-                e.stopPropagation();
-                const previous = track.icon || "";
-                track.icon = iconSelect.value;
-                iconDisplay.textContent = track.icon || "＋";
-
-                const storedNote = `${track.icon ? `[ICON:${track.icon}] ` : ""}${track.note || ""}`;
-                const { error } = await window.eetgSupabase.from("tracks").update({
-                    note: storedNote,
-                    updated_at: new Date().toISOString()
-                }).eq("id", track.id);
-
-                if (error) {
-                    track.icon = previous;
-                    iconSelect.value = previous;
-                    iconDisplay.textContent = previous || "＋";
-                    showSupabaseError("Das Gleis-Icon konnte nicht gespeichert werden.", error);
-                }
-            });
-
-            iconRow.appendChild(iconSelect);
-        } else if (!track.icon) {
-            iconRow.style.display = "none";
-        }
-
-        titleBox.appendChild(iconRow);
-
         const lengthLabel = document.createElement("div");
         lengthLabel.className = "track-length-label";
         lengthLabel.textContent = track.length + " m";
@@ -5454,6 +5477,68 @@ function renderPlan() {
         noteLabel.textContent = "Notiz";
         noteWrap.appendChild(noteLabel);
 
+        const noteContent = document.createElement("div");
+        noteContent.className = "track-note-content";
+
+        const iconBox = document.createElement("div");
+        iconBox.className = "track-note-icon-box";
+
+        const iconDisplay = document.createElement("div");
+        iconDisplay.className = "track-note-icon-display";
+        iconDisplay.textContent = track.icon || "—";
+        iconDisplay.title = track.icon ? "Gleisausstattung" : "Keine Gleisausstattung";
+        iconBox.appendChild(iconDisplay);
+
+        if (isAdmin() && adminEditMode) {
+            const iconSelect = document.createElement("select");
+            iconSelect.className = "track-note-icon-select";
+            iconSelect.title = "Gleisausstattung auswählen";
+
+            [
+                ["", "Kein Icon"],
+                ["🔧", "Werkstatt"],
+                ["⚡", "Elektrisch"],
+                ["🚫⚡", "Nicht elektrisch"],
+                ["🧼", "Waschanlage"],
+                ["⭐", "Sondergleis"]
+            ].forEach(([value,label]) => {
+                const option = document.createElement("option");
+                option.value = value;
+                option.textContent = value ? `${value} ${label}` : label;
+                option.selected = value === (track.icon || "");
+                iconSelect.appendChild(option);
+            });
+
+            iconSelect.addEventListener("pointerdown", e => e.stopPropagation());
+            iconSelect.addEventListener("click", e => e.stopPropagation());
+            iconSelect.addEventListener("change", async e => {
+                e.stopPropagation();
+                const previous = track.icon || "";
+                track.icon = iconSelect.value;
+                iconDisplay.textContent = track.icon || "—";
+                iconDisplay.title = track.icon ? "Gleisausstattung" : "Keine Gleisausstattung";
+
+                const storedNote = `${track.icon ? `[ICON:${track.icon}] ` : ""}${track.note || ""}`;
+                const { error } = await window.eetgSupabase.from("tracks").update({
+                    note: storedNote,
+                    updated_at: new Date().toISOString()
+                }).eq("id", track.id);
+
+                if (error) {
+                    track.icon = previous;
+                    iconSelect.value = previous;
+                    iconDisplay.textContent = previous || "—";
+                    showSupabaseError("Das Gleis-Icon konnte nicht gespeichert werden.", error);
+                }
+            });
+
+            iconBox.appendChild(iconSelect);
+        } else if (!track.icon) {
+            iconBox.style.display = "none";
+        }
+
+        noteContent.appendChild(iconBox);
+
         const noteField = document.createElement("textarea");
         noteField.className = "track-note";
         noteField.value = track.note || "";
@@ -5500,7 +5585,8 @@ function renderPlan() {
             }, 500);
         });
 
-        noteWrap.appendChild(noteField);
+        noteContent.appendChild(noteField);
+        noteWrap.appendChild(noteContent);
         noteWrap.appendChild(noteStatus);
         trackElement.appendChild(noteWrap);
 
