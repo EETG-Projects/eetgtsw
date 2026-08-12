@@ -3947,6 +3947,69 @@ body.light .plan-container::before{
     display:none!important;
 }
 
+
+/* =========================================================
+   OBERE LEISTE WIEDER WIE VORHER:
+   Fahrzeuglegende + Gleislegende + Info alles oben.
+========================================================= */
+
+/* Keine zweite Legendenzeile mehr */
+.track-legend-bar{
+    display:none!important;
+}
+
+/* Alles in einer einzigen oberen Zeile */
+.status-legend{
+    height:38px!important;
+    min-height:38px!important;
+    padding:0 10px!important;
+    display:flex!important;
+    align-items:center!important;
+    flex-wrap:nowrap!important;
+    gap:8px!important;
+    overflow:visible!important;
+}
+
+/* Trennung zwischen Fahrzeugstatus und Gleisicons */
+.legend-divider{
+    display:block!important;
+    width:1px!important;
+    height:20px!important;
+    flex:0 0 1px!important;
+    margin:0 4px!important;
+    background:var(--border)!important;
+}
+
+/* "Gleis:" heißt jetzt ebenfalls "Legende:" */
+.legend-track-label{
+    color:var(--accent)!important;
+    font-weight:900!important;
+    white-space:nowrap!important;
+}
+
+.legend-track-item{
+    display:inline-flex!important;
+    align-items:center!important;
+    gap:3px!important;
+    white-space:nowrap!important;
+    font-size:10px!important;
+}
+
+/* Info wieder oben in derselben Leiste */
+.global-info-bar{
+    display:flex!important;
+    align-items:center!important;
+    visibility:visible!important;
+    opacity:1!important;
+    margin-left:auto!important;
+    min-width:0!important;
+}
+
+/* Eventuelle Hilfs-/Continuation-Struktur darf nichts verschieben */
+.status-legend-continuation{
+    display:contents!important;
+}
+
 </style>
 </head>
 
@@ -4035,15 +4098,15 @@ body.light .plan-container::before{
     <span class="legend-item"><span class="legend-dot legend-werkstatt"></span>In der Werkstatt</span>
 </div>
 </div>
-    <div class="track-legend-bar" aria-label="Gleislegende">
-        <span class="legend-label legend-track-label">Gleis:</span>
+    
+    <div class="status-legend-continuation">
+        <span class="legend-divider" aria-hidden="true"></span>
+        
         <span class="legend-item legend-track-item" title="Werkstatt">🔧 Werkstatt</span>
         <span class="legend-item legend-track-item" title="Elektrisch">⚡ Elektrisch</span>
         <span class="legend-item legend-track-item" title="Nicht elektrisch">🚫⚡ Nicht elektrisch</span>
         <span class="legend-item legend-track-item" title="Waschanlage">🧼 Waschanlage</span>
         <span class="legend-item legend-track-item" title="Sondergleis">⭐ Sondergleis</span>
-    </div>
-    <div class="status-legend-continuation">
         <div class="global-info-bar" id="globalInfoBar">
     <div class="global-info-label">Info</div>
     <div class="global-info-message" id="globalInfoMessage">Keine aktuelle Information.</div>
