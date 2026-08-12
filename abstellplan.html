@@ -4010,6 +4010,107 @@ body.light .plan-container::before{
     display:contents!important;
 }
 
+
+/* =========================================================
+   FINALE OBERE LEISTE
+   EINMAL "Legende:" + Fahrzeugstatus + Gleisicons + INFO
+========================================================= */
+.legend-info-row{
+    display:flex!important;
+    align-items:stretch!important;
+    width:100%!important;
+    height:38px!important;
+    min-height:38px!important;
+    margin:0!important;
+    padding:0!important;
+    background:var(--panel)!important;
+    border-bottom:1px solid var(--border)!important;
+    overflow:hidden!important;
+}
+
+.legend-info-row .status-legend{
+    flex:0 0 auto!important;
+    width:auto!important;
+    max-width:none!important;
+    height:38px!important;
+    min-height:38px!important;
+    margin:0!important;
+    padding:0 10px!important;
+    border:0!important;
+    border-right:1px solid var(--border)!important;
+    border-radius:0!important;
+    box-shadow:none!important;
+    display:flex!important;
+    align-items:center!important;
+    flex-wrap:nowrap!important;
+    gap:8px!important;
+    overflow:visible!important;
+    background:var(--panel)!important;
+    font-size:10px!important;
+    white-space:nowrap!important;
+}
+
+.legend-info-row .status-legend strong{
+    color:var(--accent)!important;
+    margin-right:2px!important;
+    white-space:nowrap!important;
+}
+
+.legend-info-row .legend-item{
+    display:inline-flex!important;
+    align-items:center!important;
+    gap:4px!important;
+    white-space:nowrap!important;
+    font-size:10px!important;
+}
+
+.legend-info-row .legend-dot{
+    width:11px!important;
+    height:11px!important;
+    flex:0 0 11px!important;
+}
+
+.legend-info-row .legend-divider{
+    display:block!important;
+    width:1px!important;
+    height:20px!important;
+    margin:0 3px!important;
+    flex:0 0 1px!important;
+    background:var(--border)!important;
+}
+
+.legend-info-row .global-info-bar{
+    flex:1 1 auto!important;
+    min-width:0!important;
+    height:38px!important;
+    min-height:38px!important;
+    margin:0!important;
+    padding:4px 10px!important;
+    border:0!important;
+    display:flex!important;
+    align-items:center!important;
+    gap:8px!important;
+    visibility:visible!important;
+    opacity:1!important;
+    background:var(--panel)!important;
+}
+
+.legend-info-row .global-info-message{
+    flex:1 1 auto!important;
+    min-width:80px!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+}
+
+/* Alte Hilfskonstruktionen dürfen nicht mehr erscheinen. */
+.track-legend-bar,
+.legend-track-row,
+.status-legend-continuation,
+.track-icon-legend{
+    display:none!important;
+}
+
 </style>
 </head>
 
@@ -4089,38 +4190,46 @@ body.light .plan-container::before{
 
 </header>
 <div class="legend-info-row">
-<div class="status-legend" aria-label="Legende Fahrzeugstatus">
-    <strong>Legende:</strong>
-    <span class="legend-item"><span class="legend-dot legend-einsatzbereit"></span>Einsatzbereit</span>
-    <span class="legend-item"><span class="legend-dot legend-unterwegs"></span>Unterwegs</span>
-    <span class="legend-item"><span class="legend-dot legend-abgestellt"></span>Abgestellt</span>
-    <span class="legend-item"><span class="legend-dot legend-vermietet"></span>Vermietet</span>
-    <span class="legend-item"><span class="legend-dot legend-werkstatt"></span>In der Werkstatt</span>
-</div>
-</div>
-    
-    <div class="status-legend-continuation">
+    <div class="status-legend" aria-label="Legende">
+        <strong>Legende:</strong>
+
+        <span class="legend-item">
+            <span class="legend-dot legend-einsatzbereit"></span>Einsatzbereit
+        </span>
+        <span class="legend-item">
+            <span class="legend-dot legend-unterwegs"></span>Unterwegs
+        </span>
+        <span class="legend-item">
+            <span class="legend-dot legend-abgestellt"></span>Abgestellt
+        </span>
+        <span class="legend-item">
+            <span class="legend-dot legend-vermietet"></span>Vermietet
+        </span>
+        <span class="legend-item">
+            <span class="legend-dot legend-werkstatt"></span>In der Werkstatt
+        </span>
+
         <span class="legend-divider" aria-hidden="true"></span>
-        
+
         <span class="legend-item legend-track-item" title="Werkstatt">🔧 Werkstatt</span>
         <span class="legend-item legend-track-item" title="Elektrisch">⚡ Elektrisch</span>
         <span class="legend-item legend-track-item" title="Nicht elektrisch">🚫⚡ Nicht elektrisch</span>
         <span class="legend-item legend-track-item" title="Waschanlage">🧼 Waschanlage</span>
         <span class="legend-item legend-track-item" title="Sondergleis">⭐ Sondergleis</span>
-        <div class="global-info-bar" id="globalInfoBar">
-    <div class="global-info-label">Info</div>
-    <div class="global-info-message" id="globalInfoMessage">Keine aktuelle Information.</div>
+    </div>
 
-    <div class="global-info-admin admin-only" id="globalInfoAdmin">
-        <input id="globalInfoText" type="text" maxlength="300" placeholder="Information eingeben …">
-        <input id="globalInfoColor" type="color" value="#b5121b" title="Textfarbe auswählen">
-        <button class="secondary" type="button" onclick="saveGlobalInfo()">Speichern</button>
-        <button class="secondary" type="button" onclick="clearGlobalInfo()">Leeren</button>
+    <div class="global-info-bar" id="globalInfoBar">
+        <div class="global-info-label">Info</div>
+        <div class="global-info-message" id="globalInfoMessage">Keine aktuelle Information.</div>
+
+        <div class="global-info-admin admin-only" id="globalInfoAdmin">
+            <input id="globalInfoText" type="text" maxlength="300" placeholder="Information eingeben …">
+            <input id="globalInfoColor" type="color" value="#b5121b" title="Textfarbe auswählen">
+            <button class="secondary" type="button" onclick="saveGlobalInfo()">Speichern</button>
+            <button class="secondary" type="button" onclick="clearGlobalInfo()">Leeren</button>
+        </div>
     </div>
 </div>
-</div>
-
-
 
 
 <div class="app">
