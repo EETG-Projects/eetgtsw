@@ -413,7 +413,7 @@ button.danger {
 .track-line {
     position: absolute;
 
-    left: 80px;
+    left: 110px;
     right: 30px;
 
     top: 68px;
@@ -460,7 +460,7 @@ button.danger {
 .scale {
     position: absolute;
 
-    left: 80px;
+    left: 110px;
     right: 30px;
 
     top: 15px;
@@ -4212,6 +4212,64 @@ body.light .plan-container::before{
 .track-stromlos-image{width:100%;height:100%;object-fit:contain;display:block;border-radius:7px}
 .track-note-icon-display{overflow:hidden!important;font-size:0!important}
 
+
+/* Prellbock-Auswahl */
+.track-buffer-stop-select{
+    height:30px;
+    min-width:130px;
+    padding:0 6px;
+    border:1px solid var(--border);
+    border-radius:6px;
+    background:var(--panel2);
+    color:var(--text);
+    font-size:10px;
+    font-weight:800;
+}
+
+/* Prellbock direkt an der Gleislinie */
+.track-buffer-stop{
+    position:absolute;
+    top:54px;
+    width:18px;
+    height:34px;
+    z-index:8;
+    pointer-events:none;
+}
+.track-buffer-stop::before{
+    content:"";
+    position:absolute;
+    left:7px;
+    top:0;
+    width:4px;
+    height:34px;
+    background:#cfd3d7;
+    border-radius:2px;
+}
+.track-buffer-stop::after{
+    content:"";
+    position:absolute;
+    left:1px;
+    top:13px;
+    width:16px;
+    height:6px;
+    background:#cfd3d7;
+    border-radius:2px;
+}
+.track-buffer-stop.buffer-front{
+    left:102px;
+}
+.track-buffer-stop.buffer-back{
+    right:22px;
+}
+
+
+/* Vorne am Gleis jetzt derselbe 30-px-Abstand wie hinten */
+.track-line,
+.scale{
+    left:110px!important;
+    right:30px!important;
+}
+
 </style>
 </head>
 
@@ -4945,6 +5003,11 @@ async function copyDbError() {
 const PIXELS_PER_METER = 8; // Darstellung x4: 1 m = 8 px
 const VEHICLE_VISUAL_SCALE = 1; // Maßstab: 1 m Fahrzeug = 1 m Gleis.
 
+// Gleisgeometrie:
+// 80 px = linker Bereich für Gleisname/Kapazität
+// + 30 px zusätzlicher Abstand vor dem eigentlichen Gleis
+const TRACK_START_X = 110;
+
 // Gleise rasten nahe am linken Rand auf 0 px ein.
 // Durch das 25-px-Innenpadding der Planfläche entspricht das optisch
 // genau dem Abstand zwischen den Gleiskarten.
@@ -5152,10 +5215,16 @@ function mapTrack(row, index = 0) {
         length: Number(row.length),
         x: row.x_position == null ? 0 : Number(row.x_position),
         y: row.y_position == null ? (20 + index * 250) : Number(row.y_position),
-        note: String(row.note || "").replace(/^\[ICON:[^\]]*\]\s*/, ""),
+        note: String(row.note || "")
+            .replace(/^\[ICON:[^\]]*\]\s*/, "")
+            .replace(/^\[PRELLBOCK:[^\]]*\]\s*/, ""),
         icon: (() => {
             const saved = ((String(row.note || "").match(/^\[ICON:([^\]]*)\]/) || [])[1] || "");
             return (saved === "🚫⚡" || saved === "Stromlos" || saved === "stromlos") ? "stromlos" : "";
+        })(),
+        bufferStop: (() => {
+            const saved = ((String(row.note || "").match(/\[PRELLBOCK:([^\]]*)\]/) || [])[1] || "");
+            return ["front","back","none"].includes(saved) ? saved : "none";
         })(),
         location: row.location_id == null ? null : String(row.location_id)
     };
@@ -5825,11 +5894,11 @@ function renderPlan() {
 
         const width = track.length * PIXELS_PER_METER;
         // Die Umrandung endet passend zur tatsächlichen Gleislänge.
-        // 80 px links für Gleisname + 30 px rechter Innenabstand.
+        // 110 px bis zum 0-m-Punkt + 30 px rechter Innenabstand.
         // Ein zusätzliches Raster-Kästchen (25 px) rechts hinter der Gleislänge.
         const extraGridBox = 25;
-        trackElement.style.width = (width + 110 + extraGridBox) + "px";
-        trackElement.style.minWidth = (width + 110 + extraGridBox) + "px";
+        trackElement.style.width = (width + 140 + extraGridBox) + "px";
+        trackElement.style.minWidth = (width + 140 + extraGridBox) + "px";
 
         // Freie Position des Gleises auf der Planfläche.
         trackElement.style.left = track.x + "px";
@@ -5910,6 +5979,53 @@ function renderPlan() {
                 updatePlanCanvasSize();
             });
 
+            const bufferStopSelect = document.createElement("select");
+            bufferStopSelect.className = "track-buffer-stop-select";
+            bufferStopSelect.title = "Prellbock auswählen";
+
+            [
+                ["none", "Kein Prellbock"],
+                ["front", "Prellbock vorne"],
+                ["back", "Prellbock hinten"]
+            ].forEach(([value, label]) => {
+                const option = document.createElement("option");
+                option.value = value;
+                option.textContent = label;
+                option.selected = value === (track.bufferStop || "none");
+                bufferStopSelect.appendChild(option);
+            });
+
+            bufferStopSelect.addEventListener("click", event => event.stopPropagation());
+            bufferStopSelect.addEventListener("pointerdown", event => event.stopPropagation());
+            bufferStopSelect.addEventListener("change", async event => {
+                event.stopPropagation();
+
+                const previous = track.bufferStop || "none";
+                track.bufferStop = bufferStopSelect.value;
+
+                const storedNote =
+                    `${track.icon ? `[ICON:${track.icon}] ` : ""}` +
+                    `${track.bufferStop && track.bufferStop !== "none" ? `[PRELLBOCK:${track.bufferStop}] ` : ""}` +
+                    `${track.note || ""}`;
+
+                const { error } = await window.eetgSupabase
+                    .from("tracks")
+                    .update({
+                        note: storedNote,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq("id", track.id);
+
+                if (error) {
+                    track.bufferStop = previous;
+                    bufferStopSelect.value = previous;
+                    showSupabaseError("Der Prellbock konnte nicht gespeichert werden.", error);
+                    return;
+                }
+
+                renderPlan();
+            });
+
             const dragHandle = document.createElement("button");
             dragHandle.className = "track-drag-handle";
             dragHandle.type = "button";
@@ -5925,6 +6041,7 @@ function renderPlan() {
             actions.appendChild(lengthButton);
             actions.appendChild(deleteButton);
             actions.appendChild(edgeButton);
+            actions.appendChild(bufferStopSelect);
             actions.appendChild(dragHandle);
 
             // Wichtig: Die Admin-Leiste gehört direkt in den Gleiskasten,
@@ -5937,6 +6054,16 @@ function renderPlan() {
         const line = document.createElement("div");
         line.className = "track-line";
         trackElement.appendChild(line);
+
+        if (track.bufferStop && track.bufferStop !== "none") {
+            const bufferStop = document.createElement("div");
+            bufferStop.className = "track-buffer-stop " +
+                (track.bufferStop === "front" ? "buffer-front" : "buffer-back");
+            bufferStop.title = track.bufferStop === "front"
+                ? "Prellbock vorne"
+                : "Prellbock hinten";
+            trackElement.appendChild(bufferStop);
+        }
 
         // Nur der im Screenshot gezeigte Gleisbereich wird mit Bereichen belegt:
         // der schmale Korridor direkt über den Schienen.
@@ -6105,7 +6232,7 @@ function renderPlan() {
                 const zoom = Number(planZoom) || 1;
 
                 // Mausposition wieder in reale Plan-Meter umrechnen.
-                let x = (event.clientX - rect.left) / zoom - 80;
+                let x = (event.clientX - rect.left) / zoom - TRACK_START_X;
                 let position = Math.max(0, x / PIXELS_PER_METER);
 
                 if (vehicle.consist) {
@@ -6190,7 +6317,7 @@ function createTrackAreaElement(area, track) {
     const maxLength = Math.max(0, Number(track.length || 0) - safeStart);
     const safeLength = Math.max(0, Math.min(Number(area.lengthMeter || 0), maxLength));
 
-    element.style.left = (80 + safeStart * PIXELS_PER_METER) + "px";
+    element.style.left = (TRACK_START_X + safeStart * PIXELS_PER_METER) + "px";
     element.style.width = Math.max(2, safeLength * PIXELS_PER_METER) + "px";
 
     const label = document.createElement("div");
@@ -6948,7 +7075,7 @@ function updatePlanCanvasSize() {
 
     tracks.forEach(track => {
         const trackWidth =
-            track.length * PIXELS_PER_METER + 110 + 25;
+            track.length * PIXELS_PER_METER + 140 + 25;
 
         const visibleTrackHeight =
             (isAdmin() && adminEditMode) ? 285 : 215;
@@ -7070,7 +7197,12 @@ async function saveTrackNote(trackId, note) {
     const { error } = await window.eetgSupabase
         .from("tracks")
         .update({
-            note: `${(tracks.find(t => String(t.id) === String(trackId))?.icon) ? `[ICON:${tracks.find(t => String(t.id) === String(trackId)).icon}] ` : ""}${note || ""}`,
+            note: (() => {
+                const track = tracks.find(t => String(t.id) === String(trackId));
+                return `${track?.icon ? `[ICON:${track.icon}] ` : ""}` +
+                    `${track?.bufferStop && track.bufferStop !== "none" ? `[PRELLBOCK:${track.bufferStop}] ` : ""}` +
+                    `${note || ""}`;
+            })(),
             updated_at: new Date().toISOString()
         })
         .eq("id", trackId);
@@ -7116,7 +7248,7 @@ function createVehicleElement(vehicle) {
 
     const wrap = document.createElement("div");
     wrap.className = "vehicle-wrap";
-    wrap.style.left = (80 + vehicle.position * PIXELS_PER_METER) + "px";
+    wrap.style.left = (TRACK_START_X + vehicle.position * PIXELS_PER_METER) + "px";
     wrap.style.width = width + "px";
     if(vehicle.consist){const c=consists.find(x=>x.id===String(vehicle.consist));if(c){const b=document.createElement("div");b.className="consist-badge";b.textContent=[c.number,c.name].filter(Boolean).join(" · ");wrap.appendChild(b)}}
     const element = document.createElement("div");
