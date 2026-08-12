@@ -4270,6 +4270,62 @@ body.light .plan-container::before{
     right:30px!important;
 }
 
+
+/* =========================================================
+   GLEISABSTAND VORNE/HINTEN
+   0 m bleibt bei 110 px, die Schiene beginnt 30 px davor.
+========================================================= */
+.track-line{
+    left:80px!important;
+    right:30px!important;
+}
+
+/* Maßstab bleibt am echten 0-m-Punkt */
+.scale{
+    left:110px!important;
+    right:30px!important;
+}
+
+
+/* =========================================================
+   PRELLBOCK – SCHLICHTE T-FORM WIE IN DER VORLAGE
+========================================================= */
+.track-buffer-stop{
+    position:absolute!important;
+    top:54px!important;
+    width:14px!important;
+    height:34px!important;
+    z-index:9!important;
+    pointer-events:none!important;
+}
+
+/* Nur die senkrechte Abschlusskante */
+.track-buffer-stop::before{
+    content:""!important;
+    position:absolute!important;
+    top:0!important;
+    left:5px!important;
+    width:5px!important;
+    height:34px!important;
+    background:#d7dadd!important;
+    border-radius:1px!important;
+}
+
+/* Keine Querplatte mehr – die Schienen selbst laufen direkt an die Kante */
+.track-buffer-stop::after{
+    display:none!important;
+}
+
+/* Vorne = am Gleisanfang/links. Die senkrechte Kante sitzt direkt am Schienenanfang. */
+.track-buffer-stop.buffer-front{
+    left:73px!important;
+}
+
+/* Hinten = am Gleisende/rechts. */
+.track-buffer-stop.buffer-back{
+    right:23px!important;
+}
+
 </style>
 </head>
 
