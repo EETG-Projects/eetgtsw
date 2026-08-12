@@ -4111,6 +4111,101 @@ body.light .plan-container::before{
     display:none!important;
 }
 
+
+/* Gleis-Icon exakt an der Unterkante des Notizfeldes ausrichten */
+.track-note-icon-box{
+    top:auto!important;
+    bottom:20px!important;
+    align-items:flex-end!important;
+}
+
+.track-note-icon-display{
+    margin:0!important;
+}
+
+
+/* =========================================================
+   GLEIS-ICON – EXAKT MIT DEM NOTIZFELD AUSGERICHTET
+========================================================= */
+
+/* Notizbereich wieder über die gesamte Gleiskarte ziehen. */
+.track-note-wrap{
+    left:14px!important;
+    right:14px!important;
+    top:135px!important;
+}
+
+/* NOTIZ-Beschriftung beginnt erst über dem Textfeld,
+   nicht über dem Icon. */
+.track-note-label{
+    margin-left:125px!important;
+}
+
+/* Icon und Textarea befinden sich in EINER gemeinsamen Zeile. */
+.track-note-content{
+    display:flex!important;
+    align-items:flex-end!important;
+    gap:10px!important;
+    width:100%!important;
+}
+
+/* Keine absolute Positionierung mehr. */
+.track-note-icon-box{
+    position:static!important;
+    top:auto!important;
+    bottom:auto!important;
+    left:auto!important;
+    width:115px!important;
+    min-width:115px!important;
+    flex:0 0 115px!important;
+    min-height:44px!important;
+    display:flex!important;
+    align-items:flex-end!important;
+    justify-content:flex-start!important;
+    gap:6px!important;
+    z-index:auto!important;
+}
+
+/* Icon exakt so hoch wie die minimale Notizfeldhöhe.
+   Dadurch liegen Ober- UND Unterkante sauber auf einer Linie. */
+.track-note-icon-display{
+    width:44px!important;
+    min-width:44px!important;
+    height:44px!important;
+    min-height:44px!important;
+    margin:0!important;
+    padding:0!important;
+    box-sizing:border-box!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    font-size:25px!important;
+}
+
+/* Auswahl bleibt im Bearbeitungsmodus daneben. */
+.track-note-icon-select{
+    width:65px!important;
+    min-width:65px!important;
+    max-width:65px!important;
+    height:30px!important;
+    align-self:flex-end!important;
+}
+
+/* Textfeld nimmt exakt den restlichen Platz ein. */
+.track-note-content .track-note{
+    flex:1 1 auto!important;
+    width:auto!important;
+    min-width:0!important;
+    min-height:44px!important;
+    box-sizing:border-box!important;
+}
+
+/* Falls kein Icon gewählt ist, bleibt die eigentliche Icon-Box unsichtbar. */
+.track-note-icon-display:empty,
+.track-note-icon-display[data-empty="true"]{
+    display:none!important;
+}
+
 </style>
 </head>
 
@@ -4213,7 +4308,7 @@ body.light .plan-container::before{
 
         <span class="legend-item legend-track-item" title="Werkstatt">🔧 Werkstatt</span>
         <span class="legend-item legend-track-item" title="Elektrisch">⚡ Elektrisch</span>
-        <span class="legend-item legend-track-item" title="Nicht elektrisch">🚫⚡ Nicht elektrisch</span>
+        <span class="legend-item legend-track-item" title="Stromlos">🚫⚡ Stromlos</span>
         <span class="legend-item legend-track-item" title="Waschanlage">🧼 Waschanlage</span>
         <span class="legend-item legend-track-item" title="Sondergleis">⭐ Sondergleis</span>
     </div>
@@ -5888,7 +5983,7 @@ function renderPlan() {
                 ["", "Kein Icon"],
                 ["🔧", "Werkstatt"],
                 ["⚡", "Elektrisch"],
-                ["🚫⚡", "Nicht elektrisch"],
+                ["🚫⚡", "Stromlos"],
                 ["🧼", "Waschanlage"],
                 ["⭐", "Sondergleis"]
             ].forEach(([value,label]) => {
@@ -5930,7 +6025,7 @@ function renderPlan() {
             iconBox.style.display = "none";
         }
 
-        trackElement.appendChild(iconBox);
+        noteContent.appendChild(iconBox);
 
         const noteField = document.createElement("textarea");
         noteField.className = "track-note";
