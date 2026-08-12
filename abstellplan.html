@@ -3875,6 +3875,78 @@ body.light .plan-container::before{
     display:none!important;
 }
 
+
+/* Fahrzeuglegende wieder nur eine einzelne, schmale Leiste */
+.status-legend{
+    height:34px!important;
+    min-height:34px!important;
+    padding:0 10px!important;
+    display:flex!important;
+    align-items:center!important;
+    flex-wrap:nowrap!important;
+    gap:8px!important;
+    overflow-x:auto!important;
+}
+
+/* Eigene Gleis-Legendenleiste DIREKT unter der Fahrzeuglegende */
+.track-legend-bar{
+    width:100%;
+    min-height:28px;
+    box-sizing:border-box;
+    display:flex;
+    align-items:center;
+    gap:11px;
+    padding:3px 10px;
+    border-top:1px solid var(--border);
+    border-bottom:1px solid var(--border);
+    background:var(--panel);
+    color:var(--text);
+    font-size:10px;
+    font-weight:700;
+    white-space:nowrap;
+    overflow-x:auto;
+}
+.track-legend-bar .legend-track-label{
+    color:var(--accent);
+    font-weight:900;
+}
+.track-legend-bar .legend-track-item{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    font-size:10px!important;
+}
+.status-legend-continuation{
+    display:contents!important;
+}
+
+
+/* Informationstext bleibt oben in der Fahrzeug-Legendenleiste */
+.global-info-bar{
+    display:flex!important;
+    visibility:visible!important;
+    opacity:1!important;
+}
+
+/* Die Gleislegende bleibt als eigene zweite Leiste darunter. */
+.track-legend-bar{
+    position:relative;
+    z-index:5;
+}
+
+
+/* Gleis-Icon auf Höhe der Notiz setzen */
+.track-note-icon-box{
+    top:138px!important;
+}
+
+
+/* Kein ausgewähltes Gleis-Icon: keine leere Symbol-Box anzeigen */
+.track-note-icon-display:empty,
+.track-note-icon-display[data-empty="true"]{
+    display:none!important;
+}
+
 </style>
 </head>
 
@@ -3962,14 +4034,16 @@ body.light .plan-container::before{
     <span class="legend-item"><span class="legend-dot legend-vermietet"></span>Vermietet</span>
     <span class="legend-item"><span class="legend-dot legend-werkstatt"></span>In der Werkstatt</span>
 </div>
-<div class="legend-track-row">
-            <span class="legend-label legend-track-label">Gleis:</span>
-            <span class="legend-item legend-track-item" title="Werkstatt">🔧 Werkstatt</span>
-            <span class="legend-item legend-track-item" title="Elektrisch">⚡ Elektrisch</span>
-            <span class="legend-item legend-track-item" title="Nicht elektrisch">🚫⚡ Nicht elektrisch</span>
-            <span class="legend-item legend-track-item" title="Waschanlage">🧼 Waschanlage</span>
-            <span class="legend-item legend-track-item" title="Sondergleis">⭐ Sondergleis</span>
-        </div>
+</div>
+    <div class="track-legend-bar" aria-label="Gleislegende">
+        <span class="legend-label legend-track-label">Gleis:</span>
+        <span class="legend-item legend-track-item" title="Werkstatt">🔧 Werkstatt</span>
+        <span class="legend-item legend-track-item" title="Elektrisch">⚡ Elektrisch</span>
+        <span class="legend-item legend-track-item" title="Nicht elektrisch">🚫⚡ Nicht elektrisch</span>
+        <span class="legend-item legend-track-item" title="Waschanlage">🧼 Waschanlage</span>
+        <span class="legend-item legend-track-item" title="Sondergleis">⭐ Sondergleis</span>
+    </div>
+    <div class="status-legend-continuation">
         <div class="global-info-bar" id="globalInfoBar">
     <div class="global-info-label">Info</div>
     <div class="global-info-message" id="globalInfoMessage">Keine aktuelle Information.</div>
@@ -5628,8 +5702,9 @@ function renderPlan() {
 
         const iconDisplay = document.createElement("div");
         iconDisplay.className = "track-note-icon-display";
-        iconDisplay.textContent = track.icon || "—";
-        iconDisplay.title = track.icon ? "Gleisausstattung" : "Keine Gleisausstattung";
+        iconDisplay.textContent = track.icon || "";
+        iconDisplay.dataset.empty = track.icon ? "false" : "true";
+        iconDisplay.title = track.icon ? "Gleisausstattung" : "";
         iconBox.appendChild(iconDisplay);
 
         if (isAdmin() && adminEditMode) {
@@ -5658,8 +5733,10 @@ function renderPlan() {
                 e.stopPropagation();
                 const previous = track.icon || "";
                 track.icon = iconSelect.value;
-                iconDisplay.textContent = track.icon || "—";
-                iconDisplay.title = track.icon ? "Gleisausstattung" : "Keine Gleisausstattung";
+                iconDisplay.textContent = track.icon || "";
+                iconDisplay.dataset.empty = track.icon ? "false" : "true";
+                iconDisplay.dataset.empty = track.icon ? "false" : "true";
+                iconDisplay.title = track.icon ? "Gleisausstattung" : "";
 
                 const storedNote = `${track.icon ? `[ICON:${track.icon}] ` : ""}${track.note || ""}`;
                 const { error } = await window.eetgSupabase.from("tracks").update({
@@ -5670,7 +5747,8 @@ function renderPlan() {
                 if (error) {
                     track.icon = previous;
                     iconSelect.value = previous;
-                    iconDisplay.textContent = previous || "—";
+                    iconDisplay.textContent = previous || "";
+                    iconDisplay.dataset.empty = previous ? "false" : "true";
                     showSupabaseError("Das Gleis-Icon konnte nicht gespeichert werden.", error);
                 }
             });
