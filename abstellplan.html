@@ -3732,6 +3732,149 @@ body.light .plan-container::before{
     gap:4px;
 }
 
+
+/* =========================================================
+   LEGENDEN ZUSAMMENGEFÜHRT + SCHMALER
+========================================================= */
+.status-legend{
+    min-height:34px!important;
+    height:34px!important;
+    padding:0 10px!important;
+    gap:8px!important;
+    font-size:10px!important;
+    flex-wrap:nowrap!important;
+    overflow-x:auto!important;
+}
+
+.status-legend .legend-item{
+    gap:4px!important;
+    white-space:nowrap!important;
+}
+
+.status-legend .legend-item .legend-color,
+.status-legend .legend-color{
+    width:10px!important;
+    height:10px!important;
+}
+
+.legend-divider{
+    width:1px;
+    height:18px;
+    background:var(--border);
+    flex:0 0 1px;
+    margin:0 2px;
+}
+
+.legend-track-label{
+    color:var(--accent);
+    font-weight:900;
+    white-space:nowrap;
+}
+
+.legend-track-item{
+    font-size:10px!important;
+}
+
+/* Alte separate Icon-Legende endgültig deaktivieren */
+.track-icon-legend{
+    display:none!important;
+}
+
+/* =========================================================
+   GLEIS-ICON FEST IM FREIRAUM
+   Unter Gleislänge/Kapazität, links neben der Notiz.
+========================================================= */
+.track-note-content{
+    display:block!important;
+    width:100%!important;
+}
+
+.track-note-content .track-note{
+    width:100%!important;
+    min-width:0!important;
+}
+
+/* Icon-Box nicht mehr Teil der Notizzeile, sondern fest im linken Freiraum */
+.track-note-icon-box{
+    position:absolute!important;
+    left:14px!important;
+    top:112px!important;
+    width:110px!important;
+    min-height:54px!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:flex-start!important;
+    gap:6px!important;
+    z-index:28!important;
+}
+
+/* Größeres, dauerhaft sichtbares Symbol */
+.track-note-icon-display{
+    width:48px!important;
+    min-width:48px!important;
+    height:48px!important;
+    padding:0!important;
+    border-radius:9px!important;
+    font-size:26px!important;
+}
+
+/* Auswahl kompakt daneben, nur im Bearbeitungsmodus */
+.track-note-icon-select{
+    width:56px!important;
+    min-width:56px!important;
+    max-width:56px!important;
+    height:30px!important;
+    padding:0 3px!important;
+    font-size:9px!important;
+}
+
+/* Notiz beginnt rechts vom linken Icon-Bereich */
+.track-note-wrap{
+    left:135px!important;
+    right:14px!important;
+}
+
+/* Die Beschriftung NOTIZ bleibt über dem Textfeld */
+.track-note-label{
+    left:0!important;
+}
+
+
+/* Legende zweizeilig:
+   1. Zeile Fahrzeugstatus
+   2. Zeile Gleisausstattung */
+.status-legend{
+    height:auto!important;
+    min-height:52px!important;
+    padding:4px 10px!important;
+    display:flex!important;
+    align-items:center!important;
+    align-content:center!important;
+    flex-wrap:wrap!important;
+    row-gap:2px!important;
+    column-gap:8px!important;
+    overflow:visible!important;
+}
+
+.legend-track-row{
+    flex:0 0 100%;
+    width:100%;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    min-height:22px;
+    font-size:10px;
+    white-space:nowrap;
+}
+
+.legend-track-row .legend-track-label{
+    margin-right:2px;
+}
+
+.legend-divider{
+    display:none!important;
+}
+
 </style>
 </head>
 
@@ -3819,13 +3962,13 @@ body.light .plan-container::before{
     <span class="legend-item"><span class="legend-dot legend-vermietet"></span>Vermietet</span>
     <span class="legend-item"><span class="legend-dot legend-werkstatt"></span>In der Werkstatt</span>
 </div>
-<div class="track-icon-legend" aria-label="Gleisausstattung">
-            <span class="track-icon-legend-title">Gleis:</span>
-            <span title="Werkstatt">🔧 Werkstatt</span>
-            <span title="Elektrisch">⚡ Elektrisch</span>
-            <span title="Nicht elektrisch">🚫⚡ Nicht elektrisch</span>
-            <span title="Waschanlage">🧼 Waschanlage</span>
-            <span title="Sondergleis">⭐ Sondergleis</span>
+<div class="legend-track-row">
+            <span class="legend-label legend-track-label">Gleis:</span>
+            <span class="legend-item legend-track-item" title="Werkstatt">🔧 Werkstatt</span>
+            <span class="legend-item legend-track-item" title="Elektrisch">⚡ Elektrisch</span>
+            <span class="legend-item legend-track-item" title="Nicht elektrisch">🚫⚡ Nicht elektrisch</span>
+            <span class="legend-item legend-track-item" title="Waschanlage">🧼 Waschanlage</span>
+            <span class="legend-item legend-track-item" title="Sondergleis">⭐ Sondergleis</span>
         </div>
         <div class="global-info-bar" id="globalInfoBar">
     <div class="global-info-label">Info</div>
@@ -5537,7 +5680,7 @@ function renderPlan() {
             iconBox.style.display = "none";
         }
 
-        noteContent.appendChild(iconBox);
+        trackElement.appendChild(iconBox);
 
         const noteField = document.createElement("textarea");
         noteField.className = "track-note";
