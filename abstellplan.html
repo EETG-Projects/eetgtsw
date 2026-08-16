@@ -4395,7 +4395,692 @@ body.light .plan-container::before{
     white-space:nowrap;
 }
 
+
+/* =========================================================
+   HAUPTREITER: ABSTELLPLAN / FAHRTENBÜCHER
+========================================================= */
+.header-tabs{
+    align-self:stretch;
+    display:flex;
+    align-items:stretch;
+    gap:4px;
+}
+
+.header-tab{
+    position:relative;
+    height:64px;
+    min-height:64px;
+    padding:0 15px;
+    border:0;
+    border-radius:0;
+    background:transparent;
+    color:var(--muted);
+    font-size:15px;
+    font-weight:800;
+    cursor:pointer;
+    white-space:nowrap;
+}
+
+.header-tab:hover{
+    background:rgba(181,18,27,.055);
+    color:var(--text);
+    filter:none;
+}
+
+.header-tab.active{
+    color:var(--text);
+    background:transparent;
+}
+
+.header-tab.active::after{
+    content:"";
+    position:absolute;
+    left:12px;
+    right:12px;
+    bottom:0;
+    height:3px;
+    border-radius:3px 3px 0 0;
+    background:var(--accent);
+}
+
+.main-tab-view[hidden]{
+    display:none!important;
+}
+
+#abstellplanView{
+    height:calc(100vh - 64px);
+    min-height:0;
+    overflow:hidden;
+}
+
+#abstellplanView.active{
+    display:block;
+}
+
+/* Bestehende .app liegt jetzt innerhalb der Tab-Ansicht. */
+#abstellplanView > .legend-info-row{
+    flex:0 0 auto;
+}
+
+#abstellplanView > .app{
+    height:calc(100% - 38px);
+}
+
+/* Leere Fahrtenbuch-Ansicht */
+.fahrtenbuecher-view{
+    height:calc(100vh - 64px);
+    min-height:0;
+    overflow:auto;
+    background:var(--bg);
+}
+
+.fahrtenbuecher-view.active{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.fahrtenbuecher-empty{
+    width:min(680px, calc(100% - 48px));
+    padding:55px 40px;
+    text-align:center;
+    border:1px solid var(--border);
+    border-radius:14px;
+    background:var(--panel);
+    box-shadow:0 12px 35px rgba(0,0,0,.08);
+}
+
+.fahrtenbuecher-empty-icon{
+    font-size:52px;
+    line-height:1;
+    margin-bottom:18px;
+}
+
+.fahrtenbuecher-empty h1{
+    margin:0 0 10px;
+    font-size:28px;
+}
+
+.fahrtenbuecher-empty p{
+    margin:0;
+    color:var(--muted);
+    font-size:14px;
+}
+
+@media(max-width:850px){
+    .header-tab{
+        padding:0 9px;
+        font-size:12px;
+    }
+}
+
+
+/* Fahrtenbuch aus GitHub-Textdatei */
+.fahrtenbuecher-view.active{
+    display:block!important;
+    padding:24px;
+    box-sizing:border-box;
+}
+
+.fahrtenbuecher-panel{
+    width:min(1100px,100%);
+    margin:0 auto;
+    border:1px solid var(--border);
+    border-radius:12px;
+    background:var(--panel);
+    overflow:hidden;
+}
+
+.fahrtenbuecher-panel-head{
+    min-height:76px;
+    padding:14px 18px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    border-bottom:1px solid var(--border);
+}
+
+.fahrtenbuecher-panel-head h1{
+    margin:3px 0 0;
+    font-size:22px;
+}
+
+.fahrtenbuecher-eyebrow{
+    color:var(--accent);
+    font-size:10px;
+    font-weight:900;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+}
+
+.fahrtenbuch-source{
+    padding:9px 18px;
+    border-bottom:1px solid var(--border);
+    color:var(--muted);
+    font-size:11px;
+}
+
+.fahrtenbuch-source code{
+    color:var(--text);
+}
+
+.fahrtenbuch-text{
+    min-height:420px;
+    margin:0;
+    padding:22px;
+    box-sizing:border-box;
+    background:var(--panel2);
+    color:var(--text);
+    font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+    font-size:14px;
+    line-height:1.65;
+    white-space:pre-wrap;
+    overflow-wrap:anywhere;
+}
+
+
+/* =========================================================
+   FAHRTENBÜCHER – EINGABEMASKE
+========================================================= */
+.fahrtenbuecher-view.active{
+    display:block!important;
+    padding:22px!important;
+    box-sizing:border-box!important;
+}
+
+.fahrtenbuecher-panel{
+    width:min(1180px,100%)!important;
+    margin:0 auto!important;
+    border:1px solid var(--border)!important;
+    border-radius:12px!important;
+    background:var(--panel)!important;
+    overflow:hidden!important;
+}
+
+.fahrtenbuecher-panel-head{
+    min-height:72px!important;
+    padding:12px 16px!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:space-between!important;
+    gap:16px!important;
+    border-bottom:1px solid var(--border)!important;
+}
+
+.fahrtenbuch-actions{
+    display:flex;
+    gap:8px;
+    align-items:center;
+}
+
+.fahrtenbuch-form-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:12px 16px;
+    padding:18px;
+}
+
+.fahrtenbuch-form-grid .form-row{
+    margin:0;
+}
+
+.fahrtenbuch-form-grid input,
+.fahrtenbuch-form-grid select,
+.fahrtenbuch-form-grid textarea{
+    width:100%;
+    box-sizing:border-box;
+}
+
+.fahrtenbuch-full{
+    grid-column:1 / -1;
+}
+
+.fahrtenbuch-preview-wrap{
+    margin:0 18px 18px;
+    border:1px solid var(--border);
+    border-radius:9px;
+    overflow:hidden;
+}
+
+.fahrtenbuch-preview-head{
+    min-height:38px;
+    padding:0 12px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    background:var(--panel);
+    border-bottom:1px solid var(--border);
+    font-size:11px;
+}
+
+#fahrtenbuchFilenamePreview{
+    color:var(--muted);
+    font-family:ui-monospace,SFMono-Regular,Consolas,monospace;
+}
+
+.fahrtenbuch-text{
+    min-height:250px!important;
+    max-height:360px;
+    overflow:auto;
+    margin:0!important;
+    padding:16px!important;
+}
+
+.fahrtenbuch-save-state{
+    min-height:20px;
+    margin:0 18px 18px;
+    padding:8px 10px;
+    border-radius:7px;
+    font-size:12px;
+    font-weight:700;
+}
+
+.fahrtenbuch-save-state:empty{
+    display:none;
+}
+
+.fahrtenbuch-save-state.pending{
+    background:rgba(250,204,21,.12);
+    color:#facc15;
+}
+
+.fahrtenbuch-save-state.success{
+    background:rgba(34,197,94,.12);
+    color:#22c55e;
+}
+
+.fahrtenbuch-save-state.error{
+    background:rgba(239,68,68,.12);
+    color:#ef4444;
+}
+
+@media(max-width:760px){
+    .fahrtenbuch-form-grid{
+        grid-template-columns:1fr;
+    }
+    .fahrtenbuch-full{
+        grid-column:auto;
+    }
+}
+
+
+/* Fahrtenbuch-Schriftauswahl: ausschließlich Kalam oder Caveat */
+#fbSchriftart option[value="Kalam"]{font-family:"Kalam",cursive}
+#fbSchriftart option[value="Caveat"]{font-family:"Caveat",cursive}
+#fahrtenbuchPreview{
+    font-size:19px!important;
+    line-height:1.45!important;
+    letter-spacing:.01em;
+}
+
+
+/* =========================================================
+   FAHRTENBUCH – LAYOUT WIE VORLAGE
+========================================================= */
+.fahrtenbuecher-view.active{
+    display:block!important;
+    padding:0!important;
+    overflow:hidden!important;
+}
+
+.fahrtenbuch-layout{
+    height:100%;
+    display:grid;
+    grid-template-columns:380px minmax(0,1fr);
+    background:var(--bg);
+}
+
+.fahrtenbuch-sidebar{
+    border-right:1px solid var(--border);
+    background:var(--panel);
+    overflow:auto;
+}
+
+.fahrtenbuch-sidebar-head{
+    padding:18px 18px 10px;
+}
+
+.fahrtenbuch-sidebar-head h2,
+.fahrtenbuch-main-head h2{
+    margin:0;
+    font-size:18px;
+}
+
+.fahrtenbuch-form{
+    padding:8px 18px 22px;
+}
+
+.fahrtenbuch-form .form-row{
+    margin-bottom:13px;
+}
+
+.fahrtenbuch-form label{
+    margin-bottom:6px;
+    display:block;
+    font-size:12px;
+    font-weight:700;
+}
+
+.fahrtenbuch-form input,
+.fahrtenbuch-form select,
+.fahrtenbuch-form textarea{
+    width:100%;
+    box-sizing:border-box;
+}
+
+.fahrtenbuch-add-btn,
+.fahrtenbuch-save-btn{
+    width:100%;
+    margin-top:8px;
+    min-height:44px;
+}
+
+.fahrtenbuch-hint{
+    margin-top:18px;
+    padding-top:18px;
+    border-top:1px solid var(--border);
+    color:var(--muted);
+    font-size:12px;
+    line-height:1.5;
+}
+
+.fahrtenbuch-hint strong{
+    color:var(--text);
+}
+
+.fahrtenbuch-main{
+    overflow:auto;
+    padding:18px 20px 30px;
+}
+
+.fahrtenbuch-main-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    margin-bottom:14px;
+}
+
+#fahrtenbuchFilenamePreview{
+    padding:7px 10px;
+    border:1px solid var(--border);
+    border-radius:7px;
+    background:var(--panel);
+    color:var(--muted);
+    font-size:11px;
+}
+
+.fahrtenbuch-sheet-wrap{
+    width:100%;
+    overflow:auto;
+}
+
+.fahrtenbuch-sheet{
+    width:100%;
+    min-width:920px;
+    background:#e5c67c;
+    border:2px solid #5f4a22;
+    border-radius:4px;
+    box-shadow:0 8px 24px rgba(0,0,0,.20);
+    color:#2b2112;
+    font-family:"Kalam",cursive;
+}
+
+.fahrtenbuch-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr 1.15fr 1.15fr 1.6fr 2.2fr;
+}
+
+.fahrtenbuch-grid > div{
+    min-width:0;
+    padding:7px 9px;
+    border-right:1px solid rgba(86,63,26,.65);
+    border-bottom:1px solid rgba(86,63,26,.55);
+    box-sizing:border-box;
+}
+
+.fahrtenbuch-grid > div:last-child{
+    border-right:0;
+}
+
+.fahrtenbuch-grid-head{
+    font-size:17px;
+    font-weight:700;
+    text-align:center;
+    background:rgba(128,97,43,.16);
+}
+
+.fahrtenbuch-grid-row{
+    min-height:38px;
+    font-size:16px;
+}
+
+.fahrtenbuch-grid-row > div{
+    min-height:38px;
+    display:flex;
+    align-items:center;
+    white-space:normal;
+    overflow-wrap:anywhere;
+}
+
+.fahrtenbuch-current{
+    margin-top:22px;
+}
+
+.fahrtenbuch-current h3{
+    margin:0 0 10px;
+    font-size:16px;
+}
+
+.fahrtenbuch-current-table{
+    border:1px solid var(--border);
+    border-radius:8px;
+    overflow:hidden;
+    background:var(--panel);
+}
+
+.fahrtenbuch-current-head,
+.fahrtenbuch-current-row{
+    display:grid;
+    grid-template-columns:1fr 1fr 1.15fr 1.15fr 1.6fr 2.2fr;
+}
+
+.fahrtenbuch-current-head{
+    background:var(--panel2);
+    font-size:11px;
+    font-weight:800;
+}
+
+.fahrtenbuch-current-head span,
+.fahrtenbuch-current-row span{
+    padding:10px;
+    min-width:0;
+    border-right:1px solid var(--border);
+}
+
+.fahrtenbuch-current-head span:last-child,
+.fahrtenbuch-current-row span:last-child{
+    border-right:0;
+}
+
+.fahrtenbuch-current-row{
+    border-top:1px solid var(--border);
+    font-size:11px;
+}
+
+.fahrtenbuch-empty-row{
+    padding:20px;
+    color:var(--muted);
+    text-align:center;
+    font-size:12px;
+}
+
+@media(max-width:1000px){
+    .fahrtenbuch-layout{
+        grid-template-columns:300px minmax(0,1fr);
+    }
+}
+
+@media(max-width:760px){
+    .fahrtenbuch-layout{
+        display:block;
+        overflow:auto;
+    }
+    .fahrtenbuch-sidebar{
+        border-right:0;
+        border-bottom:1px solid var(--border);
+    }
+}
+
+
+/* =========================================================
+   FAHRTENBUCH-VORLAGE ALS ECHTER HINTERGRUND
+   Original: 1024 x 1024 px
+========================================================= */
+.fahrtenbuch-sheet-wrap{
+    display:flex;
+    justify-content:center;
+    align-items:flex-start;
+    overflow:auto;
+    padding:0!important;
+    background:transparent!important;
+}
+
+.fahrtenbuch-template-stage{
+    position:relative;
+    width:min(1024px,100%);
+    aspect-ratio:1 / 1;
+    flex:0 0 auto;
+    overflow:hidden;
+    background:#f4d789;
+    box-shadow:0 8px 24px rgba(0,0,0,.24);
+    --fahrtenbuch-font:"Kalam",cursive;
+}
+
+.fahrtenbuch-template-image{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    object-fit:contain;
+    display:block;
+    user-select:none;
+    pointer-events:none;
+}
+
+/*
+  Koordinaten passend zur hochgeladenen Vorlage.
+  Das Bild enthält zwei identische Fahrtenbuch-Blätter.
+*/
+.fahrtenbuch-overlay{
+    position:absolute;
+    left:18.55%;
+    width:64.10%;
+    display:grid;
+    grid-template-rows:repeat(25,1fr);
+    pointer-events:none;
+    font-family:var(--fahrtenbuch-font);
+    color:#241b0d;
+}
+
+.fahrtenbuch-overlay-top{
+    top:9.72%;
+    height:38.82%;
+}
+
+.fahrtenbuch-overlay-bottom{
+    top:58.72%;
+    height:38.82%;
+}
+
+.fahrtenbuch-template-row{
+    display:grid;
+    grid-template-columns:
+        13.15%
+        12.45%
+        14.45%
+        10.55%
+        21.55%
+        27.85%;
+    min-height:0;
+}
+
+.fahrtenbuch-template-cell{
+    min-width:0;
+    min-height:0;
+    box-sizing:border-box;
+    padding:0 3px;
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    overflow:hidden;
+    white-space:nowrap;
+    text-overflow:clip;
+    font-size:clamp(7px,1.05vw,13px);
+    line-height:1;
+}
+
+.fahrtenbuch-loknummer{
+    position:absolute;
+    left:68.2%;
+    width:13.5%;
+    height:2.7%;
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    overflow:hidden;
+    white-space:nowrap;
+    color:#2b2112;
+    font-family:var(--fahrtenbuch-font);
+    font-size:clamp(9px,1.45vw,17px);
+    line-height:1;
+    pointer-events:none;
+}
+
+.fahrtenbuch-loknummer-top{
+    top:2.85%;
+}
+
+.fahrtenbuch-loknummer-bottom{
+    top:52.05%;
+}
+
+/* Alte künstliche Fahrtenbuch-Tabelle wird nicht mehr verwendet. */
+.fahrtenbuch-sheet > .fahrtenbuch-grid,
+.fahrtenbuch-grid-head,
+.fahrtenbuch-rows{
+    display:none!important;
+}
+
+
+/* Fahrtenbuch-Schreibrechte */
+body.readonly .fahrtenbuch-add-btn,
+body.readonly .fahrtenbuch-save-btn{
+    display:none!important;
+}
+
+#fbSchriftart:disabled{
+    opacity:.72;
+    cursor:not-allowed;
+}
+
+
+/* PNG-Export: feste Texturgröße 1024 × 1024 */
+.fahrtenbuch-template-stage{
+    width:1024px!important;
+    height:1024px!important;
+    aspect-ratio:auto!important;
+    transform-origin:top left;
+}
+.fahrtenbuch-sheet-wrap{
+    max-width:100%;
+}
+
 </style>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Kalam:wght@300;400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </head>
 
 
@@ -4456,8 +5141,26 @@ body.light .plan-container::before{
 
 <header>
 
-    <div class="logo">
-        🚆 Digitaler Abstellplan
+    <div class="header-tabs" role="tablist" aria-label="Bereiche">
+        <button
+            type="button"
+            class="header-tab active"
+            id="tabAbstellplan"
+            role="tab"
+            aria-selected="true"
+            onclick="switchMainTab('abstellplan')">
+            🚆 Digitaler Abstellplan
+        </button>
+
+        <button
+            type="button"
+            class="header-tab"
+            id="tabFahrtenbuecher"
+            role="tab"
+            aria-selected="false"
+            onclick="switchMainTab('fahrtenbuecher')">
+            📖 Fahrtenbücher
+        </button>
     </div>
 
     <div class="user-box">
@@ -4473,6 +5176,7 @@ body.light .plan-container::before{
     </div>
 
 </header>
+<section id="abstellplanView" class="main-tab-view active" role="tabpanel" aria-labelledby="tabAbstellplan">
 <div class="legend-info-row">
     <div class="status-legend" aria-label="Legende">
         <strong>Legende:</strong>
@@ -4719,6 +5423,127 @@ body.light .plan-container::before{
 </main>
 
 </div>
+</section>
+
+<section
+    id="fahrtenbuecherView"
+    class="main-tab-view fahrtenbuecher-view"
+    role="tabpanel"
+    aria-labelledby="tabFahrtenbuecher"
+    hidden>
+
+    <div class="fahrtenbuch-layout">
+
+        <aside class="fahrtenbuch-sidebar">
+            <div class="fahrtenbuch-sidebar-head">
+                <h2>Fahrtenbuch erstellen</h2>
+            </div>
+
+            <div class="fahrtenbuch-form">
+
+                <div class="form-row">
+                    <label for="fbFahrzeug">Fahrzeug (Lok)</label>
+                    <select id="fbFahrzeug"></select>
+                </div>
+
+                <div class="form-row">
+                    <label for="fbDatum">Datum</label>
+                    <input id="fbDatum" type="date">
+                </div>
+
+                <div class="form-row">
+                    <label for="fbZugnummer">Zug</label>
+                    <input id="fbZugnummer" type="text" placeholder="z. B. RE 1, IC 2034">
+                </div>
+
+                <div class="form-row">
+                    <label for="fbLokfuehrer">Name</label>
+                    <input id="fbLokfuehrer" type="text" placeholder="z. B. Max Mustermann">
+                </div>
+
+                <div class="form-row">
+                    <label for="fbArbeiten">Arbeiten</label>
+                    <input id="fbArbeiten" type="text" placeholder="z. B. Rangieren, Übergabe, Zugfahrt">
+                </div>
+
+                <div class="form-row">
+                    <label for="fbLaufweg">Laufweg</label>
+                    <input id="fbLaufweg" type="text" placeholder="z. B. Bw – Hbf – Bw">
+                </div>
+
+                <div class="form-row">
+                    <label for="fbMaengel">Mängel u. Besonderheiten</label>
+                    <textarea id="fbMaengel" rows="4" placeholder="z. B. keine, Bremse prüfen, Tür klemmt"></textarea>
+                </div>
+
+                <div class="form-row">
+                    <label for="fbSchriftart">Schriftart</label>
+                    <select id="fbSchriftart">
+                        <option value="Kalam">Kalam</option>
+                        <option value="Caveat">Caveat</option>
+                    </select>
+                </div>
+
+                <button class="fahrtenbuch-add-btn" type="button" onclick="addFahrtenbuchEntry()">
+                    💾 Eintrag hinzufügen
+                </button>
+
+                <button class="secondary fahrtenbuch-save-btn" type="button" onclick="saveFahrtenbuchToGithub()">
+                    🖼 Fahrtenbuch als PNG speichern
+                </button>
+
+                <div class="fahrtenbuch-hint">
+                    <strong>Hinweis</strong>
+                    <p>Die Einträge werden oben (älteste) beginnend nach unten angefügt.
+                    Die Schriftart wird bei allen Einträgen des Fahrtenbuchs beibehalten.</p>
+                </div>
+
+                <div id="fahrtenbuchSaveState" class="fahrtenbuch-save-state" aria-live="polite"></div>
+            </div>
+        </aside>
+
+        <main class="fahrtenbuch-main">
+            <div class="fahrtenbuch-main-head">
+                <h2>Fahrtenbuch – Vorschau</h2>
+                <span id="fahrtenbuchFilenamePreview">–</span>
+            </div>
+
+            <div class="fahrtenbuch-sheet-wrap">
+                <div class="fahrtenbuch-template-stage" id="fahrtenbuchSheet">
+                    <img
+                        src="./assets/img/Fahrtenbuch_Template.png"
+                        alt="Fahrtenbuch Vorlage"
+                        class="fahrtenbuch-template-image">
+
+                    <div class="fahrtenbuch-loknummer fahrtenbuch-loknummer-top" id="fbLoknummerTop"></div>
+                    <div class="fahrtenbuch-loknummer fahrtenbuch-loknummer-bottom" id="fbLoknummerBottom"></div>
+
+                    <div class="fahrtenbuch-overlay fahrtenbuch-overlay-top" id="fahrtenbuchRowsTop"></div>
+                    <div class="fahrtenbuch-overlay fahrtenbuch-overlay-bottom" id="fahrtenbuchRowsBottom"></div>
+                </div>
+            </div>
+
+            <div class="fahrtenbuch-current">
+                <h3>Gespeicherte Einträge (aktuell)</h3>
+                <div class="fahrtenbuch-current-table">
+                    <div class="fahrtenbuch-current-head">
+                        <span>Datum</span>
+                        <span>Zug</span>
+                        <span>Name</span>
+                        <span>Arbeiten</span>
+                        <span>Laufweg</span>
+                        <span>Mängel u. Besonderheiten</span>
+                    </div>
+                    <div id="fahrtenbuchCurrentBody" class="fahrtenbuch-current-body">
+                        <div class="fahrtenbuch-empty-row">Noch keine Einträge vorhanden.</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</section>
+
+
 
 
 <!-- =====================================================
@@ -5508,6 +6333,494 @@ async function syncVevVehicles() {
         showVevSyncResult(`<strong>Synchronisierung fehlgeschlagen</strong><br>${escapeHtml(error?.message || "Unbekannter Fehler")}`);
     }
 }
+
+
+function switchMainTab(tabName) {
+    const showFahrtenbuecher = tabName === "fahrtenbuecher";
+
+    const abstellplanView = document.getElementById("abstellplanView");
+    const fahrtenbuecherView = document.getElementById("fahrtenbuecherView");
+    const abstellplanTab = document.getElementById("tabAbstellplan");
+    const fahrtenbuecherTab = document.getElementById("tabFahrtenbuecher");
+
+    if (!abstellplanView || !fahrtenbuecherView) return;
+
+    abstellplanView.hidden = showFahrtenbuecher;
+    fahrtenbuecherView.hidden = !showFahrtenbuecher;
+
+    abstellplanView.classList.toggle("active", !showFahrtenbuecher);
+    fahrtenbuecherView.classList.toggle("active", showFahrtenbuecher);
+
+    abstellplanTab?.classList.toggle("active", !showFahrtenbuecher);
+    fahrtenbuecherTab?.classList.toggle("active", showFahrtenbuecher);
+
+    abstellplanTab?.setAttribute("aria-selected", showFahrtenbuecher ? "false" : "true");
+    fahrtenbuecherTab?.setAttribute("aria-selected", showFahrtenbuecher ? "true" : "false");
+
+    try {
+        sessionStorage.setItem(
+            "eetg_main_tab",
+            showFahrtenbuecher ? "fahrtenbuecher" : "abstellplan"
+        );
+    } catch (_) {}
+
+    if (showFahrtenbuecher) {
+        prepareFahrtenbuchForm();
+    }
+
+    if (!showFahrtenbuecher) {
+        requestAnimationFrame(() => {
+            updatePlanCanvasSize();
+            applyPlanZoom(false);
+        });
+    }
+}
+
+function restoreMainTab() {
+    let saved = "abstellplan";
+    try {
+        saved = sessionStorage.getItem("eetg_main_tab") || "abstellplan";
+    } catch (_) {}
+
+    switchMainTab(saved === "fahrtenbuecher" ? "fahrtenbuecher" : "abstellplan");
+}
+
+
+
+
+
+
+
+let fahrtenbuchEntries = [];
+let fahrtenbuchFont = "Kalam";
+let fahrtenbuchLoading = false;
+
+function getFahrtenbuchVehicles(){
+    const source = Array.isArray(libraryVehicles) && libraryVehicles.length
+        ? libraryVehicles
+        : vehicles;
+
+    return [...source].sort((a,b) =>
+        String(a.number || "").localeCompare(String(b.number || ""), "de", {numeric:true})
+    );
+}
+
+async function prepareFahrtenbuchForm(){
+    const select = document.getElementById("fbFahrzeug");
+    if (!select) return;
+
+    const current = select.value;
+    const list = getFahrtenbuchVehicles();
+
+    select.innerHTML = '<option value="">Fahrzeug auswählen …</option>';
+
+    list.forEach(vehicle => {
+        const option = document.createElement("option");
+        option.value = String(vehicle.id);
+        option.textContent =
+            `${vehicle.number}` +
+            `${vehicle.model ? " · " + vehicle.model : ""}`;
+        select.appendChild(option);
+    });
+
+    if (current && [...select.options].some(option => option.value === current)) {
+        select.value = current;
+    }
+
+    const dateInput = document.getElementById("fbDatum");
+    if (dateInput && !dateInput.value) {
+        const now = new Date();
+        const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+        dateInput.value = local.toISOString().slice(0,10);
+    }
+
+    updateFahrtenbuchFilename();
+
+    if (select.value) {
+        await loadFahrtenbuchEntries();
+    } else {
+        fahrtenbuchEntries = [];
+        fahrtenbuchFont = "Kalam";
+        applyFahrtenbuchFontState();
+        renderFahrtenbuch();
+    }
+}
+
+function selectedFahrtenbuchVehicle(){
+    const id = document.getElementById("fbFahrzeug")?.value;
+    if (!id) return null;
+    return getFahrtenbuchVehicles().find(vehicle => String(vehicle.id) === String(id)) || null;
+}
+
+function updateFahrtenbuchFilename(){
+    const vehicle = selectedFahrtenbuchVehicle();
+    const label = document.getElementById("fahrtenbuchFilenamePreview");
+    if (!label) return;
+
+    if (!vehicle?.number) {
+        label.textContent = "–";
+        return;
+    }
+
+    const safe = String(vehicle.number)
+        .trim()
+        .replace(/[^\p{L}\p{N}._-]+/gu, "_");
+
+    label.textContent = `${safe}.png (Vorschau)`;
+}
+
+function currentFahrtenbuchInput(){
+    return {
+        datum: document.getElementById("fbDatum")?.value || "",
+        zug: document.getElementById("fbZugnummer")?.value.trim() || "",
+        name: document.getElementById("fbLokfuehrer")?.value.trim() || "",
+        arbeiten: document.getElementById("fbArbeiten")?.value.trim() || "",
+        laufweg: document.getElementById("fbLaufweg")?.value.trim() || "",
+        maengel: document.getElementById("fbMaengel")?.value.trim() || ""
+    };
+}
+
+function setFahrtenbuchState(text = "", type = ""){
+    const state = document.getElementById("fahrtenbuchSaveState");
+    if (!state) return;
+
+    state.className = `fahrtenbuch-save-state ${type}`.trim();
+    state.textContent = text;
+}
+
+function applyFahrtenbuchFontState(){
+    const select = document.getElementById("fbSchriftart");
+    if (!select) return;
+
+    select.value = fahrtenbuchFont === "Caveat" ? "Caveat" : "Kalam";
+
+    // Sobald für eine Lok der erste Eintrag gespeichert wurde,
+    // bleibt die Schriftart für dieses Fahrtenbuch fest.
+    const locked = fahrtenbuchEntries.length > 0;
+    select.disabled = locked;
+    select.title = locked
+        ? "Die Schriftart dieses Fahrtenbuchs ist bereits festgelegt."
+        : "Schriftart für dieses Fahrtenbuch auswählen";
+}
+
+async function loadFahrtenbuchEntries(){
+    const vehicle = selectedFahrtenbuchVehicle();
+
+    if (!vehicle) {
+        fahrtenbuchEntries = [];
+        fahrtenbuchFont = "Kalam";
+        applyFahrtenbuchFontState();
+        renderFahrtenbuch();
+        return;
+    }
+
+    if (fahrtenbuchLoading) return;
+    fahrtenbuchLoading = true;
+    setFahrtenbuchState("Fahrtenbuch wird aus Supabase geladen …", "pending");
+
+    try {
+        const { data, error } = await window.eetgSupabase
+            .from("fahrtenbuch_eintraege")
+            .select("id, vehicle_id, vehicle_number, datum, zug, name, arbeiten, laufweg, maengel, font, created_at")
+            .eq("vehicle_id", String(vehicle.id))
+            .order("datum", { ascending: true })
+            .order("created_at", { ascending: true });
+
+        if (error) throw error;
+
+        fahrtenbuchEntries = (data || []).map(row => ({
+            id: row.id,
+            datum: row.datum || "",
+            zug: row.zug || "",
+            name: row.name || "",
+            arbeiten: row.arbeiten || "",
+            laufweg: row.laufweg || "",
+            maengel: row.maengel || "",
+            font: row.font || "Kalam",
+            created_at: row.created_at || null
+        }));
+
+        if (fahrtenbuchEntries.length) {
+            fahrtenbuchFont =
+                fahrtenbuchEntries[0].font === "Caveat"
+                    ? "Caveat"
+                    : "Kalam";
+        } else {
+            fahrtenbuchFont =
+                document.getElementById("fbSchriftart")?.value === "Caveat"
+                    ? "Caveat"
+                    : "Kalam";
+        }
+
+        applyFahrtenbuchFontState();
+        renderFahrtenbuch();
+        setFahrtenbuchState(
+            fahrtenbuchEntries.length
+                ? `${fahrtenbuchEntries.length} Eintrag/Einträge aus Supabase geladen.`
+                : "Für diese Lok sind noch keine Fahrtenbucheinträge gespeichert.",
+            "success"
+        );
+    } catch (error) {
+        console.error("Fahrtenbuch laden:", error);
+        fahrtenbuchEntries = [];
+        applyFahrtenbuchFontState();
+        renderFahrtenbuch();
+        setFahrtenbuchState(
+            `Fahrtenbuch konnte nicht geladen werden: ${error?.message || "Unbekannter Fehler"}`,
+            "error"
+        );
+    } finally {
+        fahrtenbuchLoading = false;
+    }
+}
+
+async function addFahrtenbuchEntry(){
+    const vehicle = selectedFahrtenbuchVehicle();
+    if (!vehicle) {
+        alert("Bitte zuerst ein Fahrzeug auswählen.");
+        return;
+    }
+
+    if (!canWrite()) {
+        alert("Du hast nur Leserechte.");
+        return;
+    }
+
+    const entry = currentFahrtenbuchInput();
+    if (!entry.datum) {
+        alert("Bitte ein Datum auswählen.");
+        return;
+    }
+
+    // Beim ersten Eintrag wird die gewählte Schrift fest gespeichert.
+    // Danach wird immer die bereits vorhandene Fahrtenbuch-Schrift verwendet.
+    const selectedFont =
+        fahrtenbuchEntries.length
+            ? fahrtenbuchFont
+            : (document.getElementById("fbSchriftart")?.value === "Caveat"
+                ? "Caveat"
+                : "Kalam");
+
+    setFahrtenbuchState("Eintrag wird in Supabase gespeichert …", "pending");
+
+    try {
+        const { error } = await window.eetgSupabase
+            .from("fahrtenbuch_eintraege")
+            .insert({
+                vehicle_id: String(vehicle.id),
+                vehicle_number: String(vehicle.number || ""),
+                datum: entry.datum,
+                zug: entry.zug || null,
+                name: entry.name || null,
+                arbeiten: entry.arbeiten || null,
+                laufweg: entry.laufweg || null,
+                maengel: entry.maengel || null,
+                font: selectedFont,
+                created_by: currentUser?.id || null
+            });
+
+        if (error) throw error;
+
+        fahrtenbuchFont = selectedFont;
+        await loadFahrtenbuchEntries();
+
+        // Eingabefelder für den nächsten Eintrag leeren, Datum bleibt stehen.
+        ["fbZugnummer","fbLokfuehrer","fbArbeiten","fbLaufweg","fbMaengel"].forEach(id => {
+            const element = document.getElementById(id);
+            if (element) element.value = "";
+        });
+
+        setFahrtenbuchState("Eintrag dauerhaft in Supabase gespeichert.", "success");
+    } catch (error) {
+        console.error("Fahrtenbuch speichern:", error);
+        setFahrtenbuchState(
+            `Speichern fehlgeschlagen: ${error?.message || "Unbekannter Fehler"}`,
+            "error"
+        );
+    }
+}
+
+
+function renderFahrtenbuch(){
+    const top = document.getElementById("fahrtenbuchRowsTop");
+    const bottom = document.getElementById("fahrtenbuchRowsBottom");
+    const currentBody = document.getElementById("fahrtenbuchCurrentBody");
+    const sheet = document.getElementById("fahrtenbuchSheet");
+    const lokTop = document.getElementById("fbLoknummerTop");
+    const lokBottom = document.getElementById("fbLoknummerBottom");
+    const vehicle = selectedFahrtenbuchVehicle();
+
+    if (!top || !bottom || !currentBody || !sheet) return;
+
+    const fontFamily =
+        fahrtenbuchFont === "Caveat"
+            ? '"Caveat", cursive'
+            : '"Kalam", cursive';
+
+    sheet.style.setProperty("--fahrtenbuch-font", fontFamily);
+
+    const loknummer = vehicle?.number || "";
+    if (lokTop) lokTop.textContent = loknummer;
+    if (lokBottom) lokBottom.textContent = loknummer;
+
+    top.innerHTML = "";
+    bottom.innerHTML = "";
+    currentBody.innerHTML = "";
+
+    // Das hochgeladene Template besitzt zwei Blätter mit jeweils 25 nutzbaren Zeilen.
+    const rowsPerSheet = 25;
+    const totalRows = rowsPerSheet * 2;
+
+    for (let i = 0; i < totalRows; i++) {
+        const entry = fahrtenbuchEntries[i];
+        const target = i < rowsPerSheet ? top : bottom;
+
+        const row = document.createElement("div");
+        row.className = "fahrtenbuch-template-row";
+
+        [
+            entry?.datum || "",
+            entry?.zug || "",
+            entry?.name || "",
+            entry?.arbeiten || "",
+            entry?.laufweg || "",
+            entry?.maengel || ""
+        ].forEach(value => {
+            const cell = document.createElement("div");
+            cell.className = "fahrtenbuch-template-cell";
+            cell.textContent = value;
+            row.appendChild(cell);
+        });
+
+        target.appendChild(row);
+    }
+
+    if (!fahrtenbuchEntries.length) {
+        currentBody.innerHTML =
+            '<div class="fahrtenbuch-empty-row">Noch keine Einträge vorhanden.</div>';
+    } else {
+        fahrtenbuchEntries.forEach(entry => {
+            const row = document.createElement("div");
+            row.className = "fahrtenbuch-current-row";
+
+            [
+                entry.datum,
+                entry.zug,
+                entry.name,
+                entry.arbeiten,
+                entry.laufweg,
+                entry.maengel
+            ].forEach(value => {
+                const cell = document.createElement("span");
+                cell.textContent = value || "–";
+                row.appendChild(cell);
+            });
+
+            currentBody.appendChild(row);
+        });
+    }
+}
+
+async function saveFahrtenbuchToGithub(){
+    const state = document.getElementById("fahrtenbuchSaveState");
+    const vehicle = selectedFahrtenbuchVehicle();
+    const sheet = document.getElementById("fahrtenbuchSheet");
+
+    if (!vehicle) {
+        alert("Bitte zuerst ein Fahrzeug auswählen.");
+        return;
+    }
+
+    if (!fahrtenbuchEntries.length) {
+        alert("Bitte mindestens einen Eintrag hinzufügen.");
+        return;
+    }
+
+    if (!canWrite()) {
+        alert("Du hast nur Leserechte.");
+        return;
+    }
+
+    if (!sheet || typeof html2canvas !== "function") {
+        setFahrtenbuchState("PNG-Renderer konnte nicht geladen werden.", "error");
+        return;
+    }
+
+    setFahrtenbuchState("Fahrtenbuch wird als PNG gerendert …", "pending");
+
+    try {
+        if (document.fonts?.ready) {
+            await document.fonts.ready;
+        }
+
+        // Die Vorlage selbst ist 1024 × 1024. Wir rendern genau diese feste Größe.
+        const canvas = await html2canvas(sheet, {
+            backgroundColor: null,
+            scale: 1,
+            useCORS: true,
+            logging: false,
+            width: sheet.scrollWidth,
+            height: sheet.scrollHeight
+        });
+
+        const pngDataUrl = canvas.toDataURL("image/png");
+        const pngBase64 = pngDataUrl.split(",")[1];
+
+        const safeNumber = String(vehicle.number || vehicle.id)
+            .trim()
+            .replace(/[^\p{L}\p{N}._-]+/gu, "_");
+
+        setFahrtenbuchState("PNG wird nach GitHub übertragen …", "pending");
+
+        const { data, error } = await window.eetgSupabase.functions.invoke(
+            "save-fahrtenbuch-png",
+            {
+                body: {
+                    vehicleId: String(vehicle.id),
+                    vehicleNumber: String(vehicle.number || ""),
+                    filename: `${safeNumber}.png`,
+                    imageBase64: pngBase64
+                }
+            }
+        );
+
+        if (error) throw error;
+        if (!data?.ok) {
+            throw new Error(data?.error || "GitHub-Speicherung fehlgeschlagen.");
+        }
+
+        setFahrtenbuchState(
+            data.updated
+                ? `PNG auf GitHub aktualisiert: fahrtenbuecher/${data.filename}`
+                : `PNG auf GitHub erstellt: fahrtenbuecher/${data.filename}`,
+            "success"
+        );
+    } catch (error) {
+        console.error("Fahrtenbuch PNG speichern:", error);
+        setFahrtenbuchState(
+            `PNG konnte nicht gespeichert werden: ${error?.message || "Unbekannter Fehler"}`,
+            "error"
+        );
+    }
+}
+
+document.addEventListener("change", async event => {
+    if (event.target?.id === "fbFahrzeug") {
+        updateFahrtenbuchFilename();
+        await loadFahrtenbuchEntries();
+    }
+
+    if (event.target?.id === "fbSchriftart") {
+        if (fahrtenbuchEntries.length) {
+            applyFahrtenbuchFontState();
+            return;
+        }
+
+        fahrtenbuchFont = event.target.value === "Caveat" ? "Caveat" : "Kalam";
+        renderFahrtenbuch();
+    }
+});
+
 
 function canWrite() {
     return currentRole === "dispatcher" || currentRole === "admin";
@@ -8844,6 +10157,12 @@ function subscribeRealtime(){
         .on("postgres_changes",{event:"*",schema:"public",table:"global_info"},async()=>{
             await loadGlobalInfo();
         })
+        .on("postgres_changes",{event:"*",schema:"public",table:"fahrtenbuch_eintraege"},async()=>{
+            const fahrtenbuchView = document.getElementById("fahrtenbuecherView");
+            if (fahrtenbuchView && !fahrtenbuchView.hidden && selectedFahrtenbuchVehicle()) {
+                await loadFahrtenbuchEntries();
+            }
+        })
         .subscribe(status=>{
             if(status==="SUBSCRIBED"){
                 stopRealtimeFallback();
@@ -8889,6 +10208,9 @@ window.addEventListener("beforeunload",()=>{
 
     // Status der Virtuelle-EVU-Verbindung auf diesem Gerät prüfen.
     await updateVevConnectionState();
+
+    // Zuletzt geöffneten Hauptreiter wiederherstellen.
+    restoreMainTab();
 
     // Globales Infofeld zuerst aus Supabase laden,
     // damit der gespeicherte Text nach einem Reload wieder erscheint.
