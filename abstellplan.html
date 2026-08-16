@@ -5142,6 +5142,26 @@ body.readonly .fahrtenbuch-save-btn{
     opacity:.7;
 }
 
+
+.fahrtenbuch-vehicle-search-row{
+    display:flex!important;
+    align-items:center!important;
+    gap:10px!important;
+}
+.fahrtenbuch-vehicle-search-row input{
+    flex:1 1 auto!important;
+    min-width:0!important;
+}
+.fahrtenbuch-search-count{
+    flex:0 0 auto;
+    min-width:82px;
+    text-align:right;
+    color:var(--muted);
+    font-size:11px;
+    font-weight:700;
+    white-space:nowrap;
+}
+
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Kalam:wght@300;400;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -6554,21 +6574,40 @@ function renderFahrtenbuchVehicleManager(){
     const search = document.getElementById("fbVehicleSearch");
     if (!list) return;
 
-    const q = String(search?.value || "").trim().toLocaleLowerCase("de");
+    const normalizeVehicleSearch = value =>
+        String(value || "")
+            .toLocaleLowerCase("de")
+            .replace(/[\s._-]+/g, "");
+
+    const qRaw = String(search?.value || "").trim().toLocaleLowerCase("de");
+    const q = normalizeVehicleSearch(qRaw);
     const allowed = new Set(fahrtenbuchFreigaben.map(row => String(row.vehicle_id)));
 
     const candidates = allFahrtenbuchCandidateVehicles().filter(vehicle => {
-        if (!q) return true;
-        const haystack = [
+        if (!qRaw) return true;
+
+        const fields = [
             vehicle.number,
             vehicle.model,
             vehicle.type,
-            vehicle.category
-        ].filter(Boolean).join(" ").toLocaleLowerCase("de");
-        return haystack.includes(q);
+            vehicle.category,
+            vehicle.company
+        ].filter(Boolean);
+
+        const plainHaystack = fields.join(" ").toLocaleLowerCase("de");
+        const normalizedHaystack = normalizeVehicleSearch(fields.join(""));
+
+        return plainHaystack.includes(qRaw) || normalizedHaystack.includes(q);
     });
 
     list.innerHTML = "";
+
+    const count = document.getElementById("fbVehicleSearchCount");
+    if (count) {
+        count.textContent = qRaw
+            ? `${candidates.length} Treffer`
+            : `${candidates.length} Fahrzeuge`;
+    }
 
     if (!candidates.length) {
         list.innerHTML = '<div class="fahrtenbuch-manager-empty">Keine passende Lok gefunden.</div>';
@@ -7050,16 +7089,33 @@ async function saveFahrtenbuchToGithub(){
 
 
 
-document.getElementById("fbManageVehiclesBtn")?.addEventListener("click", openFahrtenbuchVehicleManager);
-document.getElementById("fbVehiclesClose")?.addEventListener("click", closeFahrtenbuchVehicleManager);
-document.getElementById("fbVehicleSearch")?.addEventListener("input", renderFahrtenbuchVehicleManager);
-document.getElementById("fahrtenbuchVehiclesModal")?.addEventListener("click", event => {
-    if (event.target?.id === "fahrtenbuchVehiclesModal") {
+// Fahrtenbuch-Verwaltung per Event-Delegation.
+// Der Verwaltungsdialog steht im HTML hinter diesem Script; direkte Listener
+// würden deshalb beim Laden noch kein Element finden.
+document.addEventListener("click", event => {
+    const target = event.target;
+
+    if (target?.closest?.("#fbManageVehiclesBtn")) {
+        openFahrtenbuchVehicleManager();
+        return;
+    }
+
+    if (target?.closest?.("#fbVehiclesClose")) {
+        closeFahrtenbuchVehicleManager();
+        return;
+    }
+
+    if (target?.id === "fahrtenbuchVehiclesModal") {
         closeFahrtenbuchVehicleManager();
     }
 });
 
 document.addEventListener("input", event => {
+    if (event.target?.id === "fbVehicleSearch") {
+        renderFahrtenbuchVehicleManager();
+        return;
+    }
+
     if (event.target?.closest?.("#fahrtenbuecherView")) {
         renderFahrtenbuch();
     }
@@ -10569,6 +10625,7 @@ document.addEventListener("DOMContentLoaded", function(){
 
         <div class="fahrtenbuch-vehicle-search-row">
             <input type="search" id="fbVehicleSearch" placeholder="Loknummer oder Baureihe suchen …" autocomplete="off">
+            <div class="fahrtenbuch-search-count" id="fbVehicleSearchCount"></div>
         </div>
 
         <div class="fahrtenbuch-vehicle-manager-list" id="fbVehicleManagerList"></div>
