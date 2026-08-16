@@ -4986,13 +4986,13 @@ body.light .plan-container::before{
 }
 
 .fahrtenbuch-overlay-top{
-    top:9.72%;
-    height:38.82%;
+    top:8.20%;
+    height:40.43%;
 }
 
 .fahrtenbuch-overlay-bottom{
-    top:58.72%;
-    height:38.82%;
+    top:57.32%;
+    height:40.53%;
 }
 
 .fahrtenbuch-template-row{
@@ -5076,6 +5076,70 @@ body.readonly .fahrtenbuch-save-btn{
 }
 .fahrtenbuch-sheet-wrap{
     max-width:100%;
+}
+
+
+/* Noch nicht gespeicherter Live-Eintrag */
+.fahrtenbuch-template-row-draft{
+    opacity:.72;
+}
+
+
+.fahrtenbuch-admin-vehicle-tools{
+    margin-top:8px;
+}
+.fahrtenbuch-admin-vehicle-tools button{
+    width:100%;
+}
+.fahrtenbuch-vehicles-modal{
+    width:min(720px,calc(100vw - 32px));
+    max-height:min(760px,calc(100vh - 40px));
+    display:flex;
+    flex-direction:column;
+}
+.fahrtenbuch-vehicle-search-row{
+    padding:0 0 12px;
+}
+.fahrtenbuch-vehicle-search-row input{
+    width:100%;
+}
+.fahrtenbuch-vehicle-manager-list{
+    overflow:auto;
+    display:flex;
+    flex-direction:column;
+    gap:7px;
+    min-height:160px;
+}
+.fahrtenbuch-manager-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:10px 12px;
+    border:1px solid var(--line,#39414a);
+    border-radius:9px;
+    background:var(--panel2,#20262c);
+}
+.fahrtenbuch-manager-info{
+    min-width:0;
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+}
+.fahrtenbuch-manager-info strong{
+    font-size:14px;
+}
+.fahrtenbuch-manager-info span{
+    opacity:.72;
+    font-size:12px;
+}
+.fahrtenbuch-manager-row button{
+    flex:0 0 auto;
+}
+.fahrtenbuch-manager-empty{
+    padding:22px;
+    text-align:center;
+    opacity:.7;
 }
 
 </style>
@@ -5444,6 +5508,10 @@ body.readonly .fahrtenbuch-save-btn{
                 <div class="form-row">
                     <label for="fbFahrzeug">Fahrzeug (Lok)</label>
                     <select id="fbFahrzeug"></select>
+                    <div class="fahrtenbuch-admin-vehicle-tools" id="fahrtenbuchAdminVehicleTools" hidden>
+                        <button type="button" class="secondary" id="fbManageVehiclesBtn">⚙ Fahrtenbuch-Loks verwalten</button>
+                    </div>
+
                 </div>
 
                 <div class="form-row">
@@ -6395,7 +6463,9 @@ let fahrtenbuchEntries = [];
 let fahrtenbuchFont = "Kalam";
 let fahrtenbuchLoading = false;
 
-function getFahrtenbuchVehicles(){
+let fahrtenbuchFreigaben = [];
+
+function allFahrtenbuchCandidateVehicles(){
     const source = Array.isArray(libraryVehicles) && libraryVehicles.length
         ? libraryVehicles
         : vehicles;
@@ -6405,14 +6475,42 @@ function getFahrtenbuchVehicles(){
     );
 }
 
+function getFahrtenbuchVehicles(){
+    const allowed = new Set(fahrtenbuchFreigaben.map(row => String(row.vehicle_id)));
+    return allFahrtenbuchCandidateVehicles().filter(vehicle =>
+        allowed.has(String(vehicle.id))
+    );
+}
+
+async function loadFahrtenbuchFreigaben(){
+    try {
+        const { data, error } = await window.eetgSupabase
+            .from("fahrtenbuch_fahrzeuge")
+            .select("vehicle_id, vehicle_number, created_at")
+            .order("vehicle_number", { ascending: true });
+
+        if (error) throw error;
+        fahrtenbuchFreigaben = data || [];
+    } catch (error) {
+        console.error("Fahrtenbuch-Freigaben laden:", error);
+        fahrtenbuchFreigaben = [];
+        setFahrtenbuchState(
+            `Fahrzeugfreigaben konnten nicht geladen werden: ${error?.message || "Unbekannter Fehler"}`,
+            "error"
+        );
+    }
+}
+
 async function prepareFahrtenbuchForm(){
     const select = document.getElementById("fbFahrzeug");
     if (!select) return;
 
+    await loadFahrtenbuchFreigaben();
+
     const current = select.value;
     const list = getFahrtenbuchVehicles();
 
-    select.innerHTML = '<option value="">Fahrzeug auswählen …</option>';
+    select.innerHTML = '<option value="">Freigegebene Lok auswählen …</option>';
 
     list.forEach(vehicle => {
         const option = document.createElement("option");
@@ -6425,6 +6523,11 @@ async function prepareFahrtenbuchForm(){
 
     if (current && [...select.options].some(option => option.value === current)) {
         select.value = current;
+    }
+
+    const adminTools = document.getElementById("fahrtenbuchAdminVehicleTools");
+    if (adminTools) {
+        adminTools.hidden = currentRole !== "admin";
     }
 
     const dateInput = document.getElementById("fbDatum");
@@ -6443,6 +6546,103 @@ async function prepareFahrtenbuchForm(){
         fahrtenbuchFont = "Kalam";
         applyFahrtenbuchFontState();
         renderFahrtenbuch();
+    }
+}
+
+function renderFahrtenbuchVehicleManager(){
+    const list = document.getElementById("fbVehicleManagerList");
+    const search = document.getElementById("fbVehicleSearch");
+    if (!list) return;
+
+    const q = String(search?.value || "").trim().toLocaleLowerCase("de");
+    const allowed = new Set(fahrtenbuchFreigaben.map(row => String(row.vehicle_id)));
+
+    const candidates = allFahrtenbuchCandidateVehicles().filter(vehicle => {
+        if (!q) return true;
+        const haystack = [
+            vehicle.number,
+            vehicle.model,
+            vehicle.type,
+            vehicle.category
+        ].filter(Boolean).join(" ").toLocaleLowerCase("de");
+        return haystack.includes(q);
+    });
+
+    list.innerHTML = "";
+
+    if (!candidates.length) {
+        list.innerHTML = '<div class="fahrtenbuch-manager-empty">Keine passende Lok gefunden.</div>';
+        return;
+    }
+
+    candidates.forEach(vehicle => {
+        const active = allowed.has(String(vehicle.id));
+        const row = document.createElement("div");
+        row.className = "fahrtenbuch-manager-row";
+
+        const info = document.createElement("div");
+        info.className = "fahrtenbuch-manager-info";
+        info.innerHTML = `
+            <strong>${escapeHtml(vehicle.number || "Ohne Nummer")}</strong>
+            <span>${escapeHtml(vehicle.model || vehicle.type || "")}</span>
+        `;
+
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = active ? "danger" : "success";
+        button.textContent = active ? "Entfernen" : "+ Freigeben";
+        button.addEventListener("click", () => toggleFahrtenbuchVehicle(vehicle, active));
+
+        row.append(info, button);
+        list.appendChild(row);
+    });
+}
+
+async function openFahrtenbuchVehicleManager(){
+    if (currentRole !== "admin") return;
+    await loadFahrtenbuchFreigaben();
+    const modal = document.getElementById("fahrtenbuchVehiclesModal");
+    if (modal) modal.hidden = false;
+    const search = document.getElementById("fbVehicleSearch");
+    if (search) {
+        search.value = "";
+        setTimeout(() => search.focus(), 0);
+    }
+    renderFahrtenbuchVehicleManager();
+}
+
+function closeFahrtenbuchVehicleManager(){
+    const modal = document.getElementById("fahrtenbuchVehiclesModal");
+    if (modal) modal.hidden = true;
+}
+
+async function toggleFahrtenbuchVehicle(vehicle, isActive){
+    if (currentRole !== "admin") return;
+
+    try {
+        if (isActive) {
+            const { error } = await window.eetgSupabase
+                .from("fahrtenbuch_fahrzeuge")
+                .delete()
+                .eq("vehicle_id", String(vehicle.id));
+            if (error) throw error;
+        } else {
+            const { error } = await window.eetgSupabase
+                .from("fahrtenbuch_fahrzeuge")
+                .insert({
+                    vehicle_id: String(vehicle.id),
+                    vehicle_number: String(vehicle.number || ""),
+                    created_by: currentUser?.id || null
+                });
+            if (error) throw error;
+        }
+
+        await loadFahrtenbuchFreigaben();
+        renderFahrtenbuchVehicleManager();
+        await prepareFahrtenbuchForm();
+    } catch (error) {
+        console.error("Fahrtenbuch-Lokfreigabe:", error);
+        alert(`Freigabe konnte nicht geändert werden: ${error?.message || "Unbekannter Fehler"}`);
     }
 }
 
@@ -6641,6 +6841,28 @@ async function addFahrtenbuchEntry(){
 }
 
 
+
+function formatFahrtenbuchDate(value){
+    if (!value) return "";
+    const parts = String(value).split("-");
+    if (parts.length === 3) {
+        return `${parts[2]}.${parts[1]}.${parts[0]}`;
+    }
+    return value;
+}
+
+function hasFahrtenbuchDraft(entry){
+    return Boolean(
+        entry?.datum ||
+        entry?.zug ||
+        entry?.name ||
+        entry?.arbeiten ||
+        entry?.laufweg ||
+        entry?.maengel
+    );
+}
+
+
 function renderFahrtenbuch(){
     const top = document.getElementById("fahrtenbuchRowsTop");
     const bottom = document.getElementById("fahrtenbuchRowsBottom");
@@ -6652,6 +6874,15 @@ function renderFahrtenbuch(){
 
     if (!top || !bottom || !currentBody || !sheet) return;
 
+    // Schrift in der Vorschau sofort aus der aktuellen Auswahl übernehmen,
+    // solange dieses Fahrtenbuch noch keine gespeicherten Einträge besitzt.
+    if (!fahrtenbuchEntries.length) {
+        fahrtenbuchFont =
+            document.getElementById("fbSchriftart")?.value === "Caveat"
+                ? "Caveat"
+                : "Kalam";
+    }
+
     const fontFamily =
         fahrtenbuchFont === "Caveat"
             ? '"Caveat", cursive'
@@ -6659,27 +6890,39 @@ function renderFahrtenbuch(){
 
     sheet.style.setProperty("--fahrtenbuch-font", fontFamily);
 
-    const loknummer = vehicle?.number || "";
-    if (lokTop) lokTop.textContent = loknummer;
-    if (lokBottom) lokBottom.textContent = loknummer;
+    // Loknummer wird absichtlich NICHT automatisch in die Textur geschrieben.
+    // Sie wird vom Benutzer manuell in der Vorlage gepflegt.
+    if (lokTop) lokTop.textContent = "";
+    if (lokBottom) lokBottom.textContent = "";
 
     top.innerHTML = "";
     bottom.innerHTML = "";
     currentBody.innerHTML = "";
 
-    // Das hochgeladene Template besitzt zwei Blätter mit jeweils 25 nutzbaren Zeilen.
     const rowsPerSheet = 25;
     const totalRows = rowsPerSheet * 2;
 
+    // Gespeicherte Einträge bleiben die Quelle.
+    // Zusätzlich wird der aktuell eingegebene, noch nicht gespeicherte Eintrag
+    // direkt als Vorschau in der nächsten freien Zeile angezeigt.
+    const displayEntries = fahrtenbuchEntries.map(entry => ({...entry, __draft:false}));
+    const draft = currentFahrtenbuchInput();
+
+    if (vehicle && hasFahrtenbuchDraft(draft) && displayEntries.length < totalRows) {
+        displayEntries.push({...draft, __draft:true});
+    }
+
     for (let i = 0; i < totalRows; i++) {
-        const entry = fahrtenbuchEntries[i];
+        const entry = displayEntries[i];
         const target = i < rowsPerSheet ? top : bottom;
 
         const row = document.createElement("div");
-        row.className = "fahrtenbuch-template-row";
+        row.className =
+            "fahrtenbuch-template-row" +
+            (entry?.__draft ? " fahrtenbuch-template-row-draft" : "");
 
         [
-            entry?.datum || "",
+            formatFahrtenbuchDate(entry?.datum || ""),
             entry?.zug || "",
             entry?.name || "",
             entry?.arbeiten || "",
@@ -6695,16 +6938,17 @@ function renderFahrtenbuch(){
         target.appendChild(row);
     }
 
+    // Untere Tabelle zeigt bewusst nur wirklich in Supabase gespeicherte Einträge.
     if (!fahrtenbuchEntries.length) {
         currentBody.innerHTML =
-            '<div class="fahrtenbuch-empty-row">Noch keine Einträge vorhanden.</div>';
+            '<div class="fahrtenbuch-empty-row">Noch keine gespeicherten Einträge vorhanden.</div>';
     } else {
         fahrtenbuchEntries.forEach(entry => {
             const row = document.createElement("div");
             row.className = "fahrtenbuch-current-row";
 
             [
-                entry.datum,
+                formatFahrtenbuchDate(entry.datum),
                 entry.zug,
                 entry.name,
                 entry.arbeiten,
@@ -6803,6 +7047,23 @@ async function saveFahrtenbuchToGithub(){
         );
     }
 }
+
+
+
+document.getElementById("fbManageVehiclesBtn")?.addEventListener("click", openFahrtenbuchVehicleManager);
+document.getElementById("fbVehiclesClose")?.addEventListener("click", closeFahrtenbuchVehicleManager);
+document.getElementById("fbVehicleSearch")?.addEventListener("input", renderFahrtenbuchVehicleManager);
+document.getElementById("fahrtenbuchVehiclesModal")?.addEventListener("click", event => {
+    if (event.target?.id === "fahrtenbuchVehiclesModal") {
+        closeFahrtenbuchVehicleManager();
+    }
+});
+
+document.addEventListener("input", event => {
+    if (event.target?.closest?.("#fahrtenbuecherView")) {
+        renderFahrtenbuch();
+    }
+});
 
 document.addEventListener("change", async event => {
     if (event.target?.id === "fbFahrzeug") {
@@ -10163,6 +10424,12 @@ function subscribeRealtime(){
                 await loadFahrtenbuchEntries();
             }
         })
+        .on("postgres_changes",{event:"*",schema:"public",table:"fahrtenbuch_fahrzeuge"},async()=>{
+            const fahrtenbuchView = document.getElementById("fahrtenbuecherView");
+            if (fahrtenbuchView && !fahrtenbuchView.hidden) {
+                await prepareFahrtenbuchForm();
+            }
+        })
         .subscribe(status=>{
             if(status==="SUBSCRIBED"){
                 stopRealtimeFallback();
@@ -10288,6 +10555,25 @@ document.addEventListener("DOMContentLoaded", function(){
     });
 })();
 </script>
+
+
+<div class="modal-overlay" id="fahrtenbuchVehiclesModal" hidden>
+    <div class="modal fahrtenbuch-vehicles-modal">
+        <div class="modal-header">
+            <div>
+                <h2>Fahrtenbuch-Loks verwalten</h2>
+                <p>Nur freigegebene Fahrzeuge erscheinen im Fahrtenbuch.</p>
+            </div>
+            <button type="button" class="secondary" id="fbVehiclesClose">✕</button>
+        </div>
+
+        <div class="fahrtenbuch-vehicle-search-row">
+            <input type="search" id="fbVehicleSearch" placeholder="Loknummer oder Baureihe suchen …" autocomplete="off">
+        </div>
+
+        <div class="fahrtenbuch-vehicle-manager-list" id="fbVehicleManagerList"></div>
+    </div>
+</div>
 
 </body>
 </html>
