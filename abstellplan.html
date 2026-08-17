@@ -5209,6 +5209,15 @@ body:not(.role-admin) .fahrtenbuch-admin-action{
     display:none!important;
 }
 
+
+/* Fahrtenbuch: alle Einträge mittig in ihrer jeweiligen Spalte */
+.fahrtenbuch-template-cell{
+    display:flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    text-align:center!important;
+}
+
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Kalam:wght@300;400;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -6759,13 +6768,17 @@ function updateFahrtenbuchFilename(){
 
 
 function getFahrtenbuchUsername(){
-    return String(
+    const username = String(
         currentUser?.username ||
         currentUser?.user_metadata?.username ||
         currentUser?.user_metadata?.display_name ||
         currentUser?.email?.split("@")[0] ||
         ""
     ).trim();
+
+    return username
+        ? username.charAt(0).toLocaleUpperCase("de") + username.slice(1)
+        : "";
 }
 
 function syncFahrtenbuchUsername(){
