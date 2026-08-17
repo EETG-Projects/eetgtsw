@@ -5218,6 +5218,17 @@ body:not(.role-admin) .fahrtenbuch-admin-action{
     text-align:center!important;
 }
 
+
+/* Fahrtenbuch komplett leeren – nur Admin */
+.fahrtenbuch-clear-btn{
+    width:100%;
+    margin-top:8px;
+    justify-content:center;
+}
+body:not(.is-admin) .fahrtenbuch-clear-btn{
+    display:none!important;
+}
+
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Kalam:wght@300;400;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -5634,6 +5645,10 @@ body:not(.role-admin) .fahrtenbuch-admin-action{
 
                 <button class="secondary fahrtenbuch-save-btn" type="button" onclick="saveFahrtenbuchToGithub()">
                     🖼 Fahrtenbuch als PNG speichern
+                </button>
+
+                <button class="danger fahrtenbuch-clear-btn admin-only" type="button" onclick="clearFahrtenbuch()">
+                    🗑 Fahrtenbuch leeren
                 </button>
 
                 <div class="fahrtenbuch-hint">
@@ -6972,10 +6987,10 @@ function formatFahrtenbuchDate(value){
 }
 
 function hasFahrtenbuchDraft(entry){
+    // Der automatisch eingetragene Benutzername allein ist noch kein Entwurf.
     return Boolean(
         entry?.datum ||
         entry?.zug ||
-        entry?.name ||
         entry?.arbeiten ||
         entry?.laufweg ||
         entry?.maengel
@@ -7143,7 +7158,76 @@ function renderFahrtenbuch(){
     }
 }
 
-async function saveFahrtenbuchToGithub(){
+
+async function clearFahrtenbuch(){
+    if (currentRole !== "admin") {
+        alert("Nur Administratoren dürfen ein Fahrtenbuch vollständig leeren.");
+        return;
+    }
+
+    const vehicle = selectedFahrtenbuchVehicle();
+    if (!vehicle) {
+        alert("Bitte zuerst ein Fahrzeug auswählen.");
+        return;
+    }
+
+    const vehicleNumber = String(vehicle.number || vehicle.id || "dieses Fahrzeug");
+
+    const confirmed = confirm(
+        `Fahrtenbuch ${vehicleNumber} wirklich vollständig leeren?\n\n` +
+        `Alle gespeicherten Fahrten dieser Lok werden aus Supabase gelöscht ` +
+        `und die PNG auf GitHub wird anschließend durch ein leeres Fahrtenbuch ersetzt.\n\n` +
+        `Dieser Vorgang kann nicht rückgängig gemacht werden.`
+    );
+
+    if (!confirmed) return;
+
+    setFahrtenbuchState("Fahrtenbuch wird vollständig geleert …", "pending");
+
+    try {
+        const { error } = await window.eetgSupabase
+            .from("fahrtenbuch_eintraege")
+            .delete()
+            .eq("vehicle_id", String(vehicle.id));
+
+        if (error) throw error;
+
+        fahrtenbuchEntries = [];
+
+        // Eingabefelder ebenfalls zurücksetzen, damit wirklich ein leeres Blatt gerendert wird.
+        ["fbDatum","fbZugnummer","fbArbeiten","fbLaufweg","fbMaengel"].forEach(id => {
+            const element = document.getElementById(id);
+            if (element) element.value = "";
+        });
+
+        // Name bleibt weiterhin automatisch der angemeldete Benutzer,
+        // zählt aber alleine nicht als Entwurf.
+        if (typeof syncFahrtenbuchUsername === "function") {
+            syncFahrtenbuchUsername();
+        }
+
+        fahrtenbuchFont = "Kalam";
+        applyFahrtenbuchFontState();
+        renderFahrtenbuch();
+
+        // Auch ohne Einträge bewusst die leere 1024x1024-PNG nach GitHub schreiben.
+        await saveFahrtenbuchToGithub({ allowEmpty: true });
+
+        setFahrtenbuchState(
+            `Fahrtenbuch ${vehicleNumber} wurde vollständig geleert und die leere PNG auf GitHub gespeichert.`,
+            "success"
+        );
+    } catch (error) {
+        console.error("Fahrtenbuch vollständig leeren:", error);
+        setFahrtenbuchState(
+            `Fahrtenbuch konnte nicht geleert werden: ${error?.message || "Unbekannter Fehler"}`,
+            "error"
+        );
+    }
+}
+
+async function saveFahrtenbuchToGithub(options = {}){
+    const allowEmpty = Boolean(options?.allowEmpty);
     const state = document.getElementById("fahrtenbuchSaveState");
     const vehicle = selectedFahrtenbuchVehicle();
     const sheet = document.getElementById("fahrtenbuchSheet");
@@ -7153,7 +7237,7 @@ async function saveFahrtenbuchToGithub(){
         return;
     }
 
-    if (!fahrtenbuchEntries.length) {
+    if (!fahrtenbuchEntries.length && !allowEmpty) {
         alert("Bitte mindestens einen Eintrag hinzufügen.");
         return;
     }
