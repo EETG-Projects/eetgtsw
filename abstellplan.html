@@ -5162,6 +5162,53 @@ body.readonly .fahrtenbuch-save-btn{
     white-space:nowrap;
 }
 
+
+/* Fahrtenbuch: Datum mittig und Handschrift etwas kräftiger */
+.fahrtenbuch-template-cell{
+    font-weight:600!important;
+}
+.fahrtenbuch-template-row .fahrtenbuch-template-cell:first-child{
+    justify-content:center!important;
+    text-align:center!important;
+}
+#fbLokfuehrer[readonly]{
+    opacity:.88;
+    cursor:default;
+}
+
+
+/* Fahrtenbuch: Admin kann einzelne gespeicherte Fahrten löschen */
+.fahrtenbuch-current-head,
+.fahrtenbuch-current-row{
+    grid-template-columns:1fr 1fr 1.15fr 1.15fr 1.6fr 2.2fr 92px!important;
+}
+
+.fahrtenbuch-admin-action-head,
+.fahrtenbuch-admin-action{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.fahrtenbuch-delete-entry{
+    min-width:72px;
+    height:28px;
+    padding:0 7px!important;
+    font-size:10px!important;
+    white-space:nowrap;
+}
+
+/* Nicht-Admins bekommen die ursprünglichen sechs Spalten ohne leere Aktionsspalte. */
+body:not(.role-admin) .fahrtenbuch-current-head,
+body:not(.role-admin) .fahrtenbuch-current-row{
+    grid-template-columns:1fr 1fr 1.15fr 1.15fr 1.6fr 2.2fr!important;
+}
+
+body:not(.role-admin) .fahrtenbuch-admin-action-head,
+body:not(.role-admin) .fahrtenbuch-admin-action{
+    display:none!important;
+}
+
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Kalam:wght@300;400;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -5546,7 +5593,7 @@ body.readonly .fahrtenbuch-save-btn{
 
                 <div class="form-row">
                     <label for="fbLokfuehrer">Name</label>
-                    <input id="fbLokfuehrer" type="text" placeholder="z. B. Max Mustermann">
+                    <input id="fbLokfuehrer" type="text" placeholder="Wird automatisch übernommen" readonly>
                 </div>
 
                 <div class="form-row">
@@ -5621,6 +5668,7 @@ body.readonly .fahrtenbuch-save-btn{
                         <span>Arbeiten</span>
                         <span>Laufweg</span>
                         <span>Mängel u. Besonderheiten</span>
+                        <span class="fahrtenbuch-admin-action-head">Aktion</span>
                     </div>
                     <div id="fahrtenbuchCurrentBody" class="fahrtenbuch-current-body">
                         <div class="fahrtenbuch-empty-row">Noch keine Einträge vorhanden.</div>
@@ -6558,6 +6606,7 @@ async function prepareFahrtenbuchForm(){
     }
 
     updateFahrtenbuchFilename();
+    syncFahrtenbuchUsername();
 
     if (select.value) {
         await loadFahrtenbuchEntries();
@@ -6708,11 +6757,30 @@ function updateFahrtenbuchFilename(){
     label.textContent = `${safe}.png (Vorschau)`;
 }
 
+
+function getFahrtenbuchUsername(){
+    return String(
+        currentUser?.username ||
+        currentUser?.user_metadata?.username ||
+        currentUser?.user_metadata?.display_name ||
+        currentUser?.email?.split("@")[0] ||
+        ""
+    ).trim();
+}
+
+function syncFahrtenbuchUsername(){
+    const input = document.getElementById("fbLokfuehrer");
+    if (!input) return;
+    input.value = getFahrtenbuchUsername();
+    input.readOnly = true;
+    input.title = "Der Name wird automatisch aus dem angemeldeten Benutzer übernommen.";
+}
+
 function currentFahrtenbuchInput(){
     return {
         datum: document.getElementById("fbDatum")?.value || "",
         zug: document.getElementById("fbZugnummer")?.value.trim() || "",
-        name: document.getElementById("fbLokfuehrer")?.value.trim() || "",
+        name: getFahrtenbuchUsername(),
         arbeiten: document.getElementById("fbArbeiten")?.value.trim() || "",
         laufweg: document.getElementById("fbLaufweg")?.value.trim() || "",
         maengel: document.getElementById("fbMaengel")?.value.trim() || ""
@@ -6864,7 +6932,7 @@ async function addFahrtenbuchEntry(){
         await loadFahrtenbuchEntries();
 
         // Eingabefelder für den nächsten Eintrag leeren, Datum bleibt stehen.
-        ["fbZugnummer","fbLokfuehrer","fbArbeiten","fbLaufweg","fbMaengel"].forEach(id => {
+        ["fbZugnummer","fbArbeiten","fbLaufweg","fbMaengel"].forEach(id => {
             const element = document.getElementById(id);
             if (element) element.value = "";
         });
@@ -6901,6 +6969,50 @@ function hasFahrtenbuchDraft(entry){
     );
 }
 
+
+
+async function deleteFahrtenbuchEntry(entryId){
+    if (currentRole !== "admin") {
+        alert("Nur Administratoren dürfen Fahrtenbucheinträge löschen.");
+        return;
+    }
+
+    const entry = fahrtenbuchEntries.find(item => String(item.id) === String(entryId));
+    if (!entry) return;
+
+    const text = [
+        "Diesen Fahrtenbucheintrag wirklich löschen?",
+        "",
+        `Datum: ${formatFahrtenbuchDate(entry.datum) || "-"}`,
+        `Zug: ${entry.zug || "-"}`,
+        `Name: ${entry.name || "-"}`
+    ].join("\n");
+
+    if (!confirm(text)) return;
+
+    setFahrtenbuchState("Fahrtenbucheintrag wird gelöscht …", "pending");
+
+    try {
+        const { error } = await window.eetgSupabase
+            .from("fahrtenbuch_eintraege")
+            .delete()
+            .eq("id", entryId);
+
+        if (error) throw error;
+
+        await loadFahrtenbuchEntries();
+        setFahrtenbuchState(
+            "Fahrtenbucheintrag wurde gelöscht. Die Vorschau wurde aktualisiert.",
+            "success"
+        );
+    } catch (error) {
+        console.error("Fahrtenbucheintrag löschen:", error);
+        setFahrtenbuchState(
+            `Löschen fehlgeschlagen: ${error?.message || "Unbekannter Fehler"}`,
+            "error"
+        );
+    }
+}
 
 function renderFahrtenbuch(){
     const top = document.getElementById("fahrtenbuchRowsTop");
@@ -6999,6 +7111,20 @@ function renderFahrtenbuch(){
                 row.appendChild(cell);
             });
 
+            const action = document.createElement("span");
+            action.className = "fahrtenbuch-admin-action";
+
+            if (currentRole === "admin") {
+                const deleteButton = document.createElement("button");
+                deleteButton.type = "button";
+                deleteButton.className = "danger fahrtenbuch-delete-entry";
+                deleteButton.textContent = "🗑 Löschen";
+                deleteButton.title = "Fahrtenbucheintrag löschen";
+                deleteButton.addEventListener("click", () => deleteFahrtenbuchEntry(entry.id));
+                action.appendChild(deleteButton);
+            }
+
+            row.appendChild(action);
             currentBody.appendChild(row);
         });
     }
@@ -7118,6 +7244,12 @@ document.addEventListener("input", event => {
 
     if (event.target?.closest?.("#fahrtenbuecherView")) {
         renderFahrtenbuch();
+    }
+});
+
+document.addEventListener("focusin", event => {
+    if (event.target?.closest?.("#fahrtenbuecherView")) {
+        syncFahrtenbuchUsername();
     }
 });
 
