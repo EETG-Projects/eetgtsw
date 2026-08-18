@@ -5229,6 +5229,24 @@ body:not(.is-admin) .fahrtenbuch-clear-btn{
     display:none!important;
 }
 
+
+.fahrtenbuch-book-status{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+    justify-content:flex-end;
+}
+#fahrtenbuchBookInfo{
+    padding:7px 10px;
+    border:1px solid var(--border);
+    border-radius:7px;
+    background:var(--panel);
+    font-size:11px;
+    font-weight:800;
+    color:var(--text);
+}
+
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Kalam:wght@300;400;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -5664,7 +5682,10 @@ body:not(.is-admin) .fahrtenbuch-clear-btn{
         <main class="fahrtenbuch-main">
             <div class="fahrtenbuch-main-head">
                 <h2>Fahrtenbuch – Vorschau</h2>
-                <span id="fahrtenbuchFilenamePreview">–</span>
+                <div class="fahrtenbuch-book-status">
+                    <span id="fahrtenbuchBookInfo">Fahrtenbuch 1 · 0 / 50</span>
+                    <span id="fahrtenbuchFilenamePreview">–</span>
+                </div>
             </div>
 
             <div class="fahrtenbuch-sheet-wrap">
@@ -6764,13 +6785,32 @@ function selectedFahrtenbuchVehicle(){
     return getFahrtenbuchVehicles().find(vehicle => String(vehicle.id) === String(id)) || null;
 }
 
+function getCurrentFahrtenbuchNumber(){
+    const count = fahrtenbuchEntries.length;
+    return Math.floor(count / 50) + 1;
+}
+
+function getCurrentFahrtenbuchSlice(){
+    const bookNumber = getCurrentFahrtenbuchNumber();
+    const start = (bookNumber - 1) * 50;
+    const end = start + 50;
+    return {
+        bookNumber,
+        start,
+        end,
+        entries: fahrtenbuchEntries.slice(start, end)
+    };
+}
+
 function updateFahrtenbuchFilename(){
     const vehicle = selectedFahrtenbuchVehicle();
     const label = document.getElementById("fahrtenbuchFilenamePreview");
-    if (!label) return;
+    const info = document.getElementById("fahrtenbuchBookInfo");
+    if (!label || !info) return;
 
     if (!vehicle?.number) {
         label.textContent = "–";
+        info.textContent = "Fahrtenbuch 1 · 0 / 50";
         return;
     }
 
@@ -6778,7 +6818,11 @@ function updateFahrtenbuchFilename(){
         .trim()
         .replace(/[^\p{L}\p{N}._-]+/gu, "_");
 
-    label.textContent = `${safe}.png (Vorschau)`;
+    const book = getCurrentFahrtenbuchSlice();
+    const used = book.entries.length;
+
+    label.textContent = `fahrtenbuecher/${safe}/fahrtenbuch_${book.bookNumber}.png`;
+    info.textContent = `Fahrtenbuch ${book.bookNumber} · ${used} / 50`;
 }
 
 
@@ -7053,24 +7097,8 @@ function renderFahrtenbuch(){
 
     if (!top || !bottom || !currentBody || !sheet) return;
 
-    // Schrift in der Vorschau sofort aus der aktuellen Auswahl übernehmen,
-    // solange dieses Fahrtenbuch noch keine gespeicherten Einträge besitzt.
-    if (!fahrtenbuchEntries.length) {
-        fahrtenbuchFont =
-            document.getElementById("fbSchriftart")?.value === "Caveat"
-                ? "Caveat"
-                : "Kalam";
-    }
+    sheet.style.setProperty("--fahrtenbuch-font", '"Kalam", cursive');
 
-    const fontFamily =
-        fahrtenbuchFont === "Caveat"
-            ? '"Caveat", cursive'
-            : '"Kalam", cursive';
-
-    sheet.style.setProperty("--fahrtenbuch-font", fontFamily);
-
-    // Loknummer wird absichtlich NICHT automatisch in die Textur geschrieben.
-    // Sie wird vom Benutzer manuell in der Vorlage gepflegt.
     if (lokTop) lokTop.textContent = "";
     if (lokBottom) lokBottom.textContent = "";
 
@@ -7079,12 +7107,10 @@ function renderFahrtenbuch(){
     currentBody.innerHTML = "";
 
     const rowsPerSheet = 25;
-    const totalRows = rowsPerSheet * 2;
+    const totalRows = 50;
+    const book = getCurrentFahrtenbuchSlice();
 
-    // Gespeicherte Einträge bleiben die Quelle.
-    // Zusätzlich wird der aktuell eingegebene, noch nicht gespeicherte Eintrag
-    // direkt als Vorschau in der nächsten freien Zeile angezeigt.
-    const displayEntries = fahrtenbuchEntries.map(entry => ({...entry, __draft:false}));
+    const displayEntries = book.entries.map(entry => ({...entry, __draft:false}));
     const draft = currentFahrtenbuchInput();
 
     if (vehicle && hasFahrtenbuchDraft(draft) && displayEntries.length < totalRows) {
@@ -7117,7 +7143,6 @@ function renderFahrtenbuch(){
         target.appendChild(row);
     }
 
-    // Untere Tabelle zeigt bewusst nur wirklich in Supabase gespeicherte Einträge.
     if (!fahrtenbuchEntries.length) {
         currentBody.innerHTML =
             '<div class="fahrtenbuch-empty-row">Noch keine gespeicherten Einträge vorhanden.</div>';
@@ -7156,76 +7181,9 @@ function renderFahrtenbuch(){
             currentBody.appendChild(row);
         });
     }
+
+    updateFahrtenbuchFilename();
 }
-
-
-async function clearFahrtenbuch(){
-    if (currentRole !== "admin") {
-        alert("Nur Administratoren dürfen ein Fahrtenbuch vollständig leeren.");
-        return;
-    }
-
-    const vehicle = selectedFahrtenbuchVehicle();
-    if (!vehicle) {
-        alert("Bitte zuerst ein Fahrzeug auswählen.");
-        return;
-    }
-
-    const vehicleNumber = String(vehicle.number || vehicle.id || "dieses Fahrzeug");
-
-    const confirmed = confirm(
-        `Fahrtenbuch ${vehicleNumber} wirklich vollständig leeren?\n\n` +
-        `Alle gespeicherten Fahrten dieser Lok werden aus Supabase gelöscht ` +
-        `und die PNG auf GitHub wird anschließend durch ein leeres Fahrtenbuch ersetzt.\n\n` +
-        `Dieser Vorgang kann nicht rückgängig gemacht werden.`
-    );
-
-    if (!confirmed) return;
-
-    setFahrtenbuchState("Fahrtenbuch wird vollständig geleert …", "pending");
-
-    try {
-        const { error } = await window.eetgSupabase
-            .from("fahrtenbuch_eintraege")
-            .delete()
-            .eq("vehicle_id", String(vehicle.id));
-
-        if (error) throw error;
-
-        fahrtenbuchEntries = [];
-
-        // Eingabefelder ebenfalls zurücksetzen, damit wirklich ein leeres Blatt gerendert wird.
-        ["fbDatum","fbZugnummer","fbArbeiten","fbLaufweg","fbMaengel"].forEach(id => {
-            const element = document.getElementById(id);
-            if (element) element.value = "";
-        });
-
-        // Name bleibt weiterhin automatisch der angemeldete Benutzer,
-        // zählt aber alleine nicht als Entwurf.
-        if (typeof syncFahrtenbuchUsername === "function") {
-            syncFahrtenbuchUsername();
-        }
-
-        fahrtenbuchFont = "Kalam";
-        applyFahrtenbuchFontState();
-        renderFahrtenbuch();
-
-        // Auch ohne Einträge bewusst die leere 1024x1024-PNG nach GitHub schreiben.
-        await saveFahrtenbuchToGithub({ allowEmpty: true });
-
-        setFahrtenbuchState(
-            `Fahrtenbuch ${vehicleNumber} wurde vollständig geleert und die leere PNG auf GitHub gespeichert.`,
-            "success"
-        );
-    } catch (error) {
-        console.error("Fahrtenbuch vollständig leeren:", error);
-        setFahrtenbuchState(
-            `Fahrtenbuch konnte nicht geleert werden: ${error?.message || "Unbekannter Fehler"}`,
-            "error"
-        );
-    }
-}
-
 async function saveFahrtenbuchToGithub(options = {}){
     const allowEmpty = Boolean(options?.allowEmpty);
     const state = document.getElementById("fahrtenbuchSaveState");
@@ -7266,7 +7224,18 @@ async function saveFahrtenbuchToGithub(options = {}){
             useCORS: true,
             logging: false,
             width: sheet.scrollWidth,
-            height: sheet.scrollHeight
+            height: sheet.scrollHeight,
+
+            // Die Live-Vorschau eines noch nicht gespeicherten Eintrags
+            // bleibt auf der Webseite sichtbar, wird aber NICHT in die
+            // nach GitHub hochgeladene PNG übernommen.
+            onclone: clonedDocument => {
+                clonedDocument
+                    .querySelectorAll(".fahrtenbuch-template-row-draft .fahrtenbuch-template-cell")
+                    .forEach(cell => {
+                        cell.textContent = "";
+                    });
+            }
         });
 
         const pngDataUrl = canvas.toDataURL("image/png");
@@ -7276,6 +7245,8 @@ async function saveFahrtenbuchToGithub(options = {}){
             .trim()
             .replace(/[^\p{L}\p{N}._-]+/gu, "_");
 
+        const book = getCurrentFahrtenbuchSlice();
+
         setFahrtenbuchState("PNG wird nach GitHub übertragen …", "pending");
 
         const { data, error } = await window.eetgSupabase.functions.invoke(
@@ -7284,7 +7255,8 @@ async function saveFahrtenbuchToGithub(options = {}){
                 body: {
                     vehicleId: String(vehicle.id),
                     vehicleNumber: String(vehicle.number || ""),
-                    filename: `${safeNumber}.png`,
+                    directory: safeNumber,
+                    filename: `fahrtenbuch_${book.bookNumber}.png`,
                     imageBase64: pngBase64
                 }
             }
@@ -7297,8 +7269,8 @@ async function saveFahrtenbuchToGithub(options = {}){
 
         setFahrtenbuchState(
             data.updated
-                ? `PNG auf GitHub aktualisiert: fahrtenbuecher/${data.filename}`
-                : `PNG auf GitHub erstellt: fahrtenbuecher/${data.filename}`,
+                ? `PNG auf GitHub aktualisiert: ${data.path || data.filename}`
+                : `PNG auf GitHub erstellt: ${data.path || data.filename}`,
             "success"
         );
     } catch (error) {
