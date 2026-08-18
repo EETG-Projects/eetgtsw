@@ -5291,6 +5291,16 @@ body:not(.is-admin) .fahrtenbuch-clear-btn{
     opacity:.98;
 }
 
+
+/* Loknummer im Fahrtenbuch automatisch aus dem ausgewählten Fahrzeug */
+#fbLoknummerTop,
+#fbLoknummerBottom{
+    font-family:"Kalam", cursive!important;
+    font-weight:700;
+    text-align:center;
+    white-space:nowrap;
+}
+
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Kalam:wght@300;400;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -7294,8 +7304,11 @@ function renderFahrtenbuch(){
 
     sheet.style.setProperty("--fahrtenbuch-font", '"Kalam", cursive');
 
-    if (lokTop) lokTop.textContent = "";
-    if (lokBottom) lokBottom.textContent = "";
+    const loknummerText = String(vehicle?.number || "")
+        .trim();
+
+    if (lokTop) lokTop.textContent = loknummerText;
+    if (lokBottom) lokBottom.textContent = loknummerText;
 
     top.innerHTML = "";
     bottom.innerHTML = "";
@@ -7533,14 +7546,11 @@ async function saveFahrtenbuchToGithub(options = {}){
         }
 
         const book = getCurrentFahrtenbuchSlice();
-        const bookWasDirty = fahrtenbuchDirtyBooks.has(book.bookNumber);
-        const githubWasVisible = currentFahrtenbuchUsesGithubTexture();
 
-        // Neue Logik:
-        // Wenn die aktuell geladene GitHub-PNG unverändert/sauber ist, bleibt sie die Basis.
-        // Dadurch bleiben manuelle Bearbeitungen in GitHub erhalten.
-        // Nur bei lokal geänderten Fahrtenbucheinträgen wird aus Vorlage + Supabase neu gerendert.
-        fahrtenbuchForceLocalRender = bookWasDirty || !githubWasVisible;
+        // WICHTIG: Beim PNG-Speichern immer aus den aktuellen Supabase-Einträgen rendern.
+        // Die GitHub-PNG ist nur die Anzeige-/Ladetextur. Würden wir sie direkt wieder
+        // exportieren, könnten ältere/teilweise leere Zeilen in GitHub landen.
+        fahrtenbuchForceLocalRender = true;
 
         renderFahrtenbuch();
 
@@ -7549,6 +7559,13 @@ async function saveFahrtenbuchToGithub(options = {}){
             try { await templateImage.decode(); } catch (_) {}
         }
         await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+        // Sicherstellen, dass die aus Supabase erzeugten Zeilen wirklich im DOM stehen,
+        // bevor html2canvas das Fahrtenbuch aufnimmt.
+        const renderedCells = sheet.querySelectorAll(".fahrtenbuch-template-row .fahrtenbuch-template-cell");
+        if (renderedCells.length < 52 * 6) {
+            throw new Error("Fahrtenbuchzeilen konnten vor dem PNG-Export nicht vollständig gerendert werden.");
+        }
 
         // Die Textur selbst ist 1024 × 1024.
         const canvas = await html2canvas(sheet, {
