@@ -7523,11 +7523,6 @@ async function saveFahrtenbuchToGithub(options = {}){
         return;
     }
 
-    if (!fahrtenbuchEntries.length && !allowEmpty) {
-        alert("Bitte mindestens einen Eintrag hinzufügen.");
-        return;
-    }
-
     if (!canWrite()) {
         alert("Du hast nur Leserechte.");
         return;
@@ -7538,7 +7533,12 @@ async function saveFahrtenbuchToGithub(options = {}){
         return;
     }
 
-    setFahrtenbuchState("Fahrtenbuch wird als PNG gerendert …", "pending");
+    setFahrtenbuchState(
+        fahrtenbuchEntries.length
+            ? "Fahrtenbuch wird als PNG gerendert …"
+            : "Leeres Fahrtenbuch wird als PNG gerendert …",
+        "pending"
+    );
 
     try {
         if (document.fonts?.ready) {
