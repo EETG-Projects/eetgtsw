@@ -7317,9 +7317,6 @@ function renderFahrtenbuch(){
     const loknummerText = String(vehicle?.number || "")
         .trim();
 
-    if (lokTop) lokTop.textContent = loknummerText;
-    if (lokBottom) lokBottom.textContent = loknummerText;
-
     top.innerHTML = "";
     bottom.innerHTML = "";
     currentBody.innerHTML = "";
@@ -7342,6 +7339,11 @@ function renderFahrtenbuch(){
         book.bookNumber,
         preferGithubTexture
     );
+
+    // Die GitHub-PNG enthält die Loknummer bereits eingebrannt.
+    // Deshalb die HTML-Loknummer nur auf der lokalen Vorlage anzeigen.
+    if (lokTop) lokTop.textContent = usingGithubTexture ? "" : loknummerText;
+    if (lokBottom) lokBottom.textContent = usingGithubTexture ? "" : loknummerText;
 
     // Bei einer geladenen GitHub-PNG sind die gespeicherten Zeilen bereits
     // Bestandteil des Bildes. Deshalb werden sie NICHT noch einmal darübergelegt.
