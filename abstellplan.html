@@ -4987,12 +4987,15 @@ body.light .plan-container::before{
 
 .fahrtenbuch-overlay-top{
     top:8.20%;
-    height:40.43%;
+    /* 25 Nutzzeilen exakt bis zur letzten vorgesehenen Schreibzeile.
+       Die bisherige Höhe lief bis zur unteren Zusatzlinie und hat dadurch
+       den Text von Zeile zu Zeile immer weiter verschoben. */
+    height:38.87%;
 }
 
 .fahrtenbuch-overlay-bottom{
     top:57.32%;
-    height:40.53%;
+    height:38.96%;
 }
 
 .fahrtenbuch-template-row{
@@ -5245,6 +5248,38 @@ body:not(.is-admin) .fahrtenbuch-clear-btn{
     font-size:11px;
     font-weight:800;
     color:var(--text);
+}
+
+
+.fahrtenbuch-view-switch{
+    display:flex;
+    align-items:center;
+    gap:6px;
+}
+.fahrtenbuch-view-switch button{
+    width:34px;
+    height:32px;
+    padding:0!important;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+.fahrtenbuch-view-switch button:disabled{
+    opacity:.38;
+    cursor:not-allowed;
+}
+
+
+/* Fahrtenbuch: saubere, gleichmäßige vertikale Ausrichtung je Texturzeile */
+.fahrtenbuch-template-row{
+    min-height:0!important;
+    height:100%;
+}
+.fahrtenbuch-template-cell{
+    line-height:1!important;
+    padding-top:1px!important;
+    padding-bottom:0!important;
+    align-items:center!important;
 }
 
 </style>
@@ -5683,7 +5718,11 @@ body:not(.is-admin) .fahrtenbuch-clear-btn{
             <div class="fahrtenbuch-main-head">
                 <h2>Fahrtenbuch – Vorschau</h2>
                 <div class="fahrtenbuch-book-status">
-                    <span id="fahrtenbuchBookInfo">Fahrtenbuch 1 · 0 / 50</span>
+                    <div class="fahrtenbuch-view-switch">
+                        <button type="button" class="secondary" id="fbPrevBookBtn" title="Vorheriges Fahrtenbuch">←</button>
+                        <span id="fahrtenbuchBookInfo">Fahrtenbuch 1 · 0 / 50</span>
+                        <button type="button" class="secondary" id="fbNextBookBtn" title="Nächstes Fahrtenbuch">→</button>
+                    </div>
                     <span id="fahrtenbuchFilenamePreview">–</span>
                 </div>
             </div>
@@ -6559,28 +6598,11 @@ function switchMainTab(tabName) {
 
 function restoreMainTab() {
     let saved = "abstellplan";
-
     try {
         saved = sessionStorage.getItem("eetg_main_tab") || "abstellplan";
     } catch (_) {}
 
-    const targetTab = saved === "fahrtenbuecher" ? "fahrtenbuecher" : "abstellplan";
-
-    const applyInitialTab = () => {
-        const abstellplanView = document.getElementById("abstellplanView");
-        const fahrtenbuecherView = document.getElementById("fahrtenbuecherView");
-        const abstellplanTab = document.getElementById("tabAbstellplan");
-        const fahrtenbuecherTab = document.getElementById("tabFahrtenbuecher");
-
-        if (!abstellplanView || !fahrtenbuecherView || !abstellplanTab || !fahrtenbuecherTab) {
-            requestAnimationFrame(applyInitialTab);
-            return;
-        }
-
-        switchMainTab(targetTab);
-    };
-
-    applyInitialTab();
+    switchMainTab(saved === "fahrtenbuecher" ? "fahrtenbuecher" : "abstellplan");
 }
 
 
@@ -6592,6 +6614,7 @@ function restoreMainTab() {
 let fahrtenbuchEntries = [];
 let fahrtenbuchFont = "Kalam";
 let fahrtenbuchLoading = false;
+let fahrtenbuchViewBookNumber = null;
 
 let fahrtenbuchFreigaben = [];
 
@@ -6802,9 +6825,27 @@ function selectedFahrtenbuchVehicle(){
     return getFahrtenbuchVehicles().find(vehicle => String(vehicle.id) === String(id)) || null;
 }
 
-function getCurrentFahrtenbuchNumber(){
+function getLatestFahrtenbuchNumber(){
     const count = fahrtenbuchEntries.length;
-    return Math.floor(count / 50) + 1;
+    return Math.max(1, Math.floor(Math.max(0, count - 1) / 50) + 1);
+}
+
+function getMaxFahrtenbuchNumber(){
+    return Math.max(1, Math.ceil(fahrtenbuchEntries.length / 50));
+}
+
+function getCurrentFahrtenbuchNumber(){
+    const maxBook = getMaxFahrtenbuchNumber();
+
+    if (
+        fahrtenbuchViewBookNumber === null ||
+        fahrtenbuchViewBookNumber < 1 ||
+        fahrtenbuchViewBookNumber > maxBook
+    ) {
+        fahrtenbuchViewBookNumber = getLatestFahrtenbuchNumber();
+    }
+
+    return fahrtenbuchViewBookNumber;
 }
 
 function getCurrentFahrtenbuchSlice(){
@@ -6817,6 +6858,21 @@ function getCurrentFahrtenbuchSlice(){
         end,
         entries: fahrtenbuchEntries.slice(start, end)
     };
+}
+
+function changeFahrtenbuchView(direction){
+    const maxBook = getMaxFahrtenbuchNumber();
+    const current = getCurrentFahrtenbuchNumber();
+    const next = Math.min(maxBook, Math.max(1, current + direction));
+
+    if (next === current) return;
+
+    fahrtenbuchViewBookNumber = next;
+    renderFahrtenbuch();
+}
+
+function resetFahrtenbuchViewToLatest(){
+    fahrtenbuchViewBookNumber = getLatestFahrtenbuchNumber();
 }
 
 function updateFahrtenbuchFilename(){
@@ -6837,9 +6893,16 @@ function updateFahrtenbuchFilename(){
 
     const book = getCurrentFahrtenbuchSlice();
     const used = book.entries.length;
+    const maxBook = getMaxFahrtenbuchNumber();
 
     label.textContent = `fahrtenbuecher/${safe}/fahrtenbuch_${book.bookNumber}.png`;
-    info.textContent = `Fahrtenbuch ${book.bookNumber} · ${used} / 50`;
+    info.textContent = `Fahrtenbuch ${book.bookNumber} von ${maxBook} · ${used} / 50`;
+
+    const prev = document.getElementById("fbPrevBookBtn");
+    const next = document.getElementById("fbNextBookBtn");
+
+    if (prev) prev.disabled = book.bookNumber <= 1;
+    if (next) next.disabled = book.bookNumber >= maxBook;
 }
 
 
@@ -6948,6 +7011,7 @@ async function loadFahrtenbuchEntries(){
                     : "Kalam";
         }
 
+        resetFahrtenbuchViewToLatest();
         applyFahrtenbuchFontState();
         renderFahrtenbuch();
         setFahrtenbuchState(
@@ -7019,6 +7083,8 @@ async function addFahrtenbuchEntry(){
 
         fahrtenbuchFont = selectedFont;
         await loadFahrtenbuchEntries();
+        resetFahrtenbuchViewToLatest();
+        renderFahrtenbuch();
 
         // Eingabefelder für den nächsten Eintrag leeren, Datum bleibt stehen.
         ["fbZugnummer","fbArbeiten","fbLaufweg","fbMaengel"].forEach(id => {
@@ -7130,7 +7196,14 @@ function renderFahrtenbuch(){
     const displayEntries = book.entries.map(entry => ({...entry, __draft:false}));
     const draft = currentFahrtenbuchInput();
 
-    if (vehicle && hasFahrtenbuchDraft(draft) && displayEntries.length < totalRows) {
+    const latestBookNumber = getLatestFahrtenbuchNumber();
+
+    if (
+        vehicle &&
+        book.bookNumber === latestBookNumber &&
+        hasFahrtenbuchDraft(draft) &&
+        displayEntries.length < totalRows
+    ) {
         displayEntries.push({...draft, __draft:true});
     }
 
@@ -7201,6 +7274,87 @@ function renderFahrtenbuch(){
 
     updateFahrtenbuchFilename();
 }
+
+async function clearFahrtenbuch(){
+    if (currentRole !== "admin") {
+        alert("Nur Administratoren dürfen ein Fahrtenbuch vollständig leeren.");
+        return;
+    }
+
+    const vehicle = selectedFahrtenbuchVehicle();
+
+    if (!vehicle) {
+        alert("Bitte zuerst eine Lok auswählen.");
+        return;
+    }
+
+    const vehicleNumber = String(vehicle.number || vehicle.id || "Unbekannt");
+
+    if (!fahrtenbuchEntries.length) {
+        alert(`Das Fahrtenbuch von ${vehicleNumber} ist bereits leer.`);
+        return;
+    }
+
+    const confirmed = confirm(
+        `Fahrtenbuch von ${vehicleNumber} wirklich vollständig leeren?\n\n` +
+        `Dabei werden ALLE gespeicherten Fahrten dieser Lok aus Supabase gelöscht.\n` +
+        `Anschließend wird Fahrtenbuch 1 als leere PNG auf GitHub gespeichert.\n\n` +
+        `Dieser Vorgang kann nicht rückgängig gemacht werden.`
+    );
+
+    if (!confirmed) return;
+
+    setFahrtenbuchState("Fahrtenbuch wird vollständig geleert …", "pending");
+
+    try {
+        const { error } = await window.eetgSupabase
+            .from("fahrtenbuch_eintraege")
+            .delete()
+            .eq("vehicle_id", String(vehicle.id));
+
+        if (error) throw error;
+
+        // Lokale Daten sofort zurücksetzen.
+        fahrtenbuchEntries = [];
+        fahrtenbuchFont = "Kalam";
+
+        // Alle Eingaben leeren. Der automatisch gesetzte Benutzername
+        // wird anschließend wieder korrekt eingesetzt.
+        ["fbDatum","fbZugnummer","fbArbeiten","fbLaufweg","fbMaengel"].forEach(id => {
+            const element = document.getElementById(id);
+            if (element) element.value = "";
+        });
+
+        if (typeof syncFahrtenbuchUsername === "function") {
+            syncFahrtenbuchUsername();
+        }
+
+        if (typeof fahrtenbuchViewBookNumber !== "undefined") {
+            fahrtenbuchViewBookNumber = null;
+        }
+
+        if (typeof applyFahrtenbuchFontState === "function") {
+            applyFahrtenbuchFontState();
+        }
+
+        renderFahrtenbuch();
+
+        // saveFahrtenbuchToGithub erlaubt mit allowEmpty bewusst ein leeres Blatt.
+        await saveFahrtenbuchToGithub({ allowEmpty: true });
+
+        setFahrtenbuchState(
+            `Fahrtenbuch von ${vehicleNumber} wurde vollständig geleert.`,
+            "success"
+        );
+    } catch (error) {
+        console.error("Fahrtenbuch vollständig leeren:", error);
+        setFahrtenbuchState(
+            `Fahrtenbuch konnte nicht geleert werden: ${error?.message || "Unbekannter Fehler"}`,
+            "error"
+        );
+    }
+}
+
 async function saveFahrtenbuchToGithub(options = {}){
     const allowEmpty = Boolean(options?.allowEmpty);
     const state = document.getElementById("fahrtenbuchSaveState");
@@ -7306,6 +7460,16 @@ async function saveFahrtenbuchToGithub(options = {}){
 // würden deshalb beim Laden noch kein Element finden.
 document.addEventListener("click", event => {
     const target = event.target;
+
+    if (target?.closest?.("#fbPrevBookBtn")) {
+        changeFahrtenbuchView(-1);
+        return;
+    }
+
+    if (target?.closest?.("#fbNextBookBtn")) {
+        changeFahrtenbuchView(1);
+        return;
+    }
 
     if (target?.closest?.("#fbManageVehiclesBtn")) {
         openFahrtenbuchVehicleManager();
@@ -10828,11 +10992,6 @@ document.addEventListener("DOMContentLoaded", function(){
         );
     });
 })();
-
-document.addEventListener("DOMContentLoaded", () => {
-    requestAnimationFrame(() => restoreMainTab());
-});
-
 </script>
 
 
