@@ -7524,6 +7524,49 @@ function currentFahrtenbuchUsesGithubTexture(){
     return image?.dataset?.source === "github";
 }
 
+
+async function renderBlankFahrtenbuchPngBase64(){
+    const sheet = document.getElementById("fahrtenbuchSheet");
+    if (!sheet || typeof html2canvas !== "function") {
+        throw new Error("PNG-Renderer konnte nicht geladen werden.");
+    }
+
+    const previousForce = fahrtenbuchForceLocalRender;
+    fahrtenbuchForceLocalRender = true;
+    renderFahrtenbuch();
+
+    const image = document.getElementById("fahrtenbuchTemplateImage");
+    if (image?.decode) {
+        try { await image.decode(); } catch (_) {}
+    }
+
+    await new Promise(resolve =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve))
+    );
+
+    const canvas = await html2canvas(sheet, {
+        backgroundColor: null,
+        scale: 1,
+        useCORS: true,
+        logging: false,
+        width: sheet.scrollWidth,
+        height: sheet.scrollHeight,
+        onclone: clonedDocument => {
+            // Nur Fahrteinträge entfernen. Die Loknummer bleibt stehen.
+            clonedDocument
+                .querySelectorAll(".fahrtenbuch-template-row .fahrtenbuch-template-cell")
+                .forEach(cell => {
+                    cell.textContent = "";
+                });
+        }
+    });
+
+    fahrtenbuchForceLocalRender = previousForce;
+    renderFahrtenbuch();
+
+    return canvas.toDataURL("image/png").split(",")[1];
+}
+
 async function saveFahrtenbuchToGithub(options = {}){
     const allowEmpty = Boolean(options?.allowEmpty);
     const state = document.getElementById("fahrtenbuchSaveState");
@@ -7614,85 +7657,68 @@ async function saveFahrtenbuchToGithub(options = {}){
         // die aktuellen Einträge; die vier weiteren werden aus derselben leeren Vorlage erzeugt.
         const currentFilename = `fahrtenbuch_${book.bookNumber}.png`;
 
-        const invokeSave = async (filename, imageBase64) => {
-            const result = await window.eetgSupabase.functions.invoke(
-                "save-fahrtenbuch-png",
-                {
-                    body: {
-                        vehicleId: String(vehicle.id),
-                        vehicleNumber: String(vehicle.number || ""),
-                        directory: safeNumber,
-                        filename,
-                        imageBase64
-                    }
-                }
-            );
-            if (result.error) throw result.error;
-            if (!result.data?.ok) {
-                throw new Error(result.data?.error || `GitHub-Speicherung fehlgeschlagen: ${filename}`);
+        // Alle Dateien in EINEM Supabase-Aufruf speichern.
+        // Dadurch hängt die Erstellung von _2 bis _5 nicht mehr von mehreren
+        // separaten Browser-Aufrufen ab.
+        const filesToSave = [
+            {
+                filename: currentFilename,
+                imageBase64: pngBase64
             }
-            return result.data;
-        };
+        ];
 
-        const data = await invokeSave(currentFilename, pngBase64);
-
-        // Bei jedem Speichern von Fahrtenbuch 1 die Vorratsdateien 2–5 erzeugen.
-        // Sie enthalten nur die Vorlage + Loknummer.
         if (book.bookNumber === 1) {
-            setFahrtenbuchState("Fahrtenbuch 1 gespeichert – Fahrtenbücher 2 bis 5 werden erstellt …", "pending");
+            setFahrtenbuchState(
+                "Leere Fahrtenbücher 2 bis 5 werden vorbereitet …",
+                "pending"
+            );
 
-            const originalForce = fahrtenbuchForceLocalRender;
+            const blankBase64 = await renderBlankFahrtenbuchPngBase64();
 
-            try {
-                // Lokale leere Vorlage erzwingen.
-                fahrtenbuchForceLocalRender = true;
-                renderFahrtenbuch();
-
-                const extraImage = document.getElementById("fahrtenbuchTemplateImage");
-                if (extraImage?.decode) {
-                    try { await extraImage.decode(); } catch (_) {}
-                }
-                await new Promise(resolve =>
-                    requestAnimationFrame(() => requestAnimationFrame(resolve))
-                );
-
-                // Ein einziges leeres Vorratsblatt rendern:
-                // Fahrteinträge werden entfernt, Loknummer bleibt erhalten.
-                const blankCanvas = await html2canvas(sheet, {
-                    backgroundColor: null,
-                    scale: 1,
-                    useCORS: true,
-                    logging: false,
-                    width: sheet.scrollWidth,
-                    height: sheet.scrollHeight,
-                    onclone: clonedDocument => {
-                        clonedDocument
-                            .querySelectorAll(".fahrtenbuch-template-row .fahrtenbuch-template-cell")
-                            .forEach(cell => { cell.textContent = ""; });
-                    }
+            for (let extraBook = 2; extraBook <= 5; extraBook++) {
+                filesToSave.push({
+                    filename: `fahrtenbuch_${extraBook}.png`,
+                    imageBase64: blankBase64
                 });
+            }
+        }
 
-                const blankBase64 = blankCanvas.toDataURL("image/png").split(",")[1];
+        setFahrtenbuchState(
+            book.bookNumber === 1
+                ? "Fahrtenbücher 1 bis 5 werden nach GitHub übertragen …"
+                : `Fahrtenbuch ${book.bookNumber} wird nach GitHub übertragen …`,
+            "pending"
+        );
 
-                // Dieselbe leere Vorlage mit der aktuellen Loknummer als 2–5 hochladen.
-                for (let extraBook = 2; extraBook <= 5; extraBook++) {
-                    setFahrtenbuchState(
-                        `Fahrtenbuch ${extraBook} wird erstellt …`,
-                        "pending"
-                    );
-
-                    await invokeSave(
-                        `fahrtenbuch_${extraBook}.png`,
-                        blankBase64
-                    );
-
-                    fahrtenbuchGithubTextureCache.delete(
-                        getFahrtenbuchTextureKey(vehicle, extraBook)
-                    );
+        const { data, error } = await window.eetgSupabase.functions.invoke(
+            "save-fahrtenbuch-png",
+            {
+                body: {
+                    vehicleId: String(vehicle.id),
+                    vehicleNumber: String(vehicle.number || ""),
+                    directory: safeNumber,
+                    files: filesToSave
                 }
-            } finally {
-                fahrtenbuchForceLocalRender = originalForce;
-                renderFahrtenbuch();
+            }
+        );
+
+        if (error) throw error;
+        if (!data?.ok) {
+            throw new Error(data?.error || "GitHub-Speicherung fehlgeschlagen.");
+        }
+
+        const primaryResult =
+            Array.isArray(data.results)
+                ? data.results.find(item => item.filename === currentFilename)
+                : null;
+
+        const dataForMessage = primaryResult || data;
+
+        if (book.bookNumber === 1) {
+            for (let extraBook = 2; extraBook <= 5; extraBook++) {
+                fahrtenbuchGithubTextureCache.delete(
+                    getFahrtenbuchTextureKey(vehicle, extraBook)
+                );
             }
         }
 
@@ -7718,9 +7744,9 @@ async function saveFahrtenbuchToGithub(options = {}){
         }, 12000);
 
         setFahrtenbuchState(
-            data.updated
-                ? `PNG auf GitHub aktualisiert: ${data.path || data.filename}`
-                : `PNG auf GitHub erstellt: ${data.path || data.filename}`,
+            dataForMessage.updated
+                ? `PNG auf GitHub aktualisiert: ${dataForMessage.path || dataForMessage.filename}`
+                : `PNG auf GitHub erstellt: ${dataForMessage.path || dataForMessage.filename}`,
             "success"
         );
     } catch (error) {
