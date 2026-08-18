@@ -5282,6 +5282,15 @@ body:not(.is-admin) .fahrtenbuch-clear-btn{
     align-items:center!important;
 }
 
+
+/* Fahrtenbuch-Textur wird aus GitHub geladen, vorhandene PNG dient als echte Ansicht. */
+#fahrtenbuchTemplateImage[data-source="github"]{
+    image-rendering:auto;
+}
+#fahrtenbuchTemplateImage[data-source="loading"]{
+    opacity:.98;
+}
+
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Kalam:wght@300;400;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -5730,9 +5739,11 @@ body:not(.is-admin) .fahrtenbuch-clear-btn{
             <div class="fahrtenbuch-sheet-wrap">
                 <div class="fahrtenbuch-template-stage" id="fahrtenbuchSheet">
                     <img
+                        id="fahrtenbuchTemplateImage"
                         src="./assets/img/Fahrtenbuch_Template.png"
                         alt="Fahrtenbuch Vorlage"
-                        class="fahrtenbuch-template-image">
+                        class="fahrtenbuch-template-image"
+                        crossorigin="anonymous">
 
                     <div class="fahrtenbuch-loknummer fahrtenbuch-loknummer-top" id="fbLoknummerTop"></div>
                     <div class="fahrtenbuch-loknummer fahrtenbuch-loknummer-bottom" id="fbLoknummerBottom"></div>
@@ -6615,6 +6626,10 @@ let fahrtenbuchEntries = [];
 let fahrtenbuchFont = "Kalam";
 let fahrtenbuchLoading = false;
 let fahrtenbuchViewBookNumber = null;
+let fahrtenbuchGithubTextureVersion = Date.now();
+let fahrtenbuchForceLocalRender = false;
+const fahrtenbuchGithubTextureCache = new Map();
+const fahrtenbuchDirtyBooks = new Set();
 
 let fahrtenbuchFreigaben = [];
 
@@ -6823,6 +6838,102 @@ function selectedFahrtenbuchVehicle(){
     const id = document.getElementById("fbFahrzeug")?.value;
     if (!id) return null;
     return getFahrtenbuchVehicles().find(vehicle => String(vehicle.id) === String(id)) || null;
+}
+
+
+function fahrtenbuchSafeVehicleNumber(vehicle){
+    return String(vehicle?.number || vehicle?.id || "")
+        .trim()
+        .replace(/[^\p{L}\p{N}._-]+/gu, "_");
+}
+
+function getFahrtenbuchGithubTextureUrl(vehicle, bookNumber){
+    const safe = fahrtenbuchSafeVehicleNumber(vehicle);
+    if (!safe) return "";
+    return `./fahrtenbuecher/${encodeURIComponent(safe)}/fahrtenbuch_${Number(bookNumber)}.png?v=${fahrtenbuchGithubTextureVersion}`;
+}
+
+function getFahrtenbuchTextureKey(vehicle, bookNumber){
+    return `${fahrtenbuchSafeVehicleNumber(vehicle)}::${Number(bookNumber)}`;
+}
+
+function setFahrtenbuchTemplateImage(vehicle, bookNumber, preferGithub){
+    const image = document.getElementById("fahrtenbuchTemplateImage");
+    if (!image) return false;
+
+    const localTemplate = "./assets/img/Fahrtenbuch_Template.png";
+    const key = getFahrtenbuchTextureKey(vehicle, bookNumber);
+
+    if (!preferGithub || !vehicle) {
+        image.onload = null;
+        image.onerror = null;
+        if (!image.src.endsWith("/assets/img/Fahrtenbuch_Template.png")) {
+            image.src = localTemplate;
+        }
+        image.dataset.source = "local";
+        return false;
+    }
+
+    const cached = fahrtenbuchGithubTextureCache.get(key);
+
+    if (cached === true) {
+        const url = getFahrtenbuchGithubTextureUrl(vehicle, bookNumber);
+        image.onload = null;
+        image.onerror = null;
+        if (image.getAttribute("src") !== url) image.src = url;
+        image.dataset.source = "github";
+        return true;
+    }
+
+    if (cached === false) {
+        image.onload = null;
+        image.onerror = null;
+        if (!image.src.endsWith("/assets/img/Fahrtenbuch_Template.png")) {
+            image.src = localTemplate;
+        }
+        image.dataset.source = "local";
+        return false;
+    }
+
+    // Noch unbekannt: GitHub-Datei einmal prüfen.
+    const url = getFahrtenbuchGithubTextureUrl(vehicle, bookNumber);
+    image.dataset.source = "loading";
+
+    image.onload = () => {
+        if (image.dataset.source !== "loading") return;
+        fahrtenbuchGithubTextureCache.set(key, true);
+        image.dataset.source = "github";
+        image.onload = null;
+        image.onerror = null;
+        renderFahrtenbuch();
+    };
+
+    image.onerror = () => {
+        if (image.dataset.source !== "loading") return;
+        fahrtenbuchGithubTextureCache.set(key, false);
+        image.dataset.source = "local";
+        image.onload = null;
+        image.onerror = null;
+        image.src = localTemplate;
+        renderFahrtenbuch();
+    };
+
+    if (image.getAttribute("src") !== url) {
+        image.src = url;
+    }
+
+    // Bis der GitHub-Test fertig ist, zeichnen wir lokal.
+    return false;
+}
+
+function markFahrtenbuchBookDirty(bookNumber){
+    fahrtenbuchDirtyBooks.add(Number(bookNumber));
+}
+
+function markAllFahrtenbuchBooksDirty(){
+    for (let i = 1; i <= getMaxFahrtenbuchNumber(); i++) {
+        fahrtenbuchDirtyBooks.add(i);
+    }
 }
 
 function getLatestFahrtenbuchNumber(){
@@ -7084,6 +7195,7 @@ async function addFahrtenbuchEntry(){
         fahrtenbuchFont = selectedFont;
         await loadFahrtenbuchEntries();
         resetFahrtenbuchViewToLatest();
+        markFahrtenbuchBookDirty(getLatestFahrtenbuchNumber());
         renderFahrtenbuch();
 
         // Eingabefelder für den nächsten Eintrag leeren, Datum bleibt stehen.
@@ -7192,18 +7304,43 @@ function renderFahrtenbuch(){
     const rowsPerSheet = 26;
     const totalRows = 52;
     const book = getCurrentFahrtenbuchSlice();
-
-    const displayEntries = book.entries.map(entry => ({...entry, __draft:false}));
-    const draft = currentFahrtenbuchInput();
-
     const latestBookNumber = getLatestFahrtenbuchNumber();
 
+    // Eine vorhandene PNG aus GitHub wird als echte Textur verwendet,
+    // solange dieses Fahrtenbuch lokal nicht verändert wurde.
+    const bookIsDirty = fahrtenbuchDirtyBooks.has(book.bookNumber);
+    const preferGithubTexture =
+        Boolean(vehicle) &&
+        !fahrtenbuchForceLocalRender &&
+        !bookIsDirty;
+
+    const usingGithubTexture = setFahrtenbuchTemplateImage(
+        vehicle,
+        book.bookNumber,
+        preferGithubTexture
+    );
+
+    // Bei einer geladenen GitHub-PNG sind die gespeicherten Zeilen bereits
+    // Bestandteil des Bildes. Deshalb werden sie NICHT noch einmal darübergelegt.
+    const displayEntries = usingGithubTexture
+        ? []
+        : book.entries.map(entry => ({...entry, __draft:false}));
+
+    const draft = currentFahrtenbuchInput();
+
+    // Die Live-Vorschau bleibt auch über einer GitHub-Textur möglich,
+    // aber nur im aktuellsten Fahrtenbuch.
     if (
         vehicle &&
         book.bookNumber === latestBookNumber &&
         hasFahrtenbuchDraft(draft) &&
-        displayEntries.length < totalRows
+        book.entries.length < totalRows
     ) {
+        const draftIndex = usingGithubTexture ? book.entries.length : displayEntries.length;
+
+        while (displayEntries.length < draftIndex) {
+            displayEntries.push(null);
+        }
         displayEntries.push({...draft, __draft:true});
     }
 
@@ -7337,6 +7474,7 @@ async function clearFahrtenbuch(){
             applyFahrtenbuchFontState();
         }
 
+        markFahrtenbuchBookDirty(1);
         renderFahrtenbuch();
 
         // saveFahrtenbuchToGithub erlaubt mit allowEmpty bewusst ein leeres Blatt.
@@ -7353,6 +7491,12 @@ async function clearFahrtenbuch(){
             "error"
         );
     }
+}
+
+
+function currentFahrtenbuchUsesGithubTexture(){
+    const image = document.getElementById("fahrtenbuchTemplateImage");
+    return image?.dataset?.source === "github";
 }
 
 async function saveFahrtenbuchToGithub(options = {}){
@@ -7388,7 +7532,25 @@ async function saveFahrtenbuchToGithub(options = {}){
             await document.fonts.ready;
         }
 
-        // Die Vorlage selbst ist 1024 × 1024. Wir rendern genau diese feste Größe.
+        const book = getCurrentFahrtenbuchSlice();
+        const bookWasDirty = fahrtenbuchDirtyBooks.has(book.bookNumber);
+        const githubWasVisible = currentFahrtenbuchUsesGithubTexture();
+
+        // Neue Logik:
+        // Wenn die aktuell geladene GitHub-PNG unverändert/sauber ist, bleibt sie die Basis.
+        // Dadurch bleiben manuelle Bearbeitungen in GitHub erhalten.
+        // Nur bei lokal geänderten Fahrtenbucheinträgen wird aus Vorlage + Supabase neu gerendert.
+        fahrtenbuchForceLocalRender = bookWasDirty || !githubWasVisible;
+
+        renderFahrtenbuch();
+
+        const templateImage = document.getElementById("fahrtenbuchTemplateImage");
+        if (templateImage?.decode) {
+            try { await templateImage.decode(); } catch (_) {}
+        }
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+        // Die Textur selbst ist 1024 × 1024.
         const canvas = await html2canvas(sheet, {
             backgroundColor: null,
             scale: 1,
@@ -7416,8 +7578,6 @@ async function saveFahrtenbuchToGithub(options = {}){
             .trim()
             .replace(/[^\p{L}\p{N}._-]+/gu, "_");
 
-        const book = getCurrentFahrtenbuchSlice();
-
         setFahrtenbuchState("PNG wird nach GitHub übertragen …", "pending");
 
         const { data, error } = await window.eetgSupabase.functions.invoke(
@@ -7438,6 +7598,16 @@ async function saveFahrtenbuchToGithub(options = {}){
             throw new Error(data?.error || "GitHub-Speicherung fehlgeschlagen.");
         }
 
+        const savedBookNumber = book.bookNumber;
+        fahrtenbuchDirtyBooks.delete(savedBookNumber);
+        fahrtenbuchGithubTextureCache.set(
+            getFahrtenbuchTextureKey(vehicle, savedBookNumber),
+            true
+        );
+        fahrtenbuchGithubTextureVersion = Date.now();
+        fahrtenbuchForceLocalRender = false;
+        renderFahrtenbuch();
+
         setFahrtenbuchState(
             data.updated
                 ? `PNG auf GitHub aktualisiert: ${data.path || data.filename}`
@@ -7445,6 +7615,8 @@ async function saveFahrtenbuchToGithub(options = {}){
             "success"
         );
     } catch (error) {
+        fahrtenbuchForceLocalRender = false;
+        renderFahrtenbuch();
         console.error("Fahrtenbuch PNG speichern:", error);
         setFahrtenbuchState(
             `PNG konnte nicht gespeichert werden: ${error?.message || "Unbekannter Fehler"}`,
@@ -7505,6 +7677,8 @@ document.addEventListener("focusin", event => {
 
 document.addEventListener("change", async event => {
     if (event.target?.id === "fbFahrzeug") {
+        fahrtenbuchDirtyBooks.clear();
+        fahrtenbuchGithubTextureVersion = Date.now();
         updateFahrtenbuchFilename();
         await loadFahrtenbuchEntries();
     }
