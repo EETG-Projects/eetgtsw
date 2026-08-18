@@ -6874,13 +6874,17 @@ function setFahrtenbuchTemplateImage(vehicle, bookNumber, preferGithub){
     const localTemplate = "./assets/img/Fahrtenbuch_Template.png";
     const key = getFahrtenbuchTextureKey(vehicle, bookNumber);
 
-    if (!preferGithub || !vehicle) {
+    const showLocal = () => {
         image.onload = null;
         image.onerror = null;
-        if (!image.src.endsWith("/assets/img/Fahrtenbuch_Template.png")) {
+        if (image.getAttribute("src") !== localTemplate) {
             image.src = localTemplate;
         }
         image.dataset.source = "local";
+    };
+
+    if (!preferGithub || !vehicle) {
+        showLocal();
         return false;
     }
 
@@ -6888,54 +6892,60 @@ function setFahrtenbuchTemplateImage(vehicle, bookNumber, preferGithub){
 
     if (cached === true) {
         const url = getFahrtenbuchGithubTextureUrl(vehicle, bookNumber);
-        image.onload = null;
-        image.onerror = null;
-        if (image.getAttribute("src") !== url) image.src = url;
-        image.dataset.source = "github";
-        return true;
+
+        // Auch bei bereits bekannter Datei erst in einem unsichtbaren Image laden.
+        // Dadurch verschwindet die sichtbare Vorlage niemals bei einem temporären 404.
+        const probe = new Image();
+        probe.crossOrigin = "anonymous";
+        probe.onload = () => {
+            image.onload = null;
+            image.onerror = null;
+            image.src = url;
+            image.dataset.source = "github";
+        };
+        probe.onerror = () => {
+            fahrtenbuchGithubTextureCache.delete(key);
+            showLocal();
+        };
+        probe.src = url;
+
+        // Bis die GitHub-Datei sicher geladen ist, lokale Vorlage zeigen.
+        if (image.dataset.source !== "github") showLocal();
+        return image.dataset.source === "github";
     }
 
     if (cached === false) {
-        image.onload = null;
-        image.onerror = null;
-        if (!image.src.endsWith("/assets/img/Fahrtenbuch_Template.png")) {
-            image.src = localTemplate;
-        }
-        image.dataset.source = "local";
+        showLocal();
         return false;
     }
 
-    // Noch unbekannt: GitHub-Datei einmal prüfen.
+    // Unbekannter Zustand: GitHub-Datei separat vorladen.
+    // Die sichtbare Vorlage wird erst NACH erfolgreichem Laden ausgetauscht.
+    showLocal();
+
     const url = getFahrtenbuchGithubTextureUrl(vehicle, bookNumber);
-    image.dataset.source = "loading";
+    const probe = new Image();
+    probe.crossOrigin = "anonymous";
 
-    image.onload = () => {
-        if (image.dataset.source !== "loading") return;
+    probe.onload = () => {
         fahrtenbuchGithubTextureCache.set(key, true);
-        image.dataset.source = "github";
         image.onload = null;
         image.onerror = null;
-        renderFahrtenbuch();
-    };
-
-    image.onerror = () => {
-        if (image.dataset.source !== "loading") return;
-        fahrtenbuchGithubTextureCache.set(key, false);
-        image.dataset.source = "local";
-        image.onload = null;
-        image.onerror = null;
-        image.src = localTemplate;
-        renderFahrtenbuch();
-    };
-
-    if (image.getAttribute("src") !== url) {
         image.src = url;
-    }
+        image.dataset.source = "github";
+        renderFahrtenbuch();
+    };
 
-    // Bis der GitHub-Test fertig ist, zeichnen wir lokal.
+    probe.onerror = () => {
+        // Nicht dauerhaft auf "false" cachen: GitHub Pages kann nach einem Commit
+        // einige Sekunden brauchen, bis die neue PNG erreichbar ist.
+        fahrtenbuchGithubTextureCache.delete(key);
+        showLocal();
+    };
+
+    probe.src = url;
     return false;
 }
-
 function markFahrtenbuchBookDirty(bookNumber){
     fahrtenbuchDirtyBooks.add(Number(bookNumber));
 }
@@ -7663,9 +7673,8 @@ async function saveFahrtenbuchToGithub(options = {}){
                         extraCanvas.toDataURL("image/png").split(",")[1]
                     );
 
-                    fahrtenbuchGithubTextureCache.set(
-                        getFahrtenbuchTextureKey(vehicle, extraBook),
-                        true
+                    fahrtenbuchGithubTextureCache.delete(
+                        getFahrtenbuchTextureKey(vehicle, extraBook)
                     );
                 }
             } finally {
@@ -7677,13 +7686,24 @@ async function saveFahrtenbuchToGithub(options = {}){
 
         const savedBookNumber = book.bookNumber;
         fahrtenbuchDirtyBooks.delete(savedBookNumber);
-        fahrtenbuchGithubTextureCache.set(
-            getFahrtenbuchTextureKey(vehicle, savedBookNumber),
-            true
+        // GitHub Pages ist nach einem Commit nicht immer sofort aktualisiert.
+        // Deshalb die gerade gespeicherte PNG nicht blind als "bereits verfügbar" markieren.
+        // Bis sie wirklich erreichbar ist, bleibt die lokale Vorlage sichtbar.
+        fahrtenbuchGithubTextureCache.delete(
+            getFahrtenbuchTextureKey(vehicle, savedBookNumber)
         );
         fahrtenbuchGithubTextureVersion = Date.now();
         fahrtenbuchForceLocalRender = false;
         renderFahrtenbuch();
+
+        // Nach kurzer GitHub-Pages-Deploy-Zeit automatisch noch einmal versuchen.
+        setTimeout(() => {
+            fahrtenbuchGithubTextureVersion = Date.now();
+            fahrtenbuchGithubTextureCache.delete(
+                getFahrtenbuchTextureKey(vehicle, savedBookNumber)
+            );
+            renderFahrtenbuch();
+        }, 12000);
 
         setFahrtenbuchState(
             data.updated
