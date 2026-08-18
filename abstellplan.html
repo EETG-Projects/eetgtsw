@@ -6559,11 +6559,28 @@ function switchMainTab(tabName) {
 
 function restoreMainTab() {
     let saved = "abstellplan";
+
     try {
         saved = sessionStorage.getItem("eetg_main_tab") || "abstellplan";
     } catch (_) {}
 
-    switchMainTab(saved === "fahrtenbuecher" ? "fahrtenbuecher" : "abstellplan");
+    const targetTab = saved === "fahrtenbuecher" ? "fahrtenbuecher" : "abstellplan";
+
+    const applyInitialTab = () => {
+        const abstellplanView = document.getElementById("abstellplanView");
+        const fahrtenbuecherView = document.getElementById("fahrtenbuecherView");
+        const abstellplanTab = document.getElementById("tabAbstellplan");
+        const fahrtenbuecherTab = document.getElementById("tabFahrtenbuecher");
+
+        if (!abstellplanView || !fahrtenbuecherView || !abstellplanTab || !fahrtenbuecherTab) {
+            requestAnimationFrame(applyInitialTab);
+            return;
+        }
+
+        switchMainTab(targetTab);
+    };
+
+    applyInitialTab();
 }
 
 
@@ -10811,6 +10828,11 @@ document.addEventListener("DOMContentLoaded", function(){
         );
     });
 })();
+
+document.addEventListener("DOMContentLoaded", () => {
+    requestAnimationFrame(() => restoreMainTab());
+});
+
 </script>
 
 
