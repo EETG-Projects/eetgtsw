@@ -7597,22 +7597,82 @@ async function saveFahrtenbuchToGithub(options = {}){
 
         setFahrtenbuchState("PNG wird nach GitHub übertragen …", "pending");
 
-        const { data, error } = await window.eetgSupabase.functions.invoke(
-            "save-fahrtenbuch-png",
-            {
-                body: {
-                    vehicleId: String(vehicle.id),
-                    vehicleNumber: String(vehicle.number || ""),
-                    directory: safeNumber,
-                    filename: `fahrtenbuch_${book.bookNumber}.png`,
-                    imageBase64: pngBase64
-                }
-            }
-        );
+        // Beim allerersten Fahrtenbuch einer Lok direkt einen Satz von 5 Texturen anlegen:
+        // fahrtenbuch_1.png bis fahrtenbuch_5.png. Nur die aktuell bearbeitete Textur enthält
+        // die aktuellen Einträge; die vier weiteren werden aus derselben leeren Vorlage erzeugt.
+        const currentFilename = `fahrtenbuch_${book.bookNumber}.png`;
 
-        if (error) throw error;
-        if (!data?.ok) {
-            throw new Error(data?.error || "GitHub-Speicherung fehlgeschlagen.");
+        const invokeSave = async (filename, imageBase64) => {
+            const result = await window.eetgSupabase.functions.invoke(
+                "save-fahrtenbuch-png",
+                {
+                    body: {
+                        vehicleId: String(vehicle.id),
+                        vehicleNumber: String(vehicle.number || ""),
+                        directory: safeNumber,
+                        filename,
+                        imageBase64
+                    }
+                }
+            );
+            if (result.error) throw result.error;
+            if (!result.data?.ok) {
+                throw new Error(result.data?.error || `GitHub-Speicherung fehlgeschlagen: ${filename}`);
+            }
+            return result.data;
+        };
+
+        const data = await invokeSave(currentFilename, pngBase64);
+
+        // Nur wenn Fahrtenbuch 1 erstmals erstellt wurde, automatisch 2–5 vorbereiten.
+        // Für die vier Folgebücher wird die reine Vorlage inkl. Loknummer gerendert.
+        if (book.bookNumber === 1 && data && !data.updated) {
+            setFahrtenbuchState("Fahrtenbuch 1 erstellt – Fahrtenbücher 2 bis 5 werden vorbereitet …", "pending");
+
+            const originalForce = fahrtenbuchForceLocalRender;
+            const originalView = fahrtenbuchViewBookNumber;
+
+            try {
+                for (let extraBook = 2; extraBook <= 5; extraBook++) {
+                    fahrtenbuchViewBookNumber = extraBook;
+                    fahrtenbuchForceLocalRender = true;
+                    renderFahrtenbuch();
+
+                    const extraImage = document.getElementById("fahrtenbuchTemplateImage");
+                    if (extraImage?.decode) {
+                        try { await extraImage.decode(); } catch (_) {}
+                    }
+                    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+                    const extraCanvas = await html2canvas(sheet, {
+                        backgroundColor: null,
+                        scale: 1,
+                        useCORS: true,
+                        logging: false,
+                        width: sheet.scrollWidth,
+                        height: sheet.scrollHeight,
+                        onclone: clonedDocument => {
+                            clonedDocument
+                                .querySelectorAll(".fahrtenbuch-template-row .fahrtenbuch-template-cell")
+                                .forEach(cell => { cell.textContent = ""; });
+                        }
+                    });
+
+                    await invokeSave(
+                        `fahrtenbuch_${extraBook}.png`,
+                        extraCanvas.toDataURL("image/png").split(",")[1]
+                    );
+
+                    fahrtenbuchGithubTextureCache.set(
+                        getFahrtenbuchTextureKey(vehicle, extraBook),
+                        true
+                    );
+                }
+            } finally {
+                fahrtenbuchViewBookNumber = originalView;
+                fahrtenbuchForceLocalRender = originalForce;
+                renderFahrtenbuch();
+            }
         }
 
         const savedBookNumber = book.bookNumber;
