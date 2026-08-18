@@ -7636,44 +7636,54 @@ async function saveFahrtenbuchToGithub(options = {}){
 
         const data = await invokeSave(currentFilename, pngBase64);
 
-        // Bei jedem Speichern von Fahrtenbuch 1 die Texturen 2–5 neu anlegen.
-        // Damit werden sie auch wieder erstellt, wenn sie auf GitHub manuell gelöscht wurden.
-        // Die vier Folgebücher werden leer gerendert; nur die Loknummer bleibt sichtbar.
+        // Bei jedem Speichern von Fahrtenbuch 1 die Vorratsdateien 2–5 erzeugen.
+        // Sie enthalten nur die Vorlage + Loknummer.
         if (book.bookNumber === 1) {
-            setFahrtenbuchState("Fahrtenbuch 1 gespeichert – Fahrtenbücher 2 bis 5 werden neu erstellt …", "pending");
+            setFahrtenbuchState("Fahrtenbuch 1 gespeichert – Fahrtenbücher 2 bis 5 werden erstellt …", "pending");
 
             const originalForce = fahrtenbuchForceLocalRender;
-            const originalView = fahrtenbuchViewBookNumber;
 
             try {
-                for (let extraBook = 2; extraBook <= 5; extraBook++) {
-                    fahrtenbuchViewBookNumber = extraBook;
-                    fahrtenbuchForceLocalRender = true;
-                    renderFahrtenbuch();
+                // Lokale leere Vorlage erzwingen.
+                fahrtenbuchForceLocalRender = true;
+                renderFahrtenbuch();
 
-                    const extraImage = document.getElementById("fahrtenbuchTemplateImage");
-                    if (extraImage?.decode) {
-                        try { await extraImage.decode(); } catch (_) {}
+                const extraImage = document.getElementById("fahrtenbuchTemplateImage");
+                if (extraImage?.decode) {
+                    try { await extraImage.decode(); } catch (_) {}
+                }
+                await new Promise(resolve =>
+                    requestAnimationFrame(() => requestAnimationFrame(resolve))
+                );
+
+                // Ein einziges leeres Vorratsblatt rendern:
+                // Fahrteinträge werden entfernt, Loknummer bleibt erhalten.
+                const blankCanvas = await html2canvas(sheet, {
+                    backgroundColor: null,
+                    scale: 1,
+                    useCORS: true,
+                    logging: false,
+                    width: sheet.scrollWidth,
+                    height: sheet.scrollHeight,
+                    onclone: clonedDocument => {
+                        clonedDocument
+                            .querySelectorAll(".fahrtenbuch-template-row .fahrtenbuch-template-cell")
+                            .forEach(cell => { cell.textContent = ""; });
                     }
-                    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+                });
 
-                    const extraCanvas = await html2canvas(sheet, {
-                        backgroundColor: null,
-                        scale: 1,
-                        useCORS: true,
-                        logging: false,
-                        width: sheet.scrollWidth,
-                        height: sheet.scrollHeight,
-                        onclone: clonedDocument => {
-                            clonedDocument
-                                .querySelectorAll(".fahrtenbuch-template-row .fahrtenbuch-template-cell")
-                                .forEach(cell => { cell.textContent = ""; });
-                        }
-                    });
+                const blankBase64 = blankCanvas.toDataURL("image/png").split(",")[1];
+
+                // Dieselbe leere Vorlage mit der aktuellen Loknummer als 2–5 hochladen.
+                for (let extraBook = 2; extraBook <= 5; extraBook++) {
+                    setFahrtenbuchState(
+                        `Fahrtenbuch ${extraBook} wird erstellt …`,
+                        "pending"
+                    );
 
                     await invokeSave(
                         `fahrtenbuch_${extraBook}.png`,
-                        extraCanvas.toDataURL("image/png").split(",")[1]
+                        blankBase64
                     );
 
                     fahrtenbuchGithubTextureCache.delete(
@@ -7681,7 +7691,6 @@ async function saveFahrtenbuchToGithub(options = {}){
                     );
                 }
             } finally {
-                fahrtenbuchViewBookNumber = originalView;
                 fahrtenbuchForceLocalRender = originalForce;
                 renderFahrtenbuch();
             }
