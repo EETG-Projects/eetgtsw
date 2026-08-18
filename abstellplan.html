@@ -4979,7 +4979,7 @@ body.light .plan-container::before{
     left:18.55%;
     width:64.10%;
     display:grid;
-    grid-template-rows:repeat(25,1fr);
+    grid-template-rows:repeat(26,1fr);
     pointer-events:none;
     font-family:var(--fahrtenbuch-font);
     color:#241b0d;
@@ -4987,7 +4987,7 @@ body.light .plan-container::before{
 
 .fahrtenbuch-overlay-top{
     top:8.20%;
-    /* 25 Nutzzeilen exakt bis zur letzten vorgesehenen Schreibzeile.
+    /* 26 Nutzzeilen exakt bis zur letzten vorgesehenen Schreibzeile.
        Die bisherige Höhe lief bis zur unteren Zusatzlinie und hat dadurch
        den Text von Zeile zu Zeile immer weiter verschoben. */
     height:38.87%;
@@ -4995,7 +4995,7 @@ body.light .plan-container::before{
 
 .fahrtenbuch-overlay-bottom{
     top:57.32%;
-    height:38.96%;
+    height:40.53%;
 }
 
 .fahrtenbuch-template-row{
@@ -5720,7 +5720,7 @@ body:not(.is-admin) .fahrtenbuch-clear-btn{
                 <div class="fahrtenbuch-book-status">
                     <div class="fahrtenbuch-view-switch">
                         <button type="button" class="secondary" id="fbPrevBookBtn" title="Vorheriges Fahrtenbuch">←</button>
-                        <span id="fahrtenbuchBookInfo">Fahrtenbuch 1 · 0 / 50</span>
+                        <span id="fahrtenbuchBookInfo">Fahrtenbuch 1 · 0 / 52</span>
                         <button type="button" class="secondary" id="fbNextBookBtn" title="Nächstes Fahrtenbuch">→</button>
                     </div>
                     <span id="fahrtenbuchFilenamePreview">–</span>
@@ -6827,11 +6827,11 @@ function selectedFahrtenbuchVehicle(){
 
 function getLatestFahrtenbuchNumber(){
     const count = fahrtenbuchEntries.length;
-    return Math.max(1, Math.floor(Math.max(0, count - 1) / 50) + 1);
+    return Math.max(1, Math.floor(Math.max(0, count - 1) / 52) + 1);
 }
 
 function getMaxFahrtenbuchNumber(){
-    return Math.max(1, Math.ceil(fahrtenbuchEntries.length / 50));
+    return Math.max(1, Math.ceil(fahrtenbuchEntries.length / 52));
 }
 
 function getCurrentFahrtenbuchNumber(){
@@ -6850,8 +6850,8 @@ function getCurrentFahrtenbuchNumber(){
 
 function getCurrentFahrtenbuchSlice(){
     const bookNumber = getCurrentFahrtenbuchNumber();
-    const start = (bookNumber - 1) * 50;
-    const end = start + 50;
+    const start = (bookNumber - 1) * 52;
+    const end = start + 52;
     return {
         bookNumber,
         start,
@@ -6883,7 +6883,7 @@ function updateFahrtenbuchFilename(){
 
     if (!vehicle?.number) {
         label.textContent = "–";
-        info.textContent = "Fahrtenbuch 1 · 0 / 50";
+        info.textContent = "Fahrtenbuch 1 · 0 / 52";
         return;
     }
 
@@ -6896,7 +6896,7 @@ function updateFahrtenbuchFilename(){
     const maxBook = getMaxFahrtenbuchNumber();
 
     label.textContent = `fahrtenbuecher/${safe}/fahrtenbuch_${book.bookNumber}.png`;
-    info.textContent = `Fahrtenbuch ${book.bookNumber} von ${maxBook} · ${used} / 50`;
+    info.textContent = `Fahrtenbuch ${book.bookNumber} von ${maxBook} · ${used} / 52`;
 
     const prev = document.getElementById("fbPrevBookBtn");
     const next = document.getElementById("fbNextBookBtn");
@@ -7189,8 +7189,8 @@ function renderFahrtenbuch(){
     bottom.innerHTML = "";
     currentBody.innerHTML = "";
 
-    const rowsPerSheet = 25;
-    const totalRows = 50;
+    const rowsPerSheet = 26;
+    const totalRows = 52;
     const book = getCurrentFahrtenbuchSlice();
 
     const displayEntries = book.entries.map(entry => ({...entry, __draft:false}));
