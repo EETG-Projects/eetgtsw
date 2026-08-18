@@ -7636,10 +7636,11 @@ async function saveFahrtenbuchToGithub(options = {}){
 
         const data = await invokeSave(currentFilename, pngBase64);
 
-        // Nur wenn Fahrtenbuch 1 erstmals erstellt wurde, automatisch 2–5 vorbereiten.
-        // Für die vier Folgebücher wird die reine Vorlage inkl. Loknummer gerendert.
-        if (book.bookNumber === 1 && data && !data.updated) {
-            setFahrtenbuchState("Fahrtenbuch 1 erstellt – Fahrtenbücher 2 bis 5 werden vorbereitet …", "pending");
+        // Bei jedem Speichern von Fahrtenbuch 1 die Texturen 2–5 neu anlegen.
+        // Damit werden sie auch wieder erstellt, wenn sie auf GitHub manuell gelöscht wurden.
+        // Die vier Folgebücher werden leer gerendert; nur die Loknummer bleibt sichtbar.
+        if (book.bookNumber === 1) {
+            setFahrtenbuchState("Fahrtenbuch 1 gespeichert – Fahrtenbücher 2 bis 5 werden neu erstellt …", "pending");
 
             const originalForce = fahrtenbuchForceLocalRender;
             const originalView = fahrtenbuchViewBookNumber;
