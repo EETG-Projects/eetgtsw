@@ -5301,6 +5301,96 @@ body:not(.is-admin) .fahrtenbuch-clear-btn{
     white-space:nowrap;
 }
 
+
+/* =========================================================
+   FIX – HORIZONTALER SLIDER IM SICHTBAREN BEREICH
+========================================================= */
+html,body{
+    width:100%!important;
+    height:100%!important;
+    min-height:0!important;
+    overflow:hidden!important;
+}
+body{
+    display:block!important;
+    position:relative!important;
+}
+header{
+    position:relative!important;
+    width:100%!important;
+    height:64px!important;
+    min-height:64px!important;
+    max-height:64px!important;
+}
+#abstellplanView,
+#fahrtenbuecherView{
+    position:absolute!important;
+    left:0!important;
+    right:0!important;
+    top:64px!important;
+    bottom:0!important;
+    width:100%!important;
+    height:auto!important;
+    min-height:0!important;
+    overflow:hidden!important;
+}
+#abstellplanView.active{
+    display:flex!important;
+    flex-direction:column!important;
+}
+#abstellplanView > .legend-info-row{
+    flex:0 0 38px!important;
+    height:38px!important;
+    min-height:38px!important;
+    max-height:38px!important;
+}
+#abstellplanView > .app{
+    flex:1 1 0!important;
+    width:100%!important;
+    height:auto!important;
+    min-height:0!important;
+    overflow:hidden!important;
+}
+#abstellplanView .sidebar,
+#abstellplanView .workspace{
+    height:auto!important;
+    min-height:0!important;
+    max-height:100%!important;
+    overflow:hidden!important;
+}
+#abstellplanView .workspace{
+    display:flex!important;
+    flex-direction:column!important;
+}
+#abstellplanView .workspace-toolbar{
+    flex:0 0 48px!important;
+    height:48px!important;
+    min-height:48px!important;
+    max-height:48px!important;
+}
+#abstellplanView .plan-container{
+    flex:1 1 0!important;
+    width:100%!important;
+    height:0!important;
+    min-width:0!important;
+    min-height:0!important;
+    max-height:100%!important;
+    overflow-x:scroll!important;
+    overflow-y:scroll!important;
+    scrollbar-gutter:stable!important;
+    overscroll-behavior:contain!important;
+}
+#abstellplanView .vehicle-list{
+    flex:1 1 0!important;
+    min-height:0!important;
+    overflow-y:auto!important;
+}
+#fahrtenbuecherView.active{
+    display:flex!important;
+    min-height:0!important;
+    overflow:auto!important;
+}
+
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Kalam:wght@300;400;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -7345,11 +7435,12 @@ function renderFahrtenbuch(){
     if (lokTop) lokTop.textContent = usingGithubTexture ? "" : loknummerText;
     if (lokBottom) lokBottom.textContent = usingGithubTexture ? "" : loknummerText;
 
-    // Bei einer geladenen GitHub-PNG sind die gespeicherten Zeilen bereits
-    // Bestandteil des Bildes. Deshalb werden sie NICHT noch einmal darübergelegt.
-    const displayEntries = usingGithubTexture
-        ? []
-        : book.entries.map(entry => ({...entry, __draft:false}));
+    // Gespeicherte Supabase-Einträge IMMER in der Vorschau anzeigen.
+    // Die GitHub-PNG dient nur als Hintergrundtextur.
+    const displayEntries = book.entries.map(entry => ({
+        ...entry,
+        __draft:false
+    }));
 
     const draft = currentFahrtenbuchInput();
 
@@ -7361,7 +7452,7 @@ function renderFahrtenbuch(){
         hasFahrtenbuchDraft(draft) &&
         book.entries.length < totalRows
     ) {
-        const draftIndex = usingGithubTexture ? book.entries.length : displayEntries.length;
+        const draftIndex = displayEntries.length;
 
         while (displayEntries.length < draftIndex) {
             displayEntries.push(null);
