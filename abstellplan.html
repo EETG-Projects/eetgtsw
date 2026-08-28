@@ -5391,6 +5391,19 @@ header{
     overflow:auto!important;
 }
 
+
+/* STANDORTE VERWALTEN */
+.location-manager-box{width:min(680px,calc(100vw - 32px))!important}
+.location-manager-list{display:flex;flex-direction:column;gap:8px;max-height:360px;overflow-y:auto;margin:12px 0 16px;padding-right:4px}
+.location-manager-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:9px;border:1px solid var(--border);border-radius:9px;background:var(--panel2)}
+.location-manager-row.current{border-color:var(--accent);box-shadow:0 0 0 2px rgba(181,18,27,.10)}
+.location-manager-row input{width:100%;min-width:0;height:34px;padding:7px 9px}
+.location-manager-row button{min-height:34px;padding:7px 10px!important;white-space:nowrap}
+.location-manager-add{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;margin-top:8px;padding-top:14px;border-top:1px solid var(--border)}
+.location-manager-add input{width:100%}
+.location-manager-empty{padding:18px;text-align:center;color:var(--muted);border:1px dashed var(--border);border-radius:9px}
+.location-manager-note{margin-top:6px;color:var(--muted);font-size:11px;line-height:1.4}
+
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Kalam:wght@300;400;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -5627,22 +5640,8 @@ header{
             <button
                 class="secondary admin-only location-admin-btn"
                 type="button"
-                onclick="openLocationModal()">
-                + Standort
-            </button>
-
-            <button
-                class="secondary admin-only location-admin-btn"
-                type="button"
-                onclick="openLocationEditModal()">
-                ✏ Standort
-            </button>
-
-            <button
-                class="danger admin-only location-admin-btn"
-                type="button"
-                onclick="deleteCurrentLocation()">
-                🗑 Standort
+                onclick="openLocationManager()">
+                ⚙ Standorte
             </button>
 
             <button
@@ -6087,6 +6086,24 @@ header{
         <div class="modal-buttons">
             <button class="secondary" type="button" onclick="closeModals()">Abbrechen</button>
             <button type="button" onclick="saveLocationEdit()">Speichern</button>
+        </div>
+    </div>
+</div>
+
+<!-- =====================================================
+     LOCATION MANAGER MODAL
+===================================================== -->
+<div class="modal" id="locationManagerModal">
+    <div class="modal-box location-manager-box">
+        <h2>Standorte verwalten</h2>
+        <div class="location-manager-note">Standorte können hier umbenannt, neu angelegt oder gelöscht werden.</div>
+        <div class="location-manager-list" id="locationManagerList"></div>
+        <div class="location-manager-add">
+            <input id="locationManagerNewName" type="text" placeholder="Neuer Standortname">
+            <button type="button" onclick="locationManagerAdd()">+ Standort anlegen</button>
+        </div>
+        <div class="modal-buttons">
+            <button class="secondary" type="button" onclick="closeModals()">Schließen</button>
         </div>
     </div>
 </div>
@@ -9449,6 +9466,83 @@ async function endAreaResize() {
         showSupabaseError("Bereichsgröße konnte nicht gespeichert werden.", error);
         await loadPlan();
     }
+}
+
+function openLocationManager() {
+    if (!enforceEditMode()) return;
+    renderLocationManager();
+    document.getElementById("locationManagerModal")?.classList.add("active");
+}
+
+function renderLocationManager() {
+    const list = document.getElementById("locationManagerList");
+    if (!list) return;
+    if (!locations.length) {
+        list.innerHTML = '<div class="location-manager-empty">Noch keine Standorte vorhanden.</div>';
+        return;
+    }
+    list.innerHTML = locations.map(location => {
+        const id = String(location.id);
+        const current = id === String(currentLocationId);
+        return `
+            <div class="location-manager-row${current ? " current" : ""}" data-location-id="${escapeHtml(id)}">
+                <input type="text" class="location-manager-name" value="${escapeHtml(location.name || "")}" aria-label="Standortname">
+                <button class="secondary" type="button" onclick="locationManagerSave('${escapeHtml(id)}')">Speichern</button>
+                <button class="danger" type="button" onclick="locationManagerDelete('${escapeHtml(id)}')">Löschen</button>
+            </div>`;
+    }).join("");
+}
+
+async function locationManagerAdd() {
+    if (!enforceEditMode()) return;
+    const input = document.getElementById("locationManagerNewName");
+    const name = String(input?.value || "").trim();
+    if (!name) { alert("Bitte einen Standortnamen eingeben."); input?.focus(); return; }
+    const { data, error } = await window.eetgSupabase.from("locations").insert({ name }).select().single();
+    if (error) { showSupabaseError("Standort konnte nicht angelegt werden.", error); return; }
+    if (input) input.value = "";
+    await loadLocations();
+    currentLocationId = String(data.id);
+    localStorage.setItem("eetg_location_id", currentLocationId);
+    renderLocationSelect();
+    renderLocationManager();
+    await loadPlan();
+}
+
+async function locationManagerSave(locationId) {
+    if (!enforceEditMode()) return;
+    const row = document.querySelector(`.location-manager-row[data-location-id="${CSS.escape(String(locationId))}"]`);
+    const input = row?.querySelector(".location-manager-name");
+    const name = String(input?.value || "").trim();
+    if (!name) { alert("Der Standortname darf nicht leer sein."); input?.focus(); return; }
+    const { error } = await window.eetgSupabase.from("locations").update({ name }).eq("id", Number(locationId));
+    if (error) { showSupabaseError("Standort konnte nicht geändert werden.", error); return; }
+    await loadLocations();
+    renderLocationSelect();
+    renderLocationManager();
+    if (String(locationId) === String(currentLocationId)) await loadPlan();
+}
+
+async function locationManagerDelete(locationId) {
+    if (!enforceEditMode()) return;
+    const location = locations.find(item => String(item.id) === String(locationId));
+    if (!location) return;
+    const confirmed = confirm(`Standort „${location.name}“ wirklich löschen?\n\nDas Löschen kann fehlschlagen, solange dem Standort noch Gleise, Fahrzeuge, Bereiche, Zugverbände oder Historieneinträge zugeordnet sind.`);
+    if (!confirmed) return;
+    const { error } = await window.eetgSupabase.from("locations").delete().eq("id", Number(locationId));
+    if (error) { showSupabaseError("Standort konnte nicht gelöscht werden.", error); return; }
+    const deletedCurrent = String(locationId) === String(currentLocationId);
+    await loadLocations();
+    if (deletedCurrent) {
+        currentLocationId = locations.length ? String(locations[0].id) : null;
+        if (currentLocationId) localStorage.setItem("eetg_location_id", currentLocationId);
+        else localStorage.removeItem("eetg_location_id");
+        selectedVehicle = null;
+    }
+    renderLocationSelect();
+    renderLocationManager();
+    if (currentLocationId) await loadPlan();
+    else { tracks=[]; vehicles=[]; areas=[]; consists=[]; renderLibrary(); renderPlan(); }
 }
 
 function openLocationModal() {
