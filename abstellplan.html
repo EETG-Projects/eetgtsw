@@ -5799,6 +5799,47 @@ body.dark:not(.admin-edit-enabled) .plan-container{
     min-height:145px;
 }
 
+
+/* =========================================================
+   FIX: FAHRZEUGE DIREKT AUF DEM GLEIS
+   Gleis läuft jetzt sichtbar durch die Fahrzeugmitte.
+========================================================= */
+
+/* Gleismitte = 69px */
+.track-line{
+    top:62px!important;
+    height:14px!important;
+    z-index:2!important;
+}
+
+/* Fahrzeugmitte ebenfalls exakt = 69px */
+.vehicle,
+.vehicle.lok{
+    top:50px!important;
+    height:38px!important;
+    margin-top:0!important;
+    z-index:10!important;
+}
+
+.vehicle.wagen{
+    top:52px!important;
+    height:34px!important;
+    margin-top:0!important;
+    z-index:10!important;
+}
+
+/* Kein alter Translate/Bottom-Wert darf die Position verschieben. */
+.track .vehicle,
+.track-line .vehicle{
+    bottom:auto!important;
+    transform:none!important;
+}
+
+.vehicle:hover,
+.vehicle.selected{
+    transform:none!important;
+}
+
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Kalam:wght@300;400;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
