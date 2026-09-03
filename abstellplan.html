@@ -5404,6 +5404,275 @@ header{
 .location-manager-empty{padding:18px;text-align:center;color:var(--muted);border:1px dashed var(--border);border-radius:9px}
 .location-manager-note{margin-top:6px;color:var(--muted);font-size:11px;line-height:1.4}
 
+
+/* =========================================================
+   REALISTISCHER ABSTELLPLAN – 2D BAHNHOF / BETRIEBSWERK
+   Nur Darstellung. Supabase, Drag&Drop, Fahrtenbuch usw.
+   bleiben unverändert.
+========================================================= */
+
+/* Gelände statt technischem UI-Raster */
+.plan-container{
+    background-color:#303532!important;
+    background-image:
+        radial-gradient(circle at 18% 22%, rgba(255,255,255,.025) 0 1px, transparent 1.5px),
+        radial-gradient(circle at 72% 64%, rgba(0,0,0,.10) 0 1px, transparent 1.5px),
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px)!important;
+    background-size:31px 31px, 43px 43px, 25px 25px, 25px 25px!important;
+}
+
+body:not(.dark) .plan-container{
+    background-color:#b9b6a9!important;
+    background-image:
+        radial-gradient(circle at 18% 22%, rgba(255,255,255,.22) 0 1px, transparent 1.5px),
+        radial-gradient(circle at 72% 64%, rgba(70,60,45,.11) 0 1px, transparent 1.5px),
+        linear-gradient(rgba(70,60,45,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(70,60,45,.035) 1px, transparent 1px)!important;
+}
+
+/* Im normalen Betrieb verschwinden die großen UI-Karten um jedes Gleis. */
+body:not(.admin-edit-enabled) .track{
+    background:transparent!important;
+    border-color:transparent!important;
+    box-shadow:none!important;
+}
+body.is-admin.admin-edit-enabled .track{
+    background:rgba(255,255,255,.025)!important;
+    border:1px dashed rgba(255,255,255,.16)!important;
+}
+
+/* Gleisnummer wie eine echte kleine Gleis-/Orts-Tafel */
+.track-number{
+    left:10px!important;
+    top:66px!important;
+    transform:translateY(-50%)!important;
+    width:64px!important;
+    padding:5px 5px 4px!important;
+    border:1px solid rgba(255,255,255,.42)!important;
+    border-radius:3px!important;
+    background:#202522!important;
+    color:#f2f2e9!important;
+    font-size:13px!important;
+    line-height:1.1!important;
+    letter-spacing:.02em;
+    box-shadow:0 2px 5px rgba(0,0,0,.35)!important;
+}
+
+/* Schotterbett + Holz/Betonschwellen */
+.track-line{
+    left:110px!important;
+    right:30px!important;
+    top:54px!important;
+    height:34px!important;
+    border-radius:2px!important;
+    border:0!important;
+
+    background:
+        /* Prellbock / Gleisabschluss */
+        linear-gradient(90deg,
+            transparent 0,
+            transparent calc(100% - 7px),
+            rgba(28,30,29,.95) calc(100% - 7px),
+            rgba(28,30,29,.95) 100%),
+        /* Schwellen */
+        repeating-linear-gradient(90deg,
+            transparent 0 9px,
+            rgba(73,62,51,.96) 9px 13px,
+            transparent 13px 23px),
+        /* Schotter */
+        linear-gradient(180deg,
+            rgba(122,119,109,.18) 0%,
+            rgba(126,122,110,.78) 18%,
+            rgba(104,101,93,.92) 50%,
+            rgba(126,122,110,.78) 82%,
+            rgba(122,119,109,.18) 100%)!important;
+
+    box-shadow:
+        inset 0 1px rgba(255,255,255,.10),
+        inset 0 -1px rgba(0,0,0,.20)!important;
+}
+
+/* Stahlschienen */
+.track-line::before,
+.track-line::after{
+    left:0!important;
+    right:6px!important;
+    height:3px!important;
+    border-radius:2px!important;
+    background:
+        linear-gradient(180deg,#d7d9d7 0%,#8e9491 35%,#505653 100%)!important;
+    box-shadow:
+        0 1px 1px rgba(0,0,0,.45),
+        0 -1px rgba(255,255,255,.16)!important;
+}
+.track-line::before{ top:8px!important; }
+.track-line::after{ top:23px!important; bottom:auto!important; }
+
+/* Maßstab dezenter – große 50-m-Marken bleiben gut lesbar */
+.scale{
+    top:13px!important;
+}
+.scale-mark{
+    opacity:.30;
+}
+.scale-mark.scale-major{
+    opacity:.88;
+    text-shadow:0 1px 2px rgba(0,0,0,.55);
+}
+body:not(.admin-edit-enabled) .scale-mark:not(.scale-major){
+    opacity:.10;
+}
+
+/* Fahrzeuge wirken mehr wie Fahrzeuge auf dem Gleis und weniger wie Buttons */
+.vehicle{
+    top:48px!important;
+    height:37px!important;
+    border-width:1px!important;
+    border-radius:3px!important;
+    box-shadow:
+        inset 0 1px rgba(255,255,255,.20),
+        inset 0 -4px rgba(0,0,0,.20),
+        0 3px 6px rgba(0,0,0,.35)!important;
+    letter-spacing:.01em;
+    z-index:12!important;
+}
+
+/* Lok-Kasten mit leicht abgeschrägten Führerstandsenden */
+.vehicle.lok{
+    clip-path:polygon(4px 0, calc(100% - 4px) 0, 100% 22%, 100% 100%, 0 100%, 0 22%)!important;
+}
+
+/* Wagen bleiben gerader und etwas niedriger */
+.vehicle.wagen{
+    height:33px!important;
+    top:50px!important;
+    border-radius:2px!important;
+}
+
+/* Radsätze unter den Fahrzeugen */
+.vehicle::after{
+    content:"";
+    position:absolute;
+    left:5px;
+    right:5px;
+    bottom:-4px;
+    height:7px;
+    pointer-events:none;
+    background:
+        radial-gradient(circle, #151817 0 3px, #555 3.2px 4px, transparent 4.2px)
+        left center / 24px 7px repeat-x;
+    opacity:.95;
+}
+
+/* Statusfarben bleiben erhalten, aber mit Fahrzeuglack-artiger Tiefe */
+.vehicle.status-einsatzbereit{
+    background:linear-gradient(180deg,#4ee17a 0%,#24b957 55%,#16843b 100%)!important;
+    border-color:#80f3a2!important;
+}
+.vehicle.status-unterwegs{
+    background:linear-gradient(180deg,#ffe45d 0%,#e8c329 58%,#b99408 100%)!important;
+    border-color:#fff0a0!important;
+}
+.vehicle.status-abgestellt{
+    background:linear-gradient(180deg,#ff6b6b 0%,#e33f45 56%,#a92128 100%)!important;
+    border-color:#ff9b9b!important;
+}
+.vehicle.status-vermietet{
+    background:linear-gradient(180deg,#6eb7ff 0%,#3185d7 56%,#1f5794 100%)!important;
+    border-color:#9dceff!important;
+}
+.vehicle.status-werkstatt{
+    background:linear-gradient(180deg,#ffad63 0%,#ee7722 56%,#aa4811 100%)!important;
+    border-color:#ffd0a6!important;
+}
+
+/* Ausgewähltes Fahrzeug: weißer Sicherheitsrahmen statt Neon-Leuchten */
+.vehicle.selected{
+    box-shadow:
+        inset 0 1px rgba(255,255,255,.25),
+        inset 0 -4px rgba(0,0,0,.20),
+        0 0 0 2px #fff,
+        0 4px 10px rgba(0,0,0,.45)!important;
+}
+
+/* Notizfeld wirkt wie eine kleine betriebliche Beschriftung unter dem Gleis */
+body:not(.admin-edit-enabled) .track-note{
+    background:rgba(25,29,27,.42)!important;
+    border-color:rgba(255,255,255,.10)!important;
+}
+body:not(.dark):not(.admin-edit-enabled) .track-note{
+    background:rgba(255,255,255,.40)!important;
+    border-color:rgba(60,55,45,.16)!important;
+}
+
+/* Bereiche wirken wie Bodenflächen statt UI-Rechtecke */
+.plan-zoom-layer .area{
+    border-width:1px!important;
+    border-style:solid!important;
+    border-radius:4px!important;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.04)!important;
+}
+body:not(.admin-edit-enabled) .plan-zoom-layer .area{
+    border-color:rgba(255,255,255,.15)!important;
+}
+
+/* Werkstatt: Beton/Hallenboden */
+.area[data-area-type="werkstatt"]{
+    background:
+        repeating-linear-gradient(90deg,
+            rgba(110,112,110,.28) 0 24px,
+            rgba(85,87,85,.28) 24px 25px),
+        repeating-linear-gradient(0deg,
+            rgba(255,255,255,.035) 0 24px,
+            rgba(0,0,0,.08) 24px 25px),
+        rgba(96,99,96,.45)!important;
+    border-color:rgba(217,221,216,.38)!important;
+}
+
+/* Service/Tankstelle: Asphalt + gelbe Sicherheitsmarkierung */
+.area[data-area-type="service"]{
+    background:
+        repeating-linear-gradient(135deg,
+            rgba(244,193,49,.13) 0 10px,
+            transparent 10px 20px),
+        rgba(57,64,60,.46)!important;
+    border-color:rgba(244,193,49,.55)!important;
+}
+
+/* Abstellung: nur leicht anderer Schotter-/Bodenbereich */
+.area[data-area-type="abstellung"]{
+    background:rgba(113,119,111,.16)!important;
+    border-color:rgba(190,197,188,.28)!important;
+}
+
+/* Sonstiges */
+.area[data-area-type="sonstiges"]{
+    background:rgba(92,86,107,.20)!important;
+    border-color:rgba(190,180,215,.32)!important;
+}
+
+/* Im Bearbeitungsmodus bleiben Bereichsgrenzen bewusst deutlich */
+body.is-admin.admin-edit-enabled .area[data-area-type]{
+    border-style:dashed!important;
+    border-width:2px!important;
+}
+
+/* Bereichsbezeichnung wie kleine Anlagenbeschilderung */
+.area-title{
+    border-radius:3px!important;
+    background:rgba(25,29,27,.88)!important;
+    color:#f4f4ee!important;
+    border:1px solid rgba(255,255,255,.24)!important;
+    box-shadow:0 2px 5px rgba(0,0,0,.28)!important;
+    letter-spacing:.02em;
+}
+
+/* Hover etwas ruhiger */
+.vehicle:hover{
+    transform:translateY(-1px)!important;
+}
+
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Kalam:wght@300;400;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
