@@ -5840,6 +5840,49 @@ body.dark:not(.admin-edit-enabled) .plan-container{
     transform:none!important;
 }
 
+
+/* =========================================================
+   ENDGÜLTIGER FIX: FAHRZEUG-WRAPPER AUF GLEISMITTE
+   Ursache: .vehicle liegt RELATIV im .vehicle-wrap.
+   Deshalb muss der Wrapper positioniert werden und das
+   Fahrzeug selbst bei top:0 bleiben.
+========================================================= */
+
+/* Gleismitte bei 69px */
+.vehicle-wrap{
+    top:50px!important;       /* 69px - 38px/2 */
+    margin-top:0!important;
+    z-index:10!important;
+}
+
+/* Fahrzeug relativ zum Wrapper, nicht nochmals 50px tiefer */
+.vehicle-wrap .vehicle,
+.vehicle-wrap .vehicle.lok{
+    position:relative!important;
+    top:0!important;
+    bottom:auto!important;
+    left:0!important;
+    height:38px!important;
+    margin:0!important;
+    transform:none!important;
+}
+
+/* Wagen etwas niedriger, aber weiterhin auf derselben Gleismitte */
+.vehicle-wrap .vehicle.wagen{
+    top:2px!important;        /* 50 + 2 + 17 = 69 */
+    height:34px!important;
+}
+
+/* Direkte .vehicle-Regeln dürfen die Wrapper-Position nicht überschreiben */
+.track > .vehicle{
+    top:50px!important;
+}
+
+.vehicle-wrap .vehicle:hover,
+.vehicle-wrap .vehicle.selected{
+    transform:none!important;
+}
+
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Kalam:wght@300;400;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
